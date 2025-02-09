@@ -1,50 +1,31 @@
-# React + TypeScript + Vite
+# MaiSON Property Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is a React app for the MaiSON property platform. To get started with the project locally, follow these steps:
 
-Currently, two official plugins are available:
+## Prerequisites
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Node.js** (LTS version)
+- **npm** (comes with Node.js)
 
-## Expanding the ESLint configuration
+## Steps to Run Locally
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/YOUR_GITHUB_USERNAME/REPO_NAME.git
+    cd REPO_NAME
+    ```
 
-- Configure the top-level `parserOptions` property like this:
+2. Install project dependencies:
+    ```bash
+    npm install
+    ```
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+3. Run the app:
+    ```bash
+    npm start
+    ```
+    Your app will be available at `http://localhost:3000`.
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+---
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+Let me know if you need any more help with adding the instructions or anything else! 🚀
