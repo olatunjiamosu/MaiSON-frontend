@@ -34,7 +34,7 @@ const SelectUserType = () => {
 
         {/* Get Started Title */}
         <h2 className="text-3xl font-bold text-gray-900 mb-6">
-          Get Started
+          We're Glad You're Here
         </h2>
         <p className="text-gray-600 mb-4">
           Are you looking to buy or sell a property?

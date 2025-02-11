@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Home, FileText, Settings, Calendar, Bell, Search, 
-  Heart, ClipboardList, MessageCircle, LogOut, Menu, List 
+  Heart, ClipboardList, MessageCircle, LogOut, Menu, List, Handshake
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -57,7 +57,7 @@ const BuyerDashboard = () => {
         {/* Navigation Links (Updated Order) */}
         <nav className="p-4 space-y-1">
           <NavItem icon={<List />} label="All Listings" active={activeSection === 'listings'} onClick={() => setActiveSection('listings')} />
-          <NavItem icon={<Search />} label="Property Matches" active={activeSection === 'matches'} onClick={() => setActiveSection('matches')} />
+          <NavItem icon={<Handshake />} label="Property Matches" active={activeSection === 'matches'} onClick={() => setActiveSection('matches')} />
           <NavItem icon={<Search />} label="Property Search" active={activeSection === 'search'} onClick={() => setActiveSection('search')} />
           <NavItem icon={<Heart />} label="Saved Properties" active={activeSection === 'saved'} onClick={() => setActiveSection('saved')} />
           <NavItem icon={<Calendar />} label="Viewings" active={activeSection === 'viewings'} onClick={() => setActiveSection('viewings')} />

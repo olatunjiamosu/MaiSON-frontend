@@ -29,7 +29,7 @@ const MaisonLanding = () => {
               </Link>
             </button>
             <button className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
-              <Link to="/select-user-type">Get Started</Link>
+              <Link to="/sign-up">Get Started</Link>
             </button>
           </div>
         </div>
@@ -43,10 +43,10 @@ const MaisonLanding = () => {
           </h1>
           <p className="text-xl mb-8 text-emerald-50">
             Experience the future of property transactions with our AI-powered platform. 
-            Save pn agent commissions while getting a better service.
+            Save on agent commissions while getting a better service.
           </p>
           <button className="bg-white text-emerald-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-50">
-            <Link to="/select-user-type">Start Your Journey</Link>
+            <Link to="/sign-up">Start Your Journey</Link>
           </button>
         </div>
       </div>

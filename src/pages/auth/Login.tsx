@@ -20,7 +20,6 @@ const Login = () => {
     }
     navigate(`/verification?email=${encodeURIComponent(email)}`);
   };
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center">
       {/* Back to Home Button */}
