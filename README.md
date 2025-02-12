@@ -1,157 +1,150 @@
-📌 Full README.md for MaiSON Property Platform
-md
-Copy
-Edit
 # 🏡 MaiSON Property Platform
 
 MaiSON is an AI-powered property marketplace designed to connect buyers and sellers directly, optimizing the real estate process.
 
----
+## 📋 Table of Contents
+- [Quick Start](#-quick-start)
+- [Project Structure](#-project-structure)
+- [Available Scripts](#-available-scripts)
+- [Development](#-development)
+- [Deployment](#-deployment)
+- [Testing](#-testing)
+- [Contributing](#-contributing)
+- [Troubleshooting](#-troubleshooting)
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
-### **📌 Prerequisites**
-Before running the project, ensure you have the following installed:
-- **[Node.js](https://nodejs.org/)** (LTS version recommended)
-- **npm** (comes with Node.js) or **yarn** (alternative package manager)
-- **Git** (for cloning the repository)
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or higher)
+- npm (comes with Node.js)
+- Git
 
-To check if you have them installed, run:
-```sh
-node -v    # Should return a version number
-npm -v     # Should return a version number
-git --version  # Should return a version number
-📥 Installation
-1️⃣ Clone the Repository
+### Installation
 
-sh
-Copy
-Edit
+```bash
+# Clone the repository
 git clone https://github.com/YOUR_GITHUB_USERNAME/REPO_NAME.git
 cd REPO_NAME
-2️⃣ Install Dependencies
 
-sh
-Copy
-Edit
-npm install  # OR yarn install
-3️⃣ Run the Development Server Since the project uses Vite, use the following command:
+# Install dependencies
+npm install
 
-sh
-Copy
-Edit
-npm run dev  # OR yarn dev
-🔗 The app should now be available at http://localhost:5173/.
+# Create environment file
+cp .env.example .env
 
-🛠 Project Structure
-python
-Copy
-Edit
+# Start development server
+npm run dev
+```
+
+## 🏗 Project Structure
+```
 src/
-  ├── pages/               # All page components
-  │   ├── LandingPage.tsx
-  │   ├── auth/            # Authentication-related pages
-  │   │   ├── Login.tsx
-  │   │   ├── RegisterBuyer.tsx
-  │   │   ├── RegisterSeller.tsx
-  │   │   ├── Verification.tsx
-  │   │   └── ResetPassword.tsx
-  │   ├── dashboard/       # Buyer & Seller dashboards
-  │   │   ├── BuyerDashboard.tsx
-  │   │   ├── SellerDashboard.tsx
-  │   ├── property/        # Property-related pages
-  │   │   ├── ListProperty.tsx
-  │   │   ├── PropertySearch.tsx
-  │   │   ├── PropertyDetail.tsx
-  │   │   └── PropertyShortlist.tsx
-  │   ├── messages/
-  │   ├── documents/
-  │   ├── aftercare/
-  ├── components/          # Reusable UI components
-  │   ├── layout/          # Navbar, Sidebar, Footer, etc.
-  │   ├── property/
-  │   ├── auth/
-  │   ├── messages/
-  │   ├── documents/
-  ├── routes/              # App routing configuration
-  ├── context/             # React Context API providers
-  ├── hooks/               # Custom React hooks
-  ├── services/            # API service calls
-  ├── utils/               # Helper functions
-  ├── types/               # TypeScript types
-  ├── styles/              # Global styles
-  ├── assets/              # Static assets (images, icons)
-  ├── App.tsx              # Root component
-  ├── main.tsx             # Vite entry point
-  ├── vite.config.ts       # Vite configuration
-  ├── tsconfig.json        # TypeScript configuration
-  ├── package.json         # Dependencies and scripts
-  ├── .gitignore           # Files to exclude from Git
-  └── README.md            # You're reading it now!
-📦 Available Scripts
-Run these in the terminal inside your project directory:
+├── pages/               # All page components
+│   ├── LandingPage.tsx
+│   ├── auth/           # Authentication pages
+│   ├── dashboard/      # Dashboard components
+│   └── property/       # Property-related pages
+├── components/         # Reusable UI components
+│   ├── layout/        # Layout components
+│   ├── property/      # Property components
+│   └── chat/          # Chat components
+├── routes/            # Routing configuration
+├── config/           # App configuration
+├── hooks/            # Custom React hooks
+├── services/         # API services
+├── utils/            # Helper functions
+├── types/            # TypeScript types
+└── assets/           # Static assets
+```
 
-Command	Description
-npm run dev	Start the development server (Vite)
-npm run build	Build the project for production
-npm run preview	Preview the built project
-npm run lint	Check for linting errors
-npm run format	Format the code (if Prettier is set up)
-🚀 Deployment
-When the project is ready for production:
+## 📜 Available Scripts
 
-sh
-Copy
-Edit
-npm run build
-This will generate an optimized dist/ folder, which can be deployed on platforms like Vercel, Netlify, or your custom server.
+```bash
+# Development
+npm run dev           # Start development server
+npm run build         # Build for production
+npm run preview      # Preview production build
 
-👥 Collaborators
-To collaborate on this repository:
+# Testing
+npm run test         # Run tests
+npm run test:watch   # Run tests in watch mode
+npm run test:coverage # Run tests with coverage
 
-Ensure you’ve been added as a collaborator on GitHub.
-Clone the repo and create a new branch for your feature:
-sh
-Copy
-Edit
-git checkout -b feature-your-branch-name
-Commit changes and push your branch:
-sh
-Copy
-Edit
-git add .
-git commit -m "Added new feature"
-git push origin feature-your-branch-name
-Create a Pull Request (PR) on GitHub for review.
-📌 Troubleshooting
-❓ Vite issues? Try clearing cache and reinstalling:
+# Code Quality
+npm run lint         # Run ESLint
+npm run format       # Format code with Prettier
+```
 
-sh
-Copy
-Edit
+## 🛠 Development
+
+### Environment Variables
+Required environment variables:
+```env
+REACT_APP_API_URL=http://localhost:3000
+REACT_APP_GOOGLE_MAPS_API_KEY=your_key_here
+```
+
+### Features
+- 🔐 Authentication & Authorization
+- 🏠 Property Listings
+- 💬 Real-time Chat
+- 🗺 Interactive Maps
+- 📊 Property Analytics
+- 📱 Responsive Design
+
+## 🚀 Deployment
+
+### Docker
+```bash
+# Build image
+docker build -t maison-frontend .
+
+# Run container
+docker run -p 80:80 maison-frontend
+```
+
+### CI/CD Pipeline
+- Automated testing
+- Docker image building
+- Deployment to Azure Container Apps
+
+## 🧪 Testing
+- Unit tests with Jest
+- Component testing with React Testing Library
+- Integration tests
+- E2E tests (coming soon)
+
+## 👥 Contributing
+
+1. Fork the repository
+2. Create your feature branch
+```bash
+git checkout -b feature/amazing-feature
+```
+3. Commit your changes
+```bash
+git commit -m 'Add amazing feature'
+```
+4. Push to the branch
+```bash
+git push origin feature/amazing-feature
+```
+5. Open a Pull Request
+
+## ❓ Troubleshooting
+
+### Common Issues
+- Port conflicts: Use `npm run dev -- --port 3000`
+- Node modules issues: 
+```bash
 rm -rf node_modules package-lock.json
 npm install
-❓ Port conflict? Change the Vite dev server port:
+```
 
-sh
-Copy
-Edit
-npm run dev -- --port 3000
-❓ Git push rejected? Ensure your local branch is up to date:
-
-sh
-Copy
-Edit
-git pull origin main
-📜 License
-📌 This project is licensed under the MIT License.
-
-🚀 Let’s Build the Future of Real Estate with MaiSON! 🏡
-If you have any issues, feel free to open an issue or reach out on GitHub! 🔥
-
-yaml
-Copy
-Edit
+## 📝 License
+This project is licensed under the MIT License.
 
 ---
+
+Built with ❤️ by the MaiSON team
 
