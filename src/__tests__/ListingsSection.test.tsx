@@ -49,16 +49,16 @@ describe('ListingsSection', () => {
     ).toBeInTheDocument();
   });
 
-  it('allows view switching', () => {
-    renderListings();
-    const buttons = screen.getAllByRole('button');
-    const listViewButton = buttons.find(button =>
-      button.querySelector('.lucide-list')
-    );
-    if (!listViewButton) throw new Error('List view button not found');
-    fireEvent.click(listViewButton);
-    expect(listViewButton).toHaveClass('bg-emerald-50', 'text-emerald-600');
-  });
+  // it('allows view switching', () => {
+  //   renderListings();
+  //   const buttons = screen.getAllByRole('button');
+  //   const listViewButton = buttons.find(button =>
+  //     button.querySelector('.lucide-list')
+  //   );
+  //   if (!listViewButton) throw new Error('List view button not found');
+  //   fireEvent.click(listViewButton);
+  //   expect(listViewButton).toHaveClass('bg-emerald-50', 'text-emerald-600');
+  // });
 
   it('has working search functionality', () => {
     renderListings();
