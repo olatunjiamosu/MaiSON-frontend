@@ -3,7 +3,6 @@ import { Brain, Users, Clock, Shield } from 'lucide-react';
 import Footer from '../components/layout/Footer';
 import { Link } from 'react-router-dom';
 
-
 const MaisonLanding = () => {
   return (
     <div className="min-h-screen w-full flex flex-col">
@@ -16,14 +15,22 @@ const MaisonLanding = () => {
             <span>SON</span>
           </div>
           <div className="flex items-center space-x-6">
-            <a href="#" className="text-gray-600 hover:text-gray-900">Features</a>
-            <a href="#" className="text-gray-600 hover:text-gray-900">Listings</a>
-            <a href="#" className="text-gray-600 hover:text-gray-900">About</a>
-            <a href="#" className="text-gray-600 hover:text-gray-900">Contact</a>
+            <a href="#" className="text-gray-600 hover:text-gray-900">
+              Features
+            </a>
+            <a href="#" className="text-gray-600 hover:text-gray-900">
+              Listings
+            </a>
+            <a href="#" className="text-gray-600 hover:text-gray-900">
+              About
+            </a>
+            <a href="#" className="text-gray-600 hover:text-gray-900">
+              Contact
+            </a>
             <button className="text-emerald-600 hover:text-emerald-700">
-            <Link 
-               to="/login" 
-              className="text-emerald-600 hover:text-emerald-700"
+              <Link
+                to="/login"
+                className="text-emerald-600 hover:text-emerald-700"
               >
                 Login
               </Link>
@@ -42,8 +49,8 @@ const MaisonLanding = () => {
             Property Done The Intelligent Way
           </h1>
           <p className="text-xl mb-8 text-emerald-50">
-            Experience the future of property transactions with our AI-powered platform. 
-            Save on agent commissions while getting a better service.
+            Experience the future of property transactions with our AI-powered
+            platform. Save on agent commissions while getting a better service.
           </p>
           <button className="bg-white text-emerald-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-50">
             <Link to="/sign-up">Start Your Journey</Link>
@@ -58,22 +65,22 @@ const MaisonLanding = () => {
             Why Choose MaiSON
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            <FeatureCard 
+            <FeatureCard
               icon={<Brain className="h-8 w-8 text-emerald-600" />}
               title="AI-Powered Matching"
               description="Intelligent property matching based on deep learning algorithms"
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<Users className="h-8 w-8 text-emerald-600" />}
               title="Direct Connections"
               description="Connect buyers and sellers with a 24/7 AI assistant"
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<Clock className="h-8 w-8 text-emerald-600" />}
               title="Time Saving"
               description="Automated scheduling and viewing management"
             />
-            <FeatureCard 
+            <FeatureCard
               icon={<Shield className="h-8 w-8 text-emerald-600" />}
               title="Secure Process"
               description="End-to-end security for all documententation"
@@ -83,16 +90,14 @@ const MaisonLanding = () => {
       </div>
 
       {/* Footer */}
-      <Footer/>
+      <Footer />
     </div>
   );
 };
 
 const FeatureCard = ({ icon, title, description }) => (
   <div className="text-center">
-    <div className="flex justify-center mb-4">
-      {icon}
-    </div>
+    <div className="flex justify-center mb-4">{icon}</div>
     <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
     <p className="text-gray-500">{description}</p>
   </div>

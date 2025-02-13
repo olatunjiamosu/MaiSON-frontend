@@ -20,22 +20,24 @@ const MessagesSection = () => {
         {
           id: 1,
           sender: 'ai',
-          content: 'Hello! I can help you with information about 123 Park Avenue. What would you like to know?',
-          timestamp: '10:30 AM'
+          content:
+            'Hello! I can help you with information about 123 Park Avenue. What would you like to know?',
+          timestamp: '10:30 AM',
         },
         {
           id: 2,
           sender: 'user',
           content: 'What documents are needed for viewing?',
-          timestamp: '10:31 AM'
+          timestamp: '10:31 AM',
         },
         {
           id: 3,
           sender: 'ai',
-          content: 'For viewing 123 Park Avenue, you\'ll need to bring a photo ID and proof of funds. Would you like me to schedule a viewing for you?',
-          timestamp: '10:32 AM'
-        }
-      ]
+          content:
+            "For viewing 123 Park Avenue, you'll need to bring a photo ID and proof of funds. Would you like me to schedule a viewing for you?",
+          timestamp: '10:32 AM',
+        },
+      ],
     },
     {
       id: 2,
@@ -47,11 +49,12 @@ const MessagesSection = () => {
         {
           id: 1,
           sender: 'ai',
-          content: 'Welcome! I can assist you with information about 45 Queen Street.',
-          timestamp: '09:15 AM'
-        }
-      ]
-    }
+          content:
+            'Welcome! I can assist you with information about 45 Queen Street.',
+          timestamp: '09:15 AM',
+        },
+      ],
+    },
   ];
 
   return (
@@ -61,15 +64,12 @@ const MessagesSection = () => {
         <div className="p-4 border-b">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search properties"
-              className="pl-9"
-            />
+            <Input placeholder="Search properties" className="pl-9" />
           </div>
         </div>
 
         <div className="overflow-y-auto h-full">
-          {propertyChats.map((property) => (
+          {propertyChats.map(property => (
             <button
               key={property.id}
               onClick={() => setSelectedProperty(property)}
@@ -109,14 +109,16 @@ const MessagesSection = () => {
                 <Home className="h-5 w-5 text-emerald-600" />
                 <div>
                   <h2 className="font-medium">{selectedProperty.address}</h2>
-                  <p className="text-sm text-gray-500">{selectedProperty.price}</p>
+                  <p className="text-sm text-gray-500">
+                    {selectedProperty.price}
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {selectedProperty.messages.map((msg) => (
+              {selectedProperty.messages.map(msg => (
                 <div
                   key={msg.id}
                   className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -137,7 +139,9 @@ const MessagesSection = () => {
                       </div>
                     )}
                     <p className="text-sm">{msg.content}</p>
-                    <p className="text-xs text-gray-400 mt-1">{msg.timestamp}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {msg.timestamp}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -148,7 +152,7 @@ const MessagesSection = () => {
               <div className="flex space-x-2">
                 <Input
                   value={message}
-                  onChange={(e) => setMessage(e.target.value)}
+                  onChange={e => setMessage(e.target.value)}
                   placeholder="Type your message..."
                   className="flex-1"
                 />

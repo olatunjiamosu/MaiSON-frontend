@@ -1,9 +1,18 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Copy package files first for better caching
 COPY package*.json ./
-RUN npm ci
+RUN npm install --frozen-lockfile
+
+# Copy configuration files
+COPY .eslintrc.js .prettierrc ./
+
+# Copy source code
 COPY . .
+
+# Build the application
 RUN npm run build
 
 # Production stage

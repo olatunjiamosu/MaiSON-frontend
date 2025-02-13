@@ -7,7 +7,7 @@ import SavedPropertiesSection from '../pages/dashboard/buyer-sections/SavedPrope
 jest.mock('../components/map/PropertyMap', () => {
   return {
     __esModule: true,
-    default: () => <div data-testid="mock-map">Map</div>
+    default: () => <div data-testid="mock-map">Map</div>,
   };
 });
 
@@ -37,7 +37,9 @@ describe('SavedPropertiesSection', () => {
 
   it('has working search functionality', () => {
     renderSaved();
-    const searchInput = screen.getByPlaceholderText('Search saved properties...');
+    const searchInput = screen.getByPlaceholderText(
+      'Search saved properties...'
+    );
     fireEvent.change(searchInput, { target: { value: 'London' } });
     // Verify the search input value changed
     expect(searchInput).toHaveValue('London');
@@ -46,7 +48,7 @@ describe('SavedPropertiesSection', () => {
   it('allows toggling between grid and list views', () => {
     renderSaved();
     const buttons = screen.getAllByRole('button');
-    const listViewButton = buttons.find(button => 
+    const listViewButton = buttons.find(button =>
       button.querySelector('.lucide-list')
     );
     if (!listViewButton) throw new Error('List view button not found');
@@ -57,7 +59,7 @@ describe('SavedPropertiesSection', () => {
   it('allows adding notes to properties', () => {
     renderSaved();
     const buttons = screen.getAllByRole('button');
-    const editNotesButton = buttons.find(button => 
+    const editNotesButton = buttons.find(button =>
       button.querySelector('.lucide-pencil-line')
     );
     if (!editNotesButton) throw new Error('Edit notes button not found');
@@ -65,4 +67,4 @@ describe('SavedPropertiesSection', () => {
     // Check for modal content directly
     expect(screen.getByText('Update Category')).toBeInTheDocument();
   });
-}); 
+});

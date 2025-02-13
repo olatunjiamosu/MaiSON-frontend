@@ -7,8 +7,8 @@ const MaisonChat = () => {
   const [chatHistory, setChatHistory] = useState([
     {
       type: 'bot',
-      message: 'Hi! I\'m MaiSON, your AI assistant. How can I help you today?'
-    }
+      message: "Hi! I'm MaiSON, your AI assistant. How can I help you today?",
+    },
   ]);
 
   const handleSend = () => {
@@ -16,13 +16,19 @@ const MaisonChat = () => {
 
     // Add user message to chat
     setChatHistory(prev => [...prev, { type: 'user', message }]);
-    
+
     // TODO: Add actual AI response logic
     setTimeout(() => {
-      setChatHistory(prev => [...prev, {
-        type: 'bot',
-        message: 'I understand you said: ' + message + '. How can I assist you further?'
-      }]);
+      setChatHistory(prev => [
+        ...prev,
+        {
+          type: 'bot',
+          message:
+            'I understand you said: ' +
+            message +
+            '. How can I assist you further?',
+        },
+      ]);
     }, 1000);
 
     setMessage('');
@@ -33,13 +39,17 @@ const MaisonChat = () => {
       {/* Modified Chat Button - removed bouncing prompt */}
       {!isOpen && (
         <div className="flex flex-col items-center">
-          <span className="mb-2 text-sm text-gray-600 font-medium">Chat with me</span>
+          <span className="mb-2 text-sm text-gray-600 font-medium">
+            Chat with me
+          </span>
           <button
             onClick={() => setIsOpen(true)}
             className="bg-emerald-600 text-white w-20 h-20 rounded-full shadow-lg hover:bg-emerald-700 
             transition-all hover:scale-110 flex items-center justify-center font-bold text-xl"
           >
-            <span>M<span className="text-white">ai</span>SON</span>
+            <span>
+              M<span className="text-white">ai</span>SON
+            </span>
           </button>
         </div>
       )}
@@ -55,7 +65,9 @@ const MaisonChat = () => {
                   <span className="text-emerald-100">ai</span>
                   <span>SON</span>
                 </span>
-                <span className="text-xs text-emerald-100">Your property assistant</span>
+                <span className="text-xs text-emerald-100">
+                  Your property assistant
+                </span>
               </div>
             </div>
             <button
@@ -94,8 +106,8 @@ const MaisonChat = () => {
               <input
                 type="text"
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                onChange={e => setMessage(e.target.value)}
+                onKeyPress={e => e.key === 'Enter' && handleSend()}
                 placeholder="Type your message..."
                 className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
@@ -113,4 +125,4 @@ const MaisonChat = () => {
   );
 };
 
-export default MaisonChat; 
+export default MaisonChat;

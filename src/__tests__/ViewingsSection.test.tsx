@@ -14,7 +14,9 @@ describe('ViewingsSection', () => {
 
   it('renders upcoming and completed tabs', () => {
     renderViewings();
-    expect(screen.getByRole('button', { name: 'Upcoming' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Upcoming' })
+    ).toBeInTheDocument();
     expect(screen.getByText('Completed')).toBeInTheDocument();
   });
 
@@ -31,6 +33,8 @@ describe('ViewingsSection', () => {
     fireEvent.click(completedTab);
     const editButton = screen.getByText('Edit Notes');
     fireEvent.click(editButton);
-    expect(screen.getByPlaceholderText('Add your notes about the viewing...')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Add your notes about the viewing...')
+    ).toBeInTheDocument();
   });
-}); 
+});

@@ -38,13 +38,13 @@ const PropertyCard = ({
   id,
   showSaveButton = true,
   isSaved = false,
-  onToggleSave
+  onToggleSave,
 }: PropertyCardProps) => {
   const navigate = useNavigate();
 
   const handleViewProperty = () => {
     navigate(`/property/${id}`, {
-      state: { from: isSaved ? 'saved' : 'listings' }
+      state: { from: isSaved ? 'saved' : 'listings' },
     });
   };
 
@@ -78,22 +78,24 @@ const PropertyCard = ({
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-md overflow-hidden transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl ${className}`}>
+    <div
+      className={`bg-white rounded-lg shadow-md overflow-hidden transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl ${className}`}
+    >
       {/* Image */}
       <div className="relative h-48">
-        <img 
-          src={image} 
-          alt="Property" 
+        <img
+          src={image}
+          alt="Property"
           className="w-full h-full object-cover"
         />
-        <button 
+        <button
           onClick={handleSaveClick}
           className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:bg-gray-50"
         >
-          <Heart 
+          <Heart
             className={`h-5 w-5 ${
               isSaved ? 'fill-emerald-600 text-emerald-600' : 'text-gray-400'
-            }`} 
+            }`}
           />
         </button>
       </div>
@@ -104,7 +106,9 @@ const PropertyCard = ({
           <h3 className="text-xl font-bold text-gray-900">{price}</h3>
           <div className="text-sm text-gray-600">
             <p className="font-medium">{road}</p>
-            <p>{city}, {postcode}</p>
+            <p>
+              {city}, {postcode}
+            </p>
           </div>
         </div>
 
@@ -141,4 +145,4 @@ const PropertyCard = ({
   );
 };
 
-export default PropertyCard; 
+export default PropertyCard;

@@ -15,32 +15,32 @@ const RegisterBuyer = () => {
     bedrooms: '',
     bathrooms: '',
     receptionRooms: '',
-    
+
     // Step 2: Property Type & Features
     propertyType: [],
     gardenPreference: '',
-    
+
     // Step 3: Price & Details
     priceRange: '',
-    description: ''
+    description: '',
   });
 
-  const handleInputChange = (e) => {
+  const handleInputChange = e => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleCheckboxChange = (e) => {
+  const handleCheckboxChange = e => {
     const { name, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      propertyType: checked 
+      propertyType: checked
         ? [...prev.propertyType, name]
-        : prev.propertyType.filter(type => type !== name)
+        : prev.propertyType.filter(type => type !== name),
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = e => {
     e.preventDefault();
     // Handle form submission logic here
     console.log('Form submitted:', formData);
@@ -52,7 +52,10 @@ const RegisterBuyer = () => {
       <nav className="bg-white border-b">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <div onClick={() => navigate('/')} className="flex items-center space-x-2 cursor-pointer">
+            <div
+              onClick={() => navigate('/')}
+              className="flex items-center space-x-2 cursor-pointer"
+            >
               <Home className="h-6 w-6 text-emerald-600" />
               <span className="text-2xl font-bold">
                 <span>M</span>
@@ -61,7 +64,10 @@ const RegisterBuyer = () => {
               </span>
             </div>
             <div className="flex space-x-6">
-              <button onClick={() => navigate('/')} className="text-gray-600 hover:text-gray-900">
+              <button
+                onClick={() => navigate('/')}
+                className="text-gray-600 hover:text-gray-900"
+              >
                 Home
               </button>
               <button className="text-gray-600 hover:text-gray-900">
@@ -82,7 +88,7 @@ const RegisterBuyer = () => {
               </span>
             </div>
             <div className="flex h-2 mb-4 overflow-hidden bg-emerald-100 rounded">
-              <div 
+              <div
                 className="bg-emerald-600 transition-all duration-500"
                 style={{ width: `${(currentStep / totalSteps) * 100}%` }}
               />
@@ -97,8 +103,10 @@ const RegisterBuyer = () => {
           {/* Step 1: Basic Property Preferences */}
           {currentStep === 1 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-800">Basic Property Preferences</h2>
-              
+              <h2 className="text-2xl font-bold text-gray-800">
+                Basic Property Preferences
+              </h2>
+
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   Preferred Location
@@ -200,24 +208,29 @@ const RegisterBuyer = () => {
               <h2 className="text-2xl font-bold text-gray-800">
                 Preferred Property Type & Features
               </h2>
-              
+
               <div className="space-y-4">
                 <label className="block text-sm font-medium text-gray-700">
                   Preferred Property Type
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {['Detached', 'Semi-Detached', 'Apartment', 'Bungalow'].map(type => (
-                    <label key={type} className="flex items-center p-4 border rounded-lg cursor-pointer hover:border-emerald-500">
-                      <input
-                        type="checkbox"
-                        name={type}
-                        checked={formData.propertyType.includes(type)}
-                        onChange={handleCheckboxChange}
-                        className="mr-2"
-                      />
-                      <span>{type}</span>
-                    </label>
-                  ))}
+                  {['Detached', 'Semi-Detached', 'Apartment', 'Bungalow'].map(
+                    type => (
+                      <label
+                        key={type}
+                        className="flex items-center p-4 border rounded-lg cursor-pointer hover:border-emerald-500"
+                      >
+                        <input
+                          type="checkbox"
+                          name={type}
+                          checked={formData.propertyType.includes(type)}
+                          onChange={handleCheckboxChange}
+                          className="mr-2"
+                        />
+                        <span>{type}</span>
+                      </label>
+                    )
+                  )}
                 </div>
               </div>
               <div className="space-y-2 mt-6">
@@ -246,7 +259,7 @@ const RegisterBuyer = () => {
               <h2 className="text-2xl font-bold text-gray-800">
                 Price & Additional Details
               </h2>
-              
+
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   Desired Price Range (£)
@@ -288,7 +301,7 @@ const RegisterBuyer = () => {
                 Previous
               </button>
             )}
-            
+
             {currentStep < totalSteps ? (
               <button
                 type="button"

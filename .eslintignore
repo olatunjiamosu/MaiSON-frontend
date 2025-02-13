@@ -1,0 +1,14 @@
+# Ignore artifacts
+build
+coverage
+dist
+
+# Node modules
+node_modules
+
+# Config files
+*.config.js
+vite.config.ts
+
+# Test files
+jest.config.cjs 

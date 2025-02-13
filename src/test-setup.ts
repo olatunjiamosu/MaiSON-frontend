@@ -10,4 +10,4 @@ declare global {
       toHaveStyle(style: Record<string, any>): R;
     }
   }
-} 
+}

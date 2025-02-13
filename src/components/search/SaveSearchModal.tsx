@@ -8,7 +8,12 @@ interface SaveSearchModalProps {
   currentFilters: any; // We'll type this properly based on your filter structure
 }
 
-const SaveSearchModal = ({ isOpen, onClose, onSave, currentFilters }: SaveSearchModalProps) => {
+const SaveSearchModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  currentFilters,
+}: SaveSearchModalProps) => {
   const [searchName, setSearchName] = useState('');
   const [notifyNewMatches, setNotifyNewMatches] = useState(true);
 
@@ -24,7 +29,10 @@ const SaveSearchModal = ({ isOpen, onClose, onSave, currentFilters }: SaveSearch
       <div className="bg-white rounded-lg w-full max-w-md p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Save Search</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -37,7 +45,7 @@ const SaveSearchModal = ({ isOpen, onClose, onSave, currentFilters }: SaveSearch
             <input
               type="text"
               value={searchName}
-              onChange={(e) => setSearchName(e.target.value)}
+              onChange={e => setSearchName(e.target.value)}
               placeholder="e.g., 3 bed houses in London"
               className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             />
@@ -48,10 +56,13 @@ const SaveSearchModal = ({ isOpen, onClose, onSave, currentFilters }: SaveSearch
               type="checkbox"
               id="notifications"
               checked={notifyNewMatches}
-              onChange={(e) => setNotifyNewMatches(e.target.checked)}
+              onChange={e => setNotifyNewMatches(e.target.checked)}
               className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
             />
-            <label htmlFor="notifications" className="flex items-center gap-2 text-sm text-gray-600">
+            <label
+              htmlFor="notifications"
+              className="flex items-center gap-2 text-sm text-gray-600"
+            >
               <Bell className="h-4 w-4" />
               Notify me when new properties match this search
             </label>
@@ -73,4 +84,4 @@ const SaveSearchModal = ({ isOpen, onClose, onSave, currentFilters }: SaveSearch
   );
 };
 
-export default SaveSearchModal; 
+export default SaveSearchModal;

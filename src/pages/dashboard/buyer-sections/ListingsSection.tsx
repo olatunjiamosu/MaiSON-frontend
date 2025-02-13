@@ -1,67 +1,76 @@
 import React, { useState } from 'react';
 import PropertyCard from '../../../components/property/PropertyCard';
-import { Grid, List, SlidersHorizontal, X, ArrowUpDown, Loader2, Bell, Map } from 'lucide-react';
+import {
+  Grid,
+  List,
+  SlidersHorizontal,
+  X,
+  ArrowUpDown,
+  Loader2,
+  Bell,
+  Map,
+} from 'lucide-react';
 import SaveSearchModal from '../../../components/search/SaveSearchModal';
 import PropertyMap from '../../../components/map/PropertyMap';
 
 // Mock data
 const mockProperties = [
   {
-    id: "1",
-    image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994",
-    price: "£800,000",
-    road: "123 Park Avenue",
-    city: "London",
-    postcode: "SE22 9QA",
+    id: '1',
+    image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994',
+    price: '£800,000',
+    road: '123 Park Avenue',
+    city: 'London',
+    postcode: 'SE22 9QA',
     beds: 2,
     baths: 2,
     reception: 1,
     sqft: 1200,
-    propertyType: "Terraced",
-    epcRating: "C",
+    propertyType: 'Terraced',
+    epcRating: 'C',
     lat: 51.5074,
-    lng: -0.1278
+    lng: -0.1278,
   },
   {
-    id: "2",
-    image: "https://images.unsplash.com/photo-1570129477492-45c003edd2be",
-    price: "£950,000",
-    road: "456 Oak Street",
-    city: "London",
-    postcode: "NW3 5TB",
+    id: '2',
+    image: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be',
+    price: '£950,000',
+    road: '456 Oak Street',
+    city: 'London',
+    postcode: 'NW3 5TB',
     beds: 3,
     baths: 2,
     reception: 2,
     sqft: 1500,
-    propertyType: "Semi-Detached",
-    epcRating: "B",
+    propertyType: 'Semi-Detached',
+    epcRating: 'B',
     lat: 51.5074,
-    lng: -0.1278
+    lng: -0.1278,
   },
   {
-    id: "3",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
-    price: "£1,200,000",
-    road: "789 Maple Road",
-    city: "London",
-    postcode: "W1 7YX",
+    id: '3',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
+    price: '£1,200,000',
+    road: '789 Maple Road',
+    city: 'London',
+    postcode: 'W1 7YX',
     beds: 4,
     baths: 3,
     reception: 2,
     sqft: 2000,
-    propertyType: "Detached",
-    epcRating: "A",
+    propertyType: 'Detached',
+    epcRating: 'A',
     lat: 51.5074,
-    lng: -0.1278
-  }
+    lng: -0.1278,
+  },
 ];
 
 // Expand sort options
-type SortOption = 
-  | 'newest' 
-  | 'price-asc' 
-  | 'price-desc' 
-  | 'beds-desc' 
+type SortOption =
+  | 'newest'
+  | 'price-asc'
+  | 'price-desc'
+  | 'beds-desc'
   | 'size-desc'
   | 'popular'
   | 'epc-desc'
@@ -118,7 +127,7 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
     bathrooms: 'any',
     receptionRooms: 'any',
     propertyType: 'any',
-    gardenPreference: 'any'
+    gardenPreference: 'any',
   });
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [showSaveSearchModal, setShowSaveSearchModal] = useState(false);
@@ -129,9 +138,15 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
     return [...properties].sort((a, b) => {
       switch (sortBy) {
         case 'price-asc':
-          return parseInt(a.price.replace(/[^0-9]/g, '')) - parseInt(b.price.replace(/[^0-9]/g, ''));
+          return (
+            parseInt(a.price.replace(/[^0-9]/g, '')) -
+            parseInt(b.price.replace(/[^0-9]/g, ''))
+          );
         case 'price-desc':
-          return parseInt(b.price.replace(/[^0-9]/g, '')) - parseInt(a.price.replace(/[^0-9]/g, ''));
+          return (
+            parseInt(b.price.replace(/[^0-9]/g, '')) -
+            parseInt(a.price.replace(/[^0-9]/g, ''))
+          );
         case 'beds-desc':
           return b.beds - a.beds;
         case 'size-desc':
@@ -162,9 +177,9 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
       notifyNewMatches,
       filters: { ...filters },
       sortBy,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
-    
+
     console.log('Saving search:', searchToSave);
     // TODO: Save to backend
   };
@@ -184,7 +199,7 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
           <div className="relative group">
             <select
               value={sortBy}
-              onChange={(e) => handleSortChange(e.target.value as SortOption)}
+              onChange={e => handleSortChange(e.target.value as SortOption)}
               className="appearance-none bg-white px-4 py-2 pr-8 border rounded-lg 
                 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500
                 transition-all duration-200 ease-in-out
@@ -197,8 +212,10 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
                 </option>
               ))}
             </select>
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none
-              transition-transform duration-200 group-hover:scale-110">
+            <div
+              className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none
+              transition-transform duration-200 group-hover:scale-110"
+            >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
               ) : (
@@ -209,30 +226,30 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
 
           {/* View Toggle */}
           <div className="flex items-center gap-2 bg-white rounded-lg p-1 border">
-            <button 
+            <button
               className={`p-2 rounded transition-colors ${
-                viewMode === 'grid' 
-                  ? 'bg-emerald-50 text-emerald-600' 
+                viewMode === 'grid'
+                  ? 'bg-emerald-50 text-emerald-600'
                   : 'text-gray-400 hover:text-gray-600'
               }`}
               onClick={() => setViewMode('grid')}
             >
               <Grid className="h-5 w-5" />
             </button>
-            <button 
+            <button
               className={`p-2 rounded transition-colors ${
-                viewMode === 'list' 
-                  ? 'bg-emerald-50 text-emerald-600' 
+                viewMode === 'list'
+                  ? 'bg-emerald-50 text-emerald-600'
                   : 'text-gray-400 hover:text-gray-600'
               }`}
               onClick={() => setViewMode('list')}
             >
               <List className="h-5 w-5" />
             </button>
-            <button 
+            <button
               className={`p-2 rounded transition-colors ${
-                viewMode === 'map' 
-                  ? 'bg-emerald-50 text-emerald-600' 
+                viewMode === 'map'
+                  ? 'bg-emerald-50 text-emerald-600'
                   : 'text-gray-400 hover:text-gray-600'
               }`}
               onClick={() => setViewMode('map')}
@@ -240,11 +257,13 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
               <Map className="h-5 w-5" />
             </button>
           </div>
-          
+
           {/* Filter Button */}
-          <button 
+          <button
             className={`flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 ${
-              showFilters ? 'bg-emerald-50 text-emerald-600 border-emerald-600' : ''
+              showFilters
+                ? 'bg-emerald-50 text-emerald-600 border-emerald-600'
+                : ''
             }`}
             onClick={() => setShowFilters(!showFilters)}
           >
@@ -268,14 +287,14 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
         <div className="bg-white p-6 rounded-lg border shadow-sm">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold">Filters</h3>
-            <button 
+            <button
               onClick={() => setShowFilters(false)}
               className="text-gray-400 hover:text-gray-600"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Location */}
             <div>
@@ -287,10 +306,12 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
                 placeholder="Enter postcode or area"
                 className="w-full p-2 border rounded"
                 value={filters.location}
-                onChange={(e) => setFilters(prev => ({
-                  ...prev,
-                  location: e.target.value
-                }))}
+                onChange={e =>
+                  setFilters(prev => ({
+                    ...prev,
+                    location: e.target.value,
+                  }))
+                }
               />
             </div>
 
@@ -305,10 +326,15 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
                   placeholder="Min"
                   className="w-full p-2 border rounded"
                   value={filters.priceRange.min}
-                  onChange={(e) => setFilters(prev => ({
-                    ...prev,
-                    priceRange: { ...prev.priceRange, min: Number(e.target.value) }
-                  }))}
+                  onChange={e =>
+                    setFilters(prev => ({
+                      ...prev,
+                      priceRange: {
+                        ...prev.priceRange,
+                        min: Number(e.target.value),
+                      },
+                    }))
+                  }
                 />
                 <span>-</span>
                 <input
@@ -316,10 +342,15 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
                   placeholder="Max"
                   className="w-full p-2 border rounded"
                   value={filters.priceRange.max}
-                  onChange={(e) => setFilters(prev => ({
-                    ...prev,
-                    priceRange: { ...prev.priceRange, max: Number(e.target.value) }
-                  }))}
+                  onChange={e =>
+                    setFilters(prev => ({
+                      ...prev,
+                      priceRange: {
+                        ...prev.priceRange,
+                        max: Number(e.target.value),
+                      },
+                    }))
+                  }
                 />
               </div>
             </div>
@@ -335,10 +366,15 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
                   placeholder="Min sq ft"
                   className="w-full p-2 border rounded"
                   value={filters.squareFootage.min}
-                  onChange={(e) => setFilters(prev => ({
-                    ...prev,
-                    squareFootage: { ...prev.squareFootage, min: Number(e.target.value) }
-                  }))}
+                  onChange={e =>
+                    setFilters(prev => ({
+                      ...prev,
+                      squareFootage: {
+                        ...prev.squareFootage,
+                        min: Number(e.target.value),
+                      },
+                    }))
+                  }
                 />
                 <span>-</span>
                 <input
@@ -346,10 +382,15 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
                   placeholder="Max sq ft"
                   className="w-full p-2 border rounded"
                   value={filters.squareFootage.max}
-                  onChange={(e) => setFilters(prev => ({
-                    ...prev,
-                    squareFootage: { ...prev.squareFootage, max: Number(e.target.value) }
-                  }))}
+                  onChange={e =>
+                    setFilters(prev => ({
+                      ...prev,
+                      squareFootage: {
+                        ...prev.squareFootage,
+                        max: Number(e.target.value),
+                      },
+                    }))
+                  }
                 />
               </div>
             </div>
@@ -362,7 +403,9 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
               <select
                 className="w-full p-2 border rounded"
                 value={filters.bedrooms}
-                onChange={(e) => setFilters(prev => ({ ...prev, bedrooms: e.target.value }))}
+                onChange={e =>
+                  setFilters(prev => ({ ...prev, bedrooms: e.target.value }))
+                }
               >
                 <option value="any">Any</option>
                 <option value="1">1+</option>
@@ -381,7 +424,9 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
               <select
                 className="w-full p-2 border rounded"
                 value={filters.bathrooms}
-                onChange={(e) => setFilters(prev => ({ ...prev, bathrooms: e.target.value }))}
+                onChange={e =>
+                  setFilters(prev => ({ ...prev, bathrooms: e.target.value }))
+                }
               >
                 <option value="any">Any</option>
                 <option value="1">1+</option>
@@ -399,7 +444,12 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
               <select
                 className="w-full p-2 border rounded"
                 value={filters.receptionRooms}
-                onChange={(e) => setFilters(prev => ({ ...prev, receptionRooms: e.target.value }))}
+                onChange={e =>
+                  setFilters(prev => ({
+                    ...prev,
+                    receptionRooms: e.target.value,
+                  }))
+                }
               >
                 <option value="any">Any</option>
                 <option value="1">1+</option>
@@ -416,7 +466,12 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
               <select
                 className="w-full p-2 border rounded"
                 value={filters.propertyType}
-                onChange={(e) => setFilters(prev => ({ ...prev, propertyType: e.target.value }))}
+                onChange={e =>
+                  setFilters(prev => ({
+                    ...prev,
+                    propertyType: e.target.value,
+                  }))
+                }
               >
                 <option value="any">Any</option>
                 <option value="house">House</option>
@@ -434,7 +489,12 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
               <select
                 className="w-full p-2 border rounded"
                 value={filters.gardenPreference}
-                onChange={(e) => setFilters(prev => ({ ...prev, gardenPreference: e.target.value }))}
+                onChange={e =>
+                  setFilters(prev => ({
+                    ...prev,
+                    gardenPreference: e.target.value,
+                  }))
+                }
               >
                 <option value="any">Any</option>
                 <option value="required">Required</option>
@@ -451,7 +511,9 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
               <select
                 className="w-full p-2 border rounded"
                 value={filters.epcRating}
-                onChange={(e) => setFilters(prev => ({ ...prev, epcRating: e.target.value }))}
+                onChange={e =>
+                  setFilters(prev => ({ ...prev, epcRating: e.target.value }))
+                }
               >
                 <option value="any">Any</option>
                 <option value="a">A</option>
@@ -485,11 +547,12 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
           />
         </div>
       ) : (
-        <div 
+        <div
           className={`
-            ${viewMode === 'grid' 
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-              : 'space-y-4'
+            ${
+              viewMode === 'grid'
+                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+                : 'space-y-4'
             }
             transition-all duration-300 ease-in-out
           `}
@@ -500,8 +563,8 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
               key={property.id}
               className="transition-all duration-300 ease-in-out transform"
             >
-              <PropertyCard 
-                {...property} 
+              <PropertyCard
+                {...property}
                 className={viewMode === 'list' ? 'flex' : ''}
               />
             </div>

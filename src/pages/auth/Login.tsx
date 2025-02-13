@@ -15,7 +15,7 @@ const Login = () => {
 
   const handleForgotPassword = () => {
     if (!email) {
-      alert("Please enter your email first!");
+      alert('Please enter your email first!');
       return;
     }
     navigate(`/verification?email=${encodeURIComponent(email)}`);
@@ -50,7 +50,10 @@ const Login = () => {
             <form className="space-y-6" onSubmit={handleSubmit}>
               {/* Email Field */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Email address
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
@@ -66,14 +69,17 @@ const Login = () => {
                     className="block w-full pl-10 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                     placeholder="Enter your email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value)}
                   />
                 </div>
               </div>
 
               {/* Password Field */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Password
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
@@ -89,7 +95,7 @@ const Login = () => {
                     className="block w-full pl-10 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                     placeholder="Enter your password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                   />
                 </div>
               </div>
@@ -103,7 +109,10 @@ const Login = () => {
                     type="checkbox"
                     className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
                   />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                  <label
+                    htmlFor="remember-me"
+                    className="ml-2 block text-sm text-gray-900"
+                  >
                     Remember me
                   </label>
                 </div>

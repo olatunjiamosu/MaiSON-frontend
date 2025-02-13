@@ -10,43 +10,90 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-bold text-white mb-4">About MaiSON</h3>
             <p className="text-sm text-gray-400">
-              Revolutionising property transactions through artificial intelligence and innovative technology.
+              Revolutionising property transactions through artificial
+              intelligence and innovative technology.
             </p>
           </div>
-          
+
           <div>
             <h3 className="text-lg font-bold text-white mb-4">Quick Links</h3>
             <ul className="space-y-2">
-              <li><a href="#" className="text-gray-400 hover:text-white">About Us</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white">Features</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white">Pricing</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white">Contact</a></li>
+              <li>
+                <a href="#" className="text-gray-400 hover:text-white">
+                  About Us
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-gray-400 hover:text-white">
+                  Features
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-gray-400 hover:text-white">
+                  Pricing
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-gray-400 hover:text-white">
+                  Contact
+                </a>
+              </li>
             </ul>
           </div>
 
           <div>
             <h3 className="text-lg font-bold text-white mb-4">Legal</h3>
             <ul className="space-y-2">
-              <li><a href="#" className="text-gray-400 hover:text-white">Privacy Policy</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white">Terms of Service</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white">Cookie Policy</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white">GDPR Compliance</a></li>
+              <li>
+                <a href="#" className="text-gray-400 hover:text-white">
+                  Privacy Policy
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-gray-400 hover:text-white">
+                  Terms of Service
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-gray-400 hover:text-white">
+                  Cookie Policy
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-gray-400 hover:text-white">
+                  GDPR Compliance
+                </a>
+              </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-white mb-4">Connect With Us</h3>
+            <h3 className="text-lg font-bold text-white mb-4">
+              Connect With Us
+            </h3>
             <div className="flex items-center space-x-4 mb-4">
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
                 <Facebook className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
                 <Instagram className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
                 <Twitter className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
                 <Linkedin className="h-5 w-5" />
               </a>
             </div>

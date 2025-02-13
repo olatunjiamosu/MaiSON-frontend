@@ -11,7 +11,7 @@ interface SinglePropertyMapProps {
 
 const SinglePropertyMap = ({ property }: SinglePropertyMapProps) => {
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: "YOUR_GOOGLE_MAPS_API_KEY"
+    googleMapsApiKey: 'YOUR_GOOGLE_MAPS_API_KEY',
   });
 
   if (!isLoaded) return <div>Loading map...</div>;
@@ -34,7 +34,7 @@ const SinglePropertyMap = ({ property }: SinglePropertyMapProps) => {
           position={{ lat: property.lat, lng: property.lng }}
           icon={{
             url: '/path-to-marker.svg',
-            scaledSize: new window.google.maps.Size(40, 40)
+            scaledSize: new window.google.maps.Size(40, 40),
           }}
         />
       </GoogleMap>
@@ -56,4 +56,4 @@ const SinglePropertyMap = ({ property }: SinglePropertyMapProps) => {
   );
 };
 
-export default SinglePropertyMap; 
+export default SinglePropertyMap;

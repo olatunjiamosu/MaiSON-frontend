@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
-import { 
-  ArrowLeft, Heart, Share2, Calendar,
-  ChevronLeft, ChevronRight, X,
-  Maximize2, Minimize2
+import {
+  ArrowLeft,
+  Heart,
+  Share2,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import SinglePropertyMap from '../../components/map/SinglePropertyMap';
@@ -25,7 +31,7 @@ interface PropertyDetailsProps {
     floorPlan: string;
     lat: number;
     lng: number;
-  }
+  };
 }
 
 const PropertyDetails = ({ property }: PropertyDetailsProps) => {
@@ -44,13 +50,13 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
   };
 
   const nextImage = () => {
-    setSelectedImage((prev) => 
+    setSelectedImage(prev =>
       prev === property.images.length - 1 ? 0 : prev + 1
     );
   };
 
   const previousImage = () => {
-    setSelectedImage((prev) => 
+    setSelectedImage(prev =>
       prev === 0 ? property.images.length - 1 : prev - 1
     );
   };
@@ -60,12 +66,13 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
       {/* Navigation Bar */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <button 
+          <button
             onClick={handleBack}
             className="flex items-center text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="h-5 w-5 mr-2" />
-            Back to {location.state?.from === 'saved' ? 'Saved Properties' : 'Listings'}
+            Back to{' '}
+            {location.state?.from === 'saved' ? 'Saved Properties' : 'Listings'}
           </button>
           <div className="flex gap-4">
             <button className="flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-gray-50">
@@ -84,23 +91,31 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
         {/* Image Gallery */}
         <div className="mb-8 relative">
           {/* Main Image Container */}
-          <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : ''}`}>
+          <div
+            className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : ''}`}
+          >
             <img
               src={property.images[selectedImage]}
               alt="Property"
               className={`
-                ${isFullscreen 
-                  ? 'h-screen w-screen object-contain' 
-                  : 'w-full h-[600px] object-cover rounded-lg'}
+                ${
+                  isFullscreen
+                    ? 'h-screen w-screen object-contain'
+                    : 'w-full h-[600px] object-cover rounded-lg'
+                }
               `}
             />
 
             {/* Gallery Controls */}
-            <div className={`absolute inset-0 flex items-center justify-between p-4 ${
-              isFullscreen ? 'bg-black/50' : 'bg-gradient-to-r from-black/20 via-transparent to-black/20'
-            }`}>
+            <div
+              className={`absolute inset-0 flex items-center justify-between p-4 ${
+                isFullscreen
+                  ? 'bg-black/50'
+                  : 'bg-gradient-to-r from-black/20 via-transparent to-black/20'
+              }`}
+            >
               {/* Previous Button */}
-              <button 
+              <button
                 onClick={previousImage}
                 className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
               >
@@ -108,7 +123,7 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
               </button>
 
               {/* Next Button */}
-              <button 
+              <button
                 onClick={nextImage}
                 className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
               >
@@ -121,7 +136,7 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
               <div className="px-4 py-2 rounded-full bg-black/50 text-white text-sm">
                 {selectedImage + 1} / {property.images.length}
               </div>
-              <button 
+              <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
                 className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
               >
@@ -135,7 +150,7 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
 
             {/* Fullscreen Close Button */}
             {isFullscreen && (
-              <button 
+              <button
                 onClick={() => setIsFullscreen(false)}
                 className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
               >
@@ -152,8 +167,8 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
                   key={index}
                   onClick={() => setSelectedImage(index)}
                   className={`relative aspect-w-16 aspect-h-9 transition-all ${
-                    selectedImage === index 
-                      ? 'ring-2 ring-emerald-600 opacity-100' 
+                    selectedImage === index
+                      ? 'ring-2 ring-emerald-600 opacity-100'
                       : 'opacity-60 hover:opacity-100'
                   }`}
                 >
@@ -174,7 +189,9 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
           <div className="col-span-2 space-y-8">
             {/* Basic Info */}
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{property.price}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {property.price}
+              </h1>
               <p className="text-lg text-gray-600">
                 {property.road}, {property.city}, {property.postcode}
               </p>
@@ -202,8 +219,12 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
 
             {/* Description */}
             <div className="bg-white p-6 rounded-lg border">
-              <h2 className="text-xl font-semibold mb-4">About this property</h2>
-              <p className="text-gray-600 whitespace-pre-line">{property.description}</p>
+              <h2 className="text-xl font-semibold mb-4">
+                About this property
+              </h2>
+              <p className="text-gray-600 whitespace-pre-line">
+                {property.description}
+              </p>
             </div>
 
             {/* Floor Plan */}
@@ -219,11 +240,11 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
             {/* Location */}
             <div className="bg-white p-6 rounded-lg border">
               <h2 className="text-xl font-semibold mb-4">Location</h2>
-              <SinglePropertyMap 
+              <SinglePropertyMap
                 property={{
                   lat: property.lat,
                   lng: property.lng,
-                  address: `${property.road}, ${property.city}, ${property.postcode}`
+                  address: `${property.road}, ${property.city}, ${property.postcode}`,
                 }}
               />
             </div>
@@ -257,7 +278,7 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
       {isFullscreen && (
         <div className="fixed inset-0 z-50 bg-black">
           {/* Close button - moved to top-left for better visibility */}
-          <button 
+          <button
             onClick={() => setIsFullscreen(false)}
             className="absolute top-6 left-6 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors z-50"
           >
@@ -274,13 +295,13 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
 
             {/* Navigation controls */}
             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-4 sm:px-8">
-              <button 
+              <button
                 onClick={previousImage}
                 className="p-3 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors transform hover:scale-110"
               >
                 <ChevronLeft className="h-8 w-8" />
               </button>
-              <button 
+              <button
                 onClick={nextImage}
                 className="p-3 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors transform hover:scale-110"
               >
@@ -301,4 +322,4 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
   );
 };
 
-export default PropertyDetails; 
+export default PropertyDetails;

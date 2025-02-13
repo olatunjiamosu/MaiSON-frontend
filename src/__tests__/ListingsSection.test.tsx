@@ -7,7 +7,7 @@ import ListingsSection from '../pages/dashboard/buyer-sections/ListingsSection';
 jest.mock('../components/map/PropertyMap', () => {
   return {
     __esModule: true,
-    default: () => <div data-testid="mock-map">Map</div>
+    default: () => <div data-testid="mock-map">Map</div>,
   };
 });
 
@@ -26,7 +26,7 @@ const mockProperties = [
     propertyType: 'Terraced',
     epcRating: 'C',
     lat: 51.5074,
-    lng: -0.1278
+    lng: -0.1278,
   },
   // Add more properties as needed
 ];
@@ -44,13 +44,15 @@ describe('ListingsSection', () => {
     renderListings();
     // Find buttons by their SVG classes
     expect(screen.getByRole('button', { name: 'Filters' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save Search' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Save Search' })
+    ).toBeInTheDocument();
   });
 
   it('allows view switching', () => {
     renderListings();
     const buttons = screen.getAllByRole('button');
-    const listViewButton = buttons.find(button => 
+    const listViewButton = buttons.find(button =>
       button.querySelector('.lucide-list')
     );
     if (!listViewButton) throw new Error('List view button not found');
@@ -80,7 +82,7 @@ describe('ListingsSection', () => {
   it('allows toggling map view', () => {
     renderListings();
     const buttons = screen.getAllByRole('button');
-    const mapButton = buttons.find(button => 
+    const mapButton = buttons.find(button =>
       button.querySelector('.lucide-map')
     );
     if (!mapButton) throw new Error('Map button not found');
@@ -91,17 +93,17 @@ describe('ListingsSection', () => {
   it('allows saving properties', () => {
     renderListings();
     const buttons = screen.getAllByRole('button');
-    const heartButton = buttons.find(button => 
+    const heartButton = buttons.find(button =>
       button.querySelector('.lucide-heart')
     );
     if (!heartButton) throw new Error('Heart button not found');
     // Get initial state
     const heartIconBefore = heartButton.querySelector('.lucide-heart');
     expect(heartIconBefore).toHaveClass('text-gray-400');
-    
+
     fireEvent.click(heartButton);
     // Just verify that the save action was triggered (we can see the console.log)
     // Since the actual UI update might be handled by a parent component
     expect(true).toBeTruthy();
   });
-}); 
+});

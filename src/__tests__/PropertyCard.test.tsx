@@ -7,8 +7,8 @@ import { toast } from 'react-hot-toast';
 jest.mock('react-hot-toast', () => ({
   toast: {
     success: jest.fn(),
-    error: jest.fn()
-  }
+    error: jest.fn(),
+  },
 }));
 
 describe('PropertyCard', () => {
@@ -25,7 +25,7 @@ describe('PropertyCard', () => {
     sqft: 1200,
     propertyType: 'Terraced',
     epcRating: 'B',
-    showSaveButton: true
+    showSaveButton: true,
   };
 
   const renderCard = (props = {}) => {
@@ -42,24 +42,26 @@ describe('PropertyCard', () => {
 
   it('renders property details correctly', () => {
     renderCard();
-    
+
     expect(screen.getByText(mockProperty.price)).toBeInTheDocument();
     expect(screen.getByText(mockProperty.road)).toBeInTheDocument();
-    expect(screen.getByText(`${mockProperty.city}, ${mockProperty.postcode}`)).toBeInTheDocument();
+    expect(
+      screen.getByText(`${mockProperty.city}, ${mockProperty.postcode}`)
+    ).toBeInTheDocument();
     expect(screen.getByText(`${mockProperty.beds} Bed`)).toBeInTheDocument();
     expect(screen.getByText(`${mockProperty.baths} Bath`)).toBeInTheDocument();
   });
 
   it('handles save button click', () => {
     renderCard();
-    
+
     // Find the heart icon button
-    const saveButton = screen.getByRole('button', { 
+    const saveButton = screen.getByRole('button', {
       name: '', // The button has no text, just an icon
-      hidden: true 
+      hidden: true,
     });
     fireEvent.click(saveButton);
-    
+
     expect(toast.success).toHaveBeenCalledWith(
       'Property saved successfully!',
       expect.any(Object)
@@ -68,17 +70,17 @@ describe('PropertyCard', () => {
 
   it('navigates to property details on view button click', () => {
     renderCard();
-    
+
     const viewButton = screen.getByText('View Property');
     fireEvent.click(viewButton);
-    
+
     // Check if we're on the property details page
     expect(window.location.pathname).toBe(`/property/${mockProperty.id}`);
   });
 
   it('shows schedule viewing button', () => {
     renderCard();
-    
+
     expect(screen.getByText('Schedule Viewing')).toBeInTheDocument();
   });
-}); 
+});
