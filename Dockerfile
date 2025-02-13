@@ -6,9 +6,6 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --frozen-lockfile
 
-# Copy configuration files
-COPY .eslintrc.js .prettierrc ./
-
 # Copy source code
 COPY . .
 
