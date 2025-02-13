@@ -1,35 +1,66 @@
 import React, { useState } from 'react';
 import { Bot, Minimize2, Maximize2, Send } from 'lucide-react';
 
+// Add these interfaces at the top of the file
+interface ChatMessage {
+  type: 'user' | 'bot';
+  message: string;
+}
+
+interface ChatResponse {
+  message: string;
+  sessionId: string;
+}
+
 const MaisonChat = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
-  const [chatHistory, setChatHistory] = useState([
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
     {
       type: 'bot',
       message: "Hi! I'm MaiSON, your AI assistant. How can I help you today?",
     },
   ]);
+  // Add sessionId state to maintain conversation context
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
-  const handleSend = () => {
+  // Update handleSend to make API call
+  const handleSend = async () => {
     if (!message.trim()) return;
 
     // Add user message to chat
     setChatHistory(prev => [...prev, { type: 'user', message }]);
 
-    // TODO: Add actual AI response logic
-    setTimeout(() => {
-      setChatHistory(prev => [
-        ...prev,
-        {
-          type: 'bot',
-          message:
-            'I understand you said: ' +
-            message +
-            '. How can I assist you further?',
+    try {
+      const response = await fetch(`${import.meta.env.VITE_CHAT_API_URL}/api/chat/message`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Add auth header if needed
+          // 'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-      ]);
-    }, 1000);
+        body: JSON.stringify({
+          message,
+          sessionId: sessionId || undefined
+        })
+      });
+
+      const data: ChatResponse = await response.json();
+      
+      // Save session ID for context
+      if (data.sessionId) {
+        setSessionId(data.sessionId);
+      }
+
+      // Add bot response to chat
+      setChatHistory(prev => [...prev, { type: 'bot', message: data.message }]);
+    } catch (error) {
+      console.error('Failed to get chat response:', error);
+      setChatHistory(prev => [...prev, { 
+        type: 'bot', 
+        message: 'Sorry, I encountered an error. Please try again.' 
+      }]);
+    }
 
     setMessage('');
   };
