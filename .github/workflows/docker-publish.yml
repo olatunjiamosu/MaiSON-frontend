@@ -10,6 +10,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+      actions: write
+      id-token: write
+      pages: write
 
     steps:
       - name: Checkout repository
@@ -20,7 +23,16 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Set package visibility
+        run: |
+          echo "::set-output name=repo_lower::$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')"
+          curl -X PUT \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/user/packages/container/maisonfrontend/visibility" \
+            -d '{"visibility":"public"}'
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
