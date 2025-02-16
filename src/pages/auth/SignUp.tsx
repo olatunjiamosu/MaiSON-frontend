@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, MessageSquare, BarChart } from 'lucide-react';
 
+// Add these interfaces at the top of the file
+interface FeatureProps {
+  icon: React.ReactNode;
+  text: string;
+}
+
 const SignUp = () => {
   const navigate = useNavigate(); // React Router navigation hook
 
@@ -16,7 +22,7 @@ const SignUp = () => {
     smsUpdates: false,
   });
 
-  const handleSubmit = e => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     // Add validation or API call here if needed
@@ -72,15 +78,18 @@ const SignUp = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* First Name */}
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label 
+                  htmlFor="firstName"
+                  className="block text-sm font-medium mb-1"
+                >
                   First Name
                 </label>
                 <input
+                  id="firstName"
+                  name="firstName"
                   type="text"
                   value={formData.firstName}
-                  onChange={e =>
-                    setFormData({ ...formData, firstName: e.target.value })
-                  }
+                  onChange={e => setFormData({ ...formData, firstName: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   required
                 />
@@ -88,15 +97,18 @@ const SignUp = () => {
 
               {/* Last Name */}
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label 
+                  htmlFor="lastName"
+                  className="block text-sm font-medium mb-1"
+                >
                   Last Name
                 </label>
                 <input
+                  id="lastName"
+                  name="lastName"
                   type="text"
                   value={formData.lastName}
-                  onChange={e =>
-                    setFormData({ ...formData, lastName: e.target.value })
-                  }
+                  onChange={e => setFormData({ ...formData, lastName: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   required
                 />
@@ -104,15 +116,18 @@ const SignUp = () => {
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label 
+                  htmlFor="email"
+                  className="block text-sm font-medium mb-1"
+                >
                   Email Address
                 </label>
                 <input
+                  id="email"
+                  name="email"
                   type="email"
                   value={formData.email}
-                  onChange={e =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   required
                 />
@@ -120,15 +135,18 @@ const SignUp = () => {
 
               {/* Phone Number */}
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label 
+                  htmlFor="phone"
+                  className="block text-sm font-medium mb-1"
+                >
                   Phone Number
                 </label>
                 <input
+                  id="phone"
+                  name="phone"
                   type="tel"
                   value={formData.phone}
-                  onChange={e =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
+                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   required
                 />
@@ -136,15 +154,19 @@ const SignUp = () => {
 
               {/* Password */}
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label 
+                  htmlFor="password"
+                  className="block text-sm font-medium mb-1"
+                >
                   Password
                 </label>
                 <input
+                  id="password"
+                  name="password"
+                  data-testid="password-input"
                   type={formData.showPassword ? 'text' : 'password'}
                   value={formData.password}
-                  onChange={e =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
+                  onChange={e => setFormData({ ...formData, password: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   required
                 />
@@ -240,8 +262,7 @@ const SignUp = () => {
   );
 };
 
-// Feature Component
-const Feature = ({ icon, text }) => (
+const Feature = ({ icon, text }: FeatureProps) => (
   <div className="flex items-start space-x-3">
     <div className="flex-shrink-0">{icon}</div>
     <p className="text-gray-600">{text}</p>

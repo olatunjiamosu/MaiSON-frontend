@@ -21,7 +21,7 @@ import MatchesSection from './buyer-sections/MatchesSection';
 import SavedPropertiesSection from './buyer-sections/SavedPropertiesSection';
 import ViewingsSection from './buyer-sections/ViewingsSection';
 import ApplicationsSection from './buyer-sections/ApplicationsSection';
-import MessagesSection from './buyer-sections/MessagesSection';
+import PropertyChats from './buyer-sections/PropertyChats';
 import NotificationsSection from './buyer-sections/NotificationsSection';
 import PreferencesSection from './buyer-sections/PreferencesSection';
 import DocumentsSection from './buyer-sections/DocumentsSection';
@@ -152,6 +152,13 @@ const BuyerDashboard = () => {
             path="/buyer-dashboard/saved"
           />
           <NavItem
+            icon={<MessageCircle />}
+            label="Property Chats"
+            active={activeSection === 'messages'}
+            onClick={() => setActiveSection('messages')}
+            path="/buyer-dashboard/messages"
+          />
+          <NavItem
             icon={<Calendar />}
             label="Viewings"
             active={activeSection === 'viewings'}
@@ -167,13 +174,6 @@ const BuyerDashboard = () => {
             active={activeSection === 'applications'}
             onClick={() => setActiveSection('applications')}
             path="/buyer-dashboard/applications"
-          />
-          <NavItem
-            icon={<MessageCircle />}
-            label="Messages"
-            active={activeSection === 'messages'}
-            onClick={() => setActiveSection('messages')}
-            path="/buyer-dashboard/messages"
           />
           <NavItem
             icon={<Bell />}
@@ -229,7 +229,8 @@ const BuyerDashboard = () => {
               />
               <Route path="saved" element={<SavedPropertiesSection />} />
               <Route path="viewings" element={<ViewingsSection />} />
-              <Route path="messages" element={<MessagesSection />} />
+              <Route path="messages" element={<PropertyChats />} />
+              <Route path="applications" element={<ApplicationsSection />} />
             </Routes>
           </div>
         </main>
@@ -246,8 +247,17 @@ const BuyerDashboard = () => {
   );
 };
 
-// Navigation Item Component
-const NavItem = ({ icon, label, active, onClick, path }) => {
+// Add this interface before the NavItem component
+interface NavItemProps {
+  icon: React.ReactElement;
+  label: string;
+  active: boolean;
+  onClick?: () => void;
+  path: string;
+}
+
+// Update the NavItem component with TypeScript types
+const NavItem = ({ icon, label, active, onClick, path }: NavItemProps) => {
   const navigate = useNavigate();
 
   const handleClick = () => {

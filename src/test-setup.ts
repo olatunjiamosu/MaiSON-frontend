@@ -1,13 +1,5 @@
 import '@testing-library/jest-dom';
-import type { Config } from '@jest/types';
-import { expect } from '@jest/globals';
 
-declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toBeInTheDocument(): R;
-      toHaveClass(className: string): R;
-      toHaveStyle(style: Record<string, any>): R;
-    }
-  }
-}
+// Set up any global test configuration
+process.env.VITE_API_BASE_URL = 'http://maison-chatbot.hqfta8d9brd5f0da.uksouth.azurecontainer.io:8000';
+process.env.VITE_API_VERSION = '/api/v1';

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Bot, Minimize2, Maximize2, Send } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, X, MessageCircle } from 'lucide-react';
+import ChatService from '../../services/ChatService';
 
 // Add these interfaces at the top of the file
 interface ChatMessage {
@@ -21,96 +22,72 @@ const MaisonChat = () => {
       message: "Hi! I'm MaiSON, your AI assistant. How can I help you today?",
     },
   ]);
-  // Add sessionId state to maintain conversation context
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Update handleSend to make API call
+  const scrollToBottom = () => {
+    if (typeof window !== 'undefined' && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatHistory]);
+
   const handleSend = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || isLoading) return;
+
+    const userMessage = message.trim();
+    setMessage('');
+    setError(null);
+    setIsLoading(true);
 
     // Add user message to chat
-    setChatHistory(prev => [...prev, { type: 'user', message }]);
+    setChatHistory(prev => [...prev, { type: 'user', message: userMessage }]);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_CHAT_API_URL}/api/chat/message`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add auth header if needed
-          // 'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          message,
-          sessionId: sessionId || undefined
-        })
-      });
-
-      const data: ChatResponse = await response.json();
+      const response: ChatResponse = await ChatService.sendMessage(userMessage);
       
-      // Save session ID for context
-      if (data.sessionId) {
-        setSessionId(data.sessionId);
-      }
-
       // Add bot response to chat
-      setChatHistory(prev => [...prev, { type: 'bot', message: data.message }]);
+      setChatHistory(prev => [...prev, { type: 'bot', message: response.message }]);
     } catch (error) {
+      setError('Sorry, I encountered an error. Please try again.');
       console.error('Failed to get chat response:', error);
-      setChatHistory(prev => [...prev, { 
-        type: 'bot', 
-        message: 'Sorry, I encountered an error. Please try again.' 
-      }]);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    setMessage('');
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      {/* Modified Chat Button - removed bouncing prompt */}
-      {!isOpen && (
-        <div className="flex flex-col items-center">
-          <span className="mb-2 text-sm text-gray-600 font-medium">
-            Chat with me
-          </span>
-          <button
-            onClick={() => setIsOpen(true)}
-            className="bg-emerald-600 text-white w-20 h-20 rounded-full shadow-lg hover:bg-emerald-700 
-            transition-all hover:scale-110 flex items-center justify-center font-bold text-xl"
-          >
-            <span>
-              M<span className="text-white">ai</span>SON
-            </span>
-          </button>
-        </div>
-      )}
-
-      {/* Chat Window - Header modified */}
-      {isOpen && (
-        <div className="bg-white rounded-lg shadow-xl w-96 flex flex-col border">
-          <div className="p-4 bg-emerald-600 text-white rounded-t-lg flex justify-between items-center">
+    <div data-testid="chat-container" className={`fixed bottom-4 right-4 z-50 flex flex-col items-end`}>
+      {isOpen ? (
+        <div className="mb-4 bg-white rounded-lg shadow-lg overflow-hidden w-[320px]">
+          {/* Chat Header */}
+          <div className="bg-emerald-600 p-3 flex justify-between items-center">
             <div className="flex items-center space-x-2">
-              <div className="flex flex-col">
-                <span className="font-semibold">
-                  <span>M</span>
-                  <span className="text-emerald-100">ai</span>
-                  <span>SON</span>
-                </span>
-                <span className="text-xs text-emerald-100">
-                  Your property assistant
-                </span>
-              </div>
+              <span className="text-white text-sm font-medium">MaiSON</span>
+              <span className="text-emerald-100 text-xs">Your property assistant</span>
             </div>
-            <button
+            <button 
               onClick={() => setIsOpen(false)}
-              className="hover:bg-emerald-700 p-1 rounded"
+              className="text-white hover:text-emerald-100"
+              aria-label="Close chat"
             >
-              <Minimize2 className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
 
           {/* Chat Messages */}
-          <div className="flex-1 p-4 space-y-4 h-96 overflow-y-auto">
+          <div className="h-[400px] overflow-y-auto p-3 space-y-3">
             {chatHistory.map((chat, index) => (
               <div
                 key={index}
@@ -129,28 +106,55 @@ const MaisonChat = () => {
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 text-gray-800 p-3 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-pulse">...</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {error && (
+              <div className="flex justify-center">
+                <div className="bg-red-100 text-red-600 p-2 rounded-lg text-sm">
+                  {error}
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
-          <div className="p-4 border-t">
+          {/* Chat Input */}
+          <div className="p-3 border-t">
             <div className="flex space-x-2">
               <input
                 type="text"
                 value={message}
                 onChange={e => setMessage(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && handleSend()}
+                onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
-                className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="flex-1 px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                disabled={isLoading}
               />
               <button
                 onClick={handleSend}
-                className="bg-emerald-600 text-white p-2 rounded-lg hover:bg-emerald-700"
+                disabled={!message.trim() || isLoading}
+                className="p-2 text-emerald-600 hover:text-emerald-700 disabled:text-gray-400"
+                aria-label="Send message"
               >
                 <Send className="h-5 w-5" />
               </button>
             </div>
           </div>
         </div>
+      ) : (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="bg-emerald-600 text-white p-2 rounded-full shadow-lg hover:bg-emerald-700 transition-colors"
+        >
+          <MessageCircle className="h-5 w-5" />
+        </button>
       )}
     </div>
   );

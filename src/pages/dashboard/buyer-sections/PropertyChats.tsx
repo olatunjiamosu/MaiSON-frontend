@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-//import { Card } from '@/components/ui/card';
-//import { Input } from '@/components/ui/input';
-//import { Button } from '@/components/ui/button';
-import { Home, CircleUserRound, Send, Search, Bot } from 'lucide-react';
+import { Home, CircleUserRound, Send, Search, Trash2, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-const MessagesSection = () => {
+const PropertyChats = () => {
+  const navigate = useNavigate();
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [message, setMessage] = useState('');
 
@@ -20,24 +19,22 @@ const MessagesSection = () => {
         {
           id: 1,
           sender: 'ai',
-          content:
-            'Hello! I can help you with information about 123 Park Avenue. What would you like to know?',
-          timestamp: '10:30 AM',
+          content: 'Hello! I can help you with information about 123 Park Avenue. What would you like to know?',
+          timestamp: '10:30 AM'
         },
         {
           id: 2,
           sender: 'user',
           content: 'What documents are needed for viewing?',
-          timestamp: '10:31 AM',
+          timestamp: '10:31 AM'
         },
         {
           id: 3,
           sender: 'ai',
-          content:
-            "For viewing 123 Park Avenue, you'll need to bring a photo ID and proof of funds. Would you like me to schedule a viewing for you?",
-          timestamp: '10:32 AM',
-        },
-      ],
+          content: 'For viewing 123 Park Avenue, you\'ll need to bring a photo ID and proof of funds. Would you like me to schedule a viewing for you?',
+          timestamp: '10:32 AM'
+        }
+      ]
     },
     {
       id: 2,
@@ -49,13 +46,24 @@ const MessagesSection = () => {
         {
           id: 1,
           sender: 'ai',
-          content:
-            'Welcome! I can assist you with information about 45 Queen Street.',
-          timestamp: '09:15 AM',
-        },
-      ],
-    },
+          content: 'Welcome! I can assist you with information about 45 Queen Street.',
+          timestamp: '09:15 AM'
+        }
+      ]
+    }
   ];
+
+  const handleViewProperty = (propertyId: string | number) => {
+    navigate(`/property/${propertyId}`);
+  };
+
+  const handleDeleteChat = (chatId: string | number) => {
+    // Add confirmation dialog
+    if (window.confirm('Are you sure you want to delete this chat history?')) {
+      // Delete chat logic will go here when we implement backend
+      console.log('Deleting chat:', chatId);
+    }
+  };
 
   return (
     <div className="flex h-[calc(100vh-2rem)] max-h-[800px]">
@@ -64,12 +72,16 @@ const MessagesSection = () => {
         <div className="p-4 border-b">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-            <Input placeholder="Search properties" className="pl-9" />
+            <input
+              type="text"
+              placeholder="Search properties"
+              className="w-full pl-9 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
           </div>
         </div>
 
         <div className="overflow-y-auto h-full">
-          {propertyChats.map(property => (
+          {propertyChats.map((property) => (
             <button
               key={property.id}
               onClick={() => setSelectedProperty(property)}
@@ -103,22 +115,38 @@ const MessagesSection = () => {
       <div className="flex-1 flex flex-col bg-gray-50">
         {selectedProperty ? (
           <>
-            {/* Chat Header */}
+            {/* Enhanced Chat Header with Actions */}
             <div className="p-4 bg-white border-b">
-              <div className="flex items-center space-x-3">
-                <Home className="h-5 w-5 text-emerald-600" />
-                <div>
-                  <h2 className="font-medium">{selectedProperty.address}</h2>
-                  <p className="text-sm text-gray-500">
-                    {selectedProperty.price}
-                  </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Home className="h-5 w-5 text-emerald-600" />
+                  <div>
+                    <h2 className="font-medium">{selectedProperty.address}</h2>
+                    <p className="text-sm text-gray-500">{selectedProperty.price}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleViewProperty(selectedProperty.id)}
+                    className="p-2 text-gray-600 hover:text-emerald-600 transition-colors"
+                    title="View Property"
+                  >
+                    <ExternalLink className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteChat(selectedProperty.id)}
+                    className="p-2 text-gray-600 hover:text-red-600 transition-colors"
+                    title="Delete Chat History"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
                 </div>
               </div>
             </div>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {selectedProperty.messages.map(msg => (
+              {selectedProperty.messages.map((msg) => (
                 <div
                   key={msg.id}
                   className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -139,9 +167,7 @@ const MessagesSection = () => {
                       </div>
                     )}
                     <p className="text-sm">{msg.content}</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {msg.timestamp}
-                    </p>
+                    <p className="text-xs text-gray-400 mt-1">{msg.timestamp}</p>
                   </div>
                 </div>
               ))}
@@ -150,15 +176,18 @@ const MessagesSection = () => {
             {/* Message Input */}
             <div className="p-4 bg-white border-t">
               <div className="flex space-x-2">
-                <Input
+                <input
                   value={message}
-                  onChange={e => setMessage(e.target.value)}
+                  onChange={(e) => setMessage(e.target.value)}
                   placeholder="Type your message..."
-                  className="flex-1"
+                  className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
-                <Button className="bg-emerald-600 hover:bg-emerald-700">
+                <button 
+                  onClick={() => {/* handle send */}}
+                  className="bg-emerald-600 text-white p-2 rounded-lg hover:bg-emerald-700 transition-colors"
+                >
                   <Send className="h-4 w-4" />
-                </Button>
+                </button>
               </div>
             </div>
           </>
@@ -172,4 +201,4 @@ const MessagesSection = () => {
   );
 };
 
-export default MessagesSection;
+export default PropertyChats; 

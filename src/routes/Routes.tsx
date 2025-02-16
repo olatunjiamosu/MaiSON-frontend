@@ -8,11 +8,12 @@ import PublicRoute from './PublicRoute';
 import BuyerDashboard from '../pages/dashboard/BuyerDashboard';
 import SelectUserType from '../pages/auth/SelectUserType';
 import RegisterBuyer from '../pages/auth/RegisterBuyer';
-import MessagesSection from '../pages/dashboard/buyer-sections/MessagesSection';
+import PropertyChats from '../pages/dashboard/buyer-sections/PropertyChats';
 import SignUp from '../pages/auth/SignUp';
 import PropertyDetails from '../pages/property/PropertyDetails';
 import SavedPropertiesSection from '../pages/dashboard/buyer-sections/SavedPropertiesSection';
 import ViewingsSection from '../pages/dashboard/buyer-sections/ViewingsSection';
+import PublicListings from '../pages/PublicListings';
 
 // Add mock property data for testing
 const mockProperty = {
@@ -40,6 +41,8 @@ The ground floor comprises a welcoming entrance hall, elegant double reception r
 
 The first floor offers four well-proportioned bedrooms and two modern bathrooms (one en-suite). Additional benefits include a utility room, guest cloakroom, and ample storage throughout.`,
   floorPlan: 'https://images.unsplash.com/photo-1536483229849-91bbb16321cd',
+  lat: 51.5074,
+  lng: -0.1278,
 };
 
 const AppRoutes = () => (
@@ -98,6 +101,14 @@ const AppRoutes = () => (
       element={
         <PublicRoute>
           <RegisterBuyer />
+        </PublicRoute>
+      }
+    />
+    <Route
+      path="/listings"
+      element={
+        <PublicRoute>
+          <PublicListings />
         </PublicRoute>
       }
     />

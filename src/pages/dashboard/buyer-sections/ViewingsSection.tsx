@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, CheckCircle2, AlertCircle, Star } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, AlertCircle, Star, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
@@ -83,6 +83,12 @@ const ViewingsSection = () => {
 
   const handleViewProperty = (propertyId: string) => {
     navigate(`/property/${propertyId}`);
+  };
+
+  const handleMakeOffer = (propertyId: string) => {
+    navigate('/buyer-dashboard/applications', {
+      state: { propertyId, fromViewing: true }
+    });
   };
 
   return (
@@ -279,6 +285,16 @@ const ViewingsSection = () => {
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className="mt-4 flex justify-end items-center">
+                <button
+                  onClick={() => handleMakeOffer(viewing.propertyId)}
+                  className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors flex items-center space-x-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>Make an Offer</span>
+                </button>
               </div>
             </div>
           ))

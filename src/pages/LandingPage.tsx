@@ -18,9 +18,12 @@ const MaisonLanding = () => {
             <a href="#" className="text-gray-600 hover:text-gray-900">
               Features
             </a>
-            <a href="#" className="text-gray-600 hover:text-gray-900">
-              Listings
-            </a>
+            <Link 
+              to="/listings"
+              className="text-emerald-600 hover:text-emerald-700 font-medium"
+            >
+              View Listings
+            </Link>
             <a href="#" className="text-gray-600 hover:text-gray-900">
               About
             </a>
@@ -95,7 +98,13 @@ const MaisonLanding = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, description }) => (
+interface FeatureCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
+
+const FeatureCard = ({ icon, title, description }: FeatureCardProps) => (
   <div className="text-center">
     <div className="flex justify-center mb-4">{icon}</div>
     <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>

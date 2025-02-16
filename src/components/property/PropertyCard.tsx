@@ -17,9 +17,9 @@ interface PropertyCardProps {
   epcRating: string;
   className?: string;
   id: string;
-  showSaveButton?: boolean;
   isSaved?: boolean;
   onToggleSave?: (id: string) => void;
+  showSaveButton?: boolean;
 }
 
 const PropertyCard = ({
@@ -36,9 +36,9 @@ const PropertyCard = ({
   epcRating,
   className = '',
   id,
-  showSaveButton = true,
   isSaved = false,
   onToggleSave,
+  showSaveButton = true,
 }: PropertyCardProps) => {
   const navigate = useNavigate();
 
@@ -88,16 +88,18 @@ const PropertyCard = ({
           alt="Property"
           className="w-full h-full object-cover"
         />
-        <button
-          onClick={handleSaveClick}
-          className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:bg-gray-50"
-        >
-          <Heart
-            className={`h-5 w-5 ${
-              isSaved ? 'fill-emerald-600 text-emerald-600' : 'text-gray-400'
-            }`}
-          />
-        </button>
+        {showSaveButton && (
+          <button
+            onClick={handleSaveClick}
+            className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:bg-gray-50"
+          >
+            <Heart
+              className={`h-5 w-5 ${
+                isSaved ? 'fill-emerald-600 text-emerald-600' : 'text-gray-400'
+              }`}
+            />
+          </button>
+        )}
       </div>
 
       {/* Content */}
