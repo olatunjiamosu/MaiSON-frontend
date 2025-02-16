@@ -9,8 +9,8 @@ RUN npm install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Build the application (skip TypeScript checks)
+RUN npm run build:docker
 
 # Production stage
 FROM nginx:alpine

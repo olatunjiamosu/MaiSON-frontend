@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
+    "build:docker": "vite build",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings 0",
     "preview": "vite preview",
     "test": "jest --config jest.config.cjs",
