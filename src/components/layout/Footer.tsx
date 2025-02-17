@@ -1,5 +1,6 @@
 import React from 'react';
 import { Facebook, Instagram, Twitter, Linkedin, Mail } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
@@ -24,9 +25,9 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white">
+                <Link to="/features" className="hover:text-white">
                   Features
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="#" className="text-gray-400 hover:text-white">

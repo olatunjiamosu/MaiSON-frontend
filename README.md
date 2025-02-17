@@ -106,7 +106,7 @@ docker run -p 80:80 maison-frontend
 ### CI/CD Pipeline
 - Automated testing
 - Docker image building
-- Deployment to Azure Container Apps
+- Deployment to Azure Static Web Apps
 
 ## 🧪 Testing
 - Unit tests with Jest

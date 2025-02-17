@@ -14,6 +14,7 @@ import PropertyDetails from '../pages/property/PropertyDetails';
 import SavedPropertiesSection from '../pages/dashboard/buyer-sections/SavedPropertiesSection';
 import ViewingsSection from '../pages/dashboard/buyer-sections/ViewingsSection';
 import PublicListings from '../pages/PublicListings';
+import FeaturesPage from '../pages/FeaturesPage';
 
 // Add mock property data for testing
 const mockProperty = {
@@ -109,6 +110,14 @@ const AppRoutes = () => (
       element={
         <PublicRoute>
           <PublicListings />
+        </PublicRoute>
+      }
+    />
+    <Route
+      path="/features"
+      element={
+        <PublicRoute>
+          <FeaturesPage />
         </PublicRoute>
       }
     />
