@@ -231,6 +231,7 @@ const BuyerDashboard = () => {
               <Route path="viewings" element={<ViewingsSection />} />
               <Route path="messages" element={<PropertyChats />} />
               <Route path="applications" element={<ApplicationsSection />} />
+              <Route path="documents" element={<DocumentsSection />} />
             </Routes>
           </div>
         </main>
