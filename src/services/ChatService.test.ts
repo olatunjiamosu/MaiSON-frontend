@@ -31,15 +31,19 @@ describe('ChatService', () => {
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringMatching(/\/api\/v1\/chat\/message$/),
+        expect.stringMatching(/\/chat$/),
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
           body: JSON.stringify({
             message: 'Hi',
-            sessionId: null
+            sessionId: null,
+            user_id: 'guest',
+            user_name: 'Guest User',
+            user_email: 'guest@example.com'
           })
         }
       );
@@ -71,15 +75,19 @@ describe('ChatService', () => {
       
       // Verify second message was sent with the session ID
       expect(global.fetch).toHaveBeenLastCalledWith(
-        expect.stringMatching(/\/api\/v1\/chat\/message$/),
+        expect.stringMatching(/\/chat$/),
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
           body: JSON.stringify({
             message: 'Second message',
-            sessionId: '12345'
+            sessionId: '12345',
+            user_id: 'guest',
+            user_name: 'Guest User',
+            user_email: 'guest@example.com'
           })
         }
       );

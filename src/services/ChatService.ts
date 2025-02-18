@@ -18,7 +18,10 @@ class ChatService {
   private currentSessionId: string | null;
 
   constructor() {
-    this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://maisonbot-api.xyz/api/v1';
+    this.baseUrl = getEnvVar(
+      'VITE_API_BASE_URL',
+      'https://maisonbot-api.xyz/api/v1'
+    );
     this.currentSessionId = null;
   }
 
