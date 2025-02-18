@@ -5,7 +5,6 @@ import {
   Marker,
   InfoWindow,
 } from '@react-google-maps/api';
-import { MapPin } from 'lucide-react';
 
 interface Property {
   id: string;
@@ -28,8 +27,8 @@ const PropertyMap = ({
   selectedProperty,
   onPropertySelect,
 }: PropertyMapProps) => {
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY, // Use the environment variable
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
   });
 
   const [selectedMarker, setSelectedMarker] = React.useState<Property | null>(null);
@@ -39,7 +38,6 @@ const PropertyMap = ({
     lng: -0.1278,
   };
 
-  if (loadError) return <div>Error loading map</div>; // Handle load error
   if (!isLoaded) return <div>Loading map...</div>;
 
   return (
@@ -62,6 +60,10 @@ const PropertyMap = ({
                 ? '/path-to-selected-marker.svg'
                 : '/path-to-marker.svg',
             scaledSize: new window.google.maps.Size(40, 40),
+          }}
+          // Use AdvancedMarkerElement
+          options={{
+            // Add any additional options here
           }}
         />
       ))}

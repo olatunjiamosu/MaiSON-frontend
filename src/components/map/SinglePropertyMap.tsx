@@ -11,20 +11,10 @@ interface SinglePropertyMapProps {
 
 const SinglePropertyMap = ({ property }: SinglePropertyMapProps) => {
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY, // Use the environment variable
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
   });
 
   if (!isLoaded) return <div>Loading map...</div>;
-
-  const handleGetDirections = () => {
-    const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${property.lat},${property.lng}`;
-    window.open(directionsUrl, '_blank');
-  };
-
-  const handleViewInGoogleMaps = () => {
-    const mapsUrl = `https://www.google.com/maps/@?api=1&map_action=map&center=${property.lat},${property.lng}&zoom=15`;
-    window.open(mapsUrl, '_blank');
-  };
 
   return (
     <div className="h-[400px] w-full rounded-lg overflow-hidden">
@@ -46,6 +36,10 @@ const SinglePropertyMap = ({ property }: SinglePropertyMapProps) => {
             url: '/path-to-marker.svg',
             scaledSize: new window.google.maps.Size(40, 40),
           }}
+          // Use AdvancedMarkerElement
+          options={{
+            // Add any additional options here
+          }}
         />
       </GoogleMap>
 
@@ -54,16 +48,10 @@ const SinglePropertyMap = ({ property }: SinglePropertyMapProps) => {
         <h3 className="font-semibold text-gray-900">Location</h3>
         <p className="text-gray-600">{property.address}</p>
         <div className="mt-2 flex gap-2">
-          <button 
-            onClick={handleGetDirections} 
-            className="text-sm text-emerald-600 hover:text-emerald-700"
-          >
+          <button className="text-sm text-emerald-600 hover:text-emerald-700">
             Get Directions
           </button>
-          <button 
-            onClick={handleViewInGoogleMaps} 
-            className="text-sm text-emerald-600 hover:text-emerald-700"
-          >
+          <button className="text-sm text-emerald-600 hover:text-emerald-700">
             View in Google Maps
           </button>
         </div>
