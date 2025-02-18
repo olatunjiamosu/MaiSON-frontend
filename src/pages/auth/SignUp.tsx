@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, MessageSquare, BarChart } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 // Add these interfaces at the top of the file
 interface FeatureProps {
@@ -9,6 +10,7 @@ interface FeatureProps {
 }
 
 const SignUp = () => {
+  const { signup } = useAuth();
   const navigate = useNavigate(); // React Router navigation hook
 
   const [formData, setFormData] = useState({
@@ -22,12 +24,93 @@ const SignUp = () => {
     smsUpdates: false,
   });
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const [error, setError] = useState('');
+
+  const validatePassword = (password: string): string[] => {
+    const errors = [];
+    
+    // Check length
+    if (password.length < 8) {
+      errors.push('Must be at least 8 characters long');
+    }
+
+    // Check for lowercase
+    if (!/[a-z]/.test(password)) {
+      errors.push('Include at least one lowercase letter (a-z)');
+    }
+
+    // Check for uppercase
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Include at least one uppercase letter (A-Z)');
+    }
+
+    // Check for number
+    if (!/\d/.test(password)) {
+      errors.push('Include at least one number (0-9)');
+    }
+
+    // Check for special character
+    if (!/[!@#$%^&*]/.test(password)) {
+      errors.push('Include at least one special character (!@#$%^&*)');
+    }
+
+    return errors;
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError('');
 
-    // Add validation or API call here if needed
+    try {
+      // Log the attempt
+      console.log('Attempting signup with:', {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName
+      });
 
-    navigate('/select-user-type'); // Navigate to SelectUserType page
+      await signup(
+        formData.email,
+        formData.password,
+        formData.firstName,
+        formData.lastName
+      );
+
+      // Log success
+      console.log('Signup successful');
+      navigate('/select-user-type');
+    } catch (err: any) {
+      // Improve error messages
+      const errorMessage = (() => {
+        switch (err.code) {
+          case 'auth/email-already-in-use':
+            return 'An account with this email already exists. Please try logging in instead.';
+          case 'auth/invalid-email':
+            return 'Please enter a valid email address.';
+          case 'auth/operation-not-allowed':
+            return 'Account creation is currently disabled. Please try again later.';
+          case 'auth/weak-password':
+            return 'This password is too weak. Please choose a stronger password.';
+          default:
+            return `Something went wrong: ${err.message}`;
+        }
+      })();
+      
+      setError(errorMessage);
+      console.error('Signup error:', err);
+    }
+  };
+
+  // Improve password strength messaging
+  const getPasswordStrength = (password: string): { strength: string; color: string } => {
+    const errors = validatePassword(password);
+    if (errors.length === 0) {
+      return { strength: 'Strong - Good to go! 🚀', color: 'text-green-600' };
+    }
+    if (errors.length <= 2) {
+      return { strength: 'Medium - Almost there! 👍', color: 'text-yellow-600' };
+    }
+    return { strength: 'Weak - Keep going! 💪', color: 'text-red-600' };
   };
 
   return (
@@ -74,6 +157,12 @@ const SignUp = () => {
         <div className="flex-1">
           <div className="bg-white p-6 rounded-lg max-w-md">
             <h2 className="text-2xl font-bold mb-6">Create your account</h2>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                {error}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* First Name */}
@@ -167,7 +256,13 @@ const SignUp = () => {
                   type={formData.showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={e => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                    formData.password && validatePassword(formData.password).length > 0 
+                      ? 'border-red-300' 
+                      : formData.password 
+                        ? 'border-green-300' 
+                        : ''
+                  }`}
                   required
                 />
                 <div className="mt-1">
@@ -186,10 +281,26 @@ const SignUp = () => {
                     <span className="text-sm text-gray-600">Show password</span>
                   </label>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">
-                  Must be at least 8 characters with 1 lowercase, 1 uppercase,
-                  and 1 number.
-                </p>
+                {formData.password && (
+                  <div className="mt-2 text-sm">
+                    <p className={`font-medium ${getPasswordStrength(formData.password).color}`}>
+                      Password Strength: {getPasswordStrength(formData.password).strength}
+                    </p>
+                    {validatePassword(formData.password).length > 0 && (
+                      <>
+                        <p className="text-gray-600 mt-2 mb-1">Your password needs:</p>
+                        <ul className="space-y-1">
+                          {validatePassword(formData.password).map((error, index) => (
+                            <li key={index} className="text-red-600 flex items-center">
+                              <span className="mr-2">•</span>
+                              {error}
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Updates Preferences */}
