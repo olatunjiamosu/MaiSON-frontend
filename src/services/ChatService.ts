@@ -30,10 +30,14 @@ class ChatService {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
           body: JSON.stringify({
-            message,
-            sessionId: this.currentSessionId
+            message: message,
+            sessionId: this.currentSessionId,
+            user_id: "guest",
+            user_name: "Guest User",
+            user_email: "guest@example.com"
           })
         }
       );
