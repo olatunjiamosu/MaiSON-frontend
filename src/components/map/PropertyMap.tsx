@@ -28,19 +28,18 @@ const PropertyMap = ({
   selectedProperty,
   onPropertySelect,
 }: PropertyMapProps) => {
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: 'YOUR_GOOGLE_MAPS_API_KEY',
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY, // Use the environment variable
   });
 
-  const [selectedMarker, setSelectedMarker] = React.useState<Property | null>(
-    null
-  );
+  const [selectedMarker, setSelectedMarker] = React.useState<Property | null>(null);
 
   const mapCenter = {
     lat: 51.5074, // London center
     lng: -0.1278,
   };
 
+  if (loadError) return <div>Error loading map</div>; // Handle load error
   if (!isLoaded) return <div>Loading map...</div>;
 
   return (
