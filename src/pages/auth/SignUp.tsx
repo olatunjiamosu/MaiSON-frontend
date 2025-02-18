@@ -57,27 +57,50 @@ const SignUp = () => {
     return errors;
   };
 
+  const validatePhone = (phone: string): string | null => {
+    // Remove any non-digit characters
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    // UK phone number validation (basic)
+    // Allows formats like: 07700900000, +447700900000
+    const ukPhoneRegex = /^(?:(?:\+44)|(?:0))(?:7\d{9})$/;
+    
+    if (!cleanPhone) {
+      return "Phone number is required";
+    }
+    
+    if (!ukPhoneRegex.test(cleanPhone)) {
+      return "Please enter a valid UK mobile number";
+    }
+    
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
 
-    try {
-      // Log the attempt
-      console.log('Attempting signup with:', {
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName
-      });
+    // Validate phone
+    const phoneError = validatePhone(formData.phone);
+    if (phoneError) {
+      setError(phoneError);
+      return;
+    }
 
+    try {
       await signup(
         formData.email,
         formData.password,
         formData.firstName,
-        formData.lastName
+        formData.lastName,
+        {
+          phone: formData.phone,
+          preferences: {
+            emailUpdates: formData.emailUpdates,
+            smsUpdates: formData.smsUpdates
+          }
+        }
       );
-
-      // Log success
-      console.log('Signup successful');
       navigate('/select-user-type');
     } catch (err: any) {
       // Improve error messages
@@ -235,10 +258,27 @@ const SignUp = () => {
                   name="phone"
                   type="tel"
                   value={formData.phone}
-                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  onChange={e => {
+                    const value = e.target.value;
+                    // Only allow digits, spaces, plus, and hyphens
+                    const sanitized = value.replace(/[^\d\s+-]/g, '');
+                    setFormData({ ...formData, phone: sanitized });
+                  }}
+                  placeholder="07700900000"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                    formData.phone && validatePhone(formData.phone) 
+                      ? 'border-red-300' 
+                      : formData.phone 
+                        ? 'border-green-300' 
+                        : ''
+                  }`}
                   required
                 />
+                {formData.phone && validatePhone(formData.phone) && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {validatePhone(formData.phone)}
+                  </p>
+                )}
               </div>
 
               {/* Password */}
