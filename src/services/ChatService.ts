@@ -15,22 +15,17 @@ const getEnvVar = (key: string, defaultValue: string): string => {
 
 class ChatService {
   private baseUrl: string;
-  private apiVersion: string;
   private currentSessionId: string | null;
 
   constructor() {
-    this.baseUrl = getEnvVar(
-      'VITE_API_BASE_URL',
-      'http://maison-chatbot.hqfta8d9brd5f0da.uksouth.azurecontainer.io:8000'
-    );
-    this.apiVersion = getEnvVar('VITE_API_VERSION', '/api/v1');
+    this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://maisonbot-api.xyz/api/v1';
     this.currentSessionId = null;
   }
 
   async sendMessage(message: string): Promise<ChatResponse> {
     try {
       const response = await fetch(
-        `${this.baseUrl}${this.apiVersion}/chat/message`,
+        `${this.baseUrl}/chat`,
         {
           method: 'POST',
           headers: {
