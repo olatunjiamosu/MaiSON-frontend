@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { sendEmailVerification } from "firebase/auth";
 import { 
   User, 
   signInWithEmailAndPassword,
@@ -7,10 +8,11 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   UserCredential,
-  sendPasswordResetEmail // Add this import
+  sendPasswordResetEmail,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
-import { auth } from '../config/firebase';
-import { db } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { UserData } from '../types/user';
 
@@ -19,7 +21,8 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  resetPassword: (email: string) => Promise<string>; // Add this to interface
+  resetPassword: (email: string) => Promise<string>;
+  signInWithGoogle: () => Promise<UserCredential>;
   signup: (
     email: string, 
     password: string, 
@@ -107,6 +110,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      
+      // Create a user document if it doesn't exist
+      const userDocRef = doc(db, 'users', result.user.uid);
+      await setDoc(userDocRef, {
+        email: result.user.email,
+        firstName: result.user.displayName?.split(' ')[0] || '',
+        lastName: result.user.displayName?.split(' ').slice(1).join(' ') || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      return result;
+    } catch (error: any) {
+      console.error('Google sign in error:', error);
+      throw error;
+    }
+  };
+
   const signup = async (
     email: string, 
     password: string, 
@@ -120,7 +145,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateProfile(result.user, {
         displayName: `${firstName} ${lastName}`
       });
-
+  
+      // Send email verification
+      await sendEmailVerification(result.user);
+  
       const userDoc = {
         firstName,
         lastName,
@@ -134,7 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updatedAt: new Date().toISOString(),
         ...userData
       };
-
+  
       const userDocRef = doc(db, 'users', result.user.uid);
       await setDoc(userDocRef, userDoc);
       
@@ -152,7 +180,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login, 
       logout, 
       signup, 
-      resetPassword // Add this to the provider value
+      resetPassword,
+      signInWithGoogle
     }}>
       {!loading ? children : <div>Loading...</div>}
     </AuthContext.Provider>
