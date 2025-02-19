@@ -8,6 +8,7 @@ import PublicRoute from './PublicRoute';
 import BuyerDashboard from '../pages/dashboard/BuyerDashboard';
 import SelectUserType from '../pages/auth/SelectUserType';
 import RegisterBuyer from '../pages/auth/RegisterBuyer';
+import RegisterSeller from '../pages/auth/RegisterSeller';
 import PropertyChats from '../pages/dashboard/buyer-sections/PropertyChats';
 import SignUp from '../pages/auth/SignUp';
 import PropertyDetails from '../pages/property/PropertyDetails';
@@ -15,6 +16,8 @@ import SavedPropertiesSection from '../pages/dashboard/buyer-sections/SavedPrope
 import ViewingsSection from '../pages/dashboard/buyer-sections/ViewingsSection';
 import PublicListings from '../pages/PublicListings';
 import FeaturesPage from '../pages/FeaturesPage';
+import AboutPage from '../pages/AboutPage';
+import ContactPage from '../pages/ContactPage';
 
 // Add mock property data for testing
 const mockProperty = {
@@ -89,20 +92,30 @@ const AppRoutes = () => (
         </PublicRoute>
       }
     />
+
+    {/* Protected Routes - Only accessible after authentication */}
     <Route
       path="/select-user-type"
       element={
-        <PublicRoute>
+        <PrivateRoute>
           <SelectUserType />
-        </PublicRoute>
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/register-seller"
+      element={
+        <PrivateRoute>
+          <RegisterSeller />
+        </PrivateRoute>
       }
     />
     <Route
       path="/register-buyer"
       element={
-        <PublicRoute>
+        <PrivateRoute>
           <RegisterBuyer />
-        </PublicRoute>
+        </PrivateRoute>
       }
     />
     <Route
@@ -118,6 +131,22 @@ const AppRoutes = () => (
       element={
         <PublicRoute>
           <FeaturesPage />
+        </PublicRoute>
+      }
+    />
+    <Route
+      path="/about"
+      element={
+        <PublicRoute>
+          <AboutPage />
+        </PublicRoute>
+      }
+    />
+    <Route
+      path="/contact"
+      element={
+        <PublicRoute>
+          <ContactPage />
         </PublicRoute>
       }
     />

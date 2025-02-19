@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowRight, Brain, Clock, Shield, Home, MessageCircle, Calendar, FileText, BarChart, Scale, TrendingUp, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import Footer from '../components/layout/Footer';
+import Navigation from '../components/layout/Navigation';
 
 const FeaturesPage = () => {
   const features = [
@@ -54,30 +54,10 @@ const FeaturesPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Navigation */}
-      <nav className="bg-white border-b py-4">
-        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold tracking-tight">
-            <span>M</span>
-            <span className="text-emerald-600">ai</span>
-            <span>SON</span>
-          </Link>
-          <div className="flex items-center space-x-6">
-            <Link to="/features" className="text-emerald-600 hover:text-emerald-700">
-              Features
-            </Link>
-            <Link to="/listings" className="text-gray-600 hover:text-gray-900">
-              View Listings
-            </Link>
-            <Link to="/login" className="text-gray-600 hover:text-gray-900">
-              Login
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Navigation />
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-b from-emerald-50 to-white py-16">
+      <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4">
           <h1 className="text-4xl font-bold text-center mb-8">
             Revolutionising Buying and Selling Property with AI
@@ -89,7 +69,7 @@ const FeaturesPage = () => {
       </div>
 
       {/* Features Grid */}
-      <div className="py-16">
+      <div className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
@@ -107,11 +87,11 @@ const FeaturesPage = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-emerald-50 py-16">
+      <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-xl text-gray-600 mb-8">
-            Join MaiSON today and experience the future of property search.
+            Join MaiSON today and experience the future of property transactions.
           </p>
           <Link
             to="/sign-up"
@@ -122,9 +102,6 @@ const FeaturesPage = () => {
           </Link>
         </div>
       </div>
-
-      {/* Footer */}
-      <Footer />
     </div>
   );
 };

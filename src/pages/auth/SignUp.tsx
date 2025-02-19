@@ -22,12 +22,16 @@ const SignUp = () => {
     smsUpdates: false,
   });
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    // Add validation or API call here if needed
-
-    navigate('/select-user-type'); // Navigate to SelectUserType page
+    try {
+      // Handle registration
+      await registerUser(formData);
+      // After successful registration, redirect to select-user-type
+      navigate('/select-user-type');
+    } catch (error) {
+      // Handle error
+    }
   };
 
   return (
