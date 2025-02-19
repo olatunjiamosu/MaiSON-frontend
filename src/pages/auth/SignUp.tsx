@@ -2,12 +2,34 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, MessageSquare, BarChart } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 // Add these interfaces at the top of the file
 interface FeatureProps {
   icon: React.ReactNode;
   text: string;
 }
+
+const checkPhoneExists = async (phoneNumber: string) => {
+  try {
+    // Clean the phone number to match database format (just digits)
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    
+    console.log('Checking phone:', cleanPhone);
+    const phoneQuery = query(
+      collection(db, 'users'),
+      where('phone', '==', cleanPhone)  // Note: using 'phone' instead of 'phoneNumber'
+    );
+    const phoneSnapshot = await getDocs(phoneQuery);
+    const exists = !phoneSnapshot.empty;
+    console.log('Phone exists?', exists);
+    return exists;
+  } catch (error) {
+    console.error('Phone check error:', error);
+    throw new Error('Error checking phone number: ' + error.message);
+  }
+};
 
 const SignUp = () => {
   const { signup } = useAuth();
@@ -80,7 +102,7 @@ const SignUp = () => {
     e.preventDefault();
     setError('');
 
-    // Validate phone
+    // Validate phone format first
     const phoneError = validatePhone(formData.phone);
     if (phoneError) {
       setError(phoneError);
@@ -88,6 +110,14 @@ const SignUp = () => {
     }
 
     try {
+      // Check if phone already exists
+      const phoneExists = await checkPhoneExists(formData.phone);
+      if (phoneExists) {
+        setError('This phone number is already registered');
+        return;
+      }
+
+      // Only proceed with signup if phone check passes
       const result = await signup(
         formData.email,
         formData.password,
@@ -107,8 +137,10 @@ const SignUp = () => {
         navigate('/select-user-type');
       }
     } catch (err: any) {
-      // Improve error messages
       const errorMessage = (() => {
+        if (err.message?.includes('Error checking phone number')) {
+          return 'Unable to verify phone number. Please try again.';
+        }
         switch (err.code) {
           case 'auth/email-already-in-use':
             return 'An account with this email already exists. Please try logging in instead.';
@@ -125,7 +157,7 @@ const SignUp = () => {
       
       setError(errorMessage);
       console.error('Signup error:', err);
-      return; // Add explicit return to prevent proceeding
+      return;
     }
   };
 
