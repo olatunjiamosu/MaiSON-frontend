@@ -24,7 +24,7 @@ const Login = () => {
     e.preventDefault();
     try {
       await login(email, password);
-      navigate('/select-user-type');
+      navigate('/select-user-type'); // Add this back
     } catch (err: any) {
       setError(err.message);
       console.error('Login error:', err);
