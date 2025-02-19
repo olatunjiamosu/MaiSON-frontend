@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { getDoc, doc } from 'firebase/firestore';
+import { db, auth } from '../../config/firebase';
 
 const Login = () => {
   const { login, resetPassword } = useAuth();
@@ -24,7 +26,8 @@ const Login = () => {
     e.preventDefault();
     try {
       await login(email, password);
-      navigate('/select-user-type'); // Add this back
+      // After successful login, go to home page where they'll see logged-in state
+      navigate('/');
     } catch (err: any) {
       setError(err.message);
       console.error('Login error:', err);

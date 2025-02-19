@@ -1,12 +1,20 @@
 import { Navigate } from 'react-router-dom';
-
-// Mock authentication check (Replace this with actual auth logic)
-const isAuthenticated = () => {
-  return !!localStorage.getItem('token'); // Check if a token exists
-};
+import { useAuth } from '../context/AuthContext';
 
 const PrivateRoute = ({ children }) => {
-  return isAuthenticated() ? children : <Navigate to="/login" />;
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>; // Or your loading spinner component
+  }
+
+  if (!user) {
+    // Redirect to login if not authenticated
+    return <Navigate to="/login" />;
+  }
+
+  // User is authenticated, show the protected content
+  return children;
 };
 
 export default PrivateRoute;
