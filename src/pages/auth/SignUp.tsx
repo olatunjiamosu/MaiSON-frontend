@@ -88,7 +88,7 @@ const SignUp = () => {
     }
 
     try {
-      await signup(
+      const result = await signup(
         formData.email,
         formData.password,
         formData.firstName,
@@ -101,7 +101,11 @@ const SignUp = () => {
           }
         }
       );
-      navigate('/select-user-type');
+
+      // Only navigate if signup was successful
+      if (result) {
+        navigate('/select-user-type');
+      }
     } catch (err: any) {
       // Improve error messages
       const errorMessage = (() => {
@@ -121,6 +125,7 @@ const SignUp = () => {
       
       setError(errorMessage);
       console.error('Signup error:', err);
+      return; // Add explicit return to prevent proceeding
     }
   };
 
