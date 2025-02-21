@@ -1,5 +1,5 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, X } from 'lucide-react';
 
 interface FormData {
@@ -23,7 +23,7 @@ interface FormData {
   description: string;
 }
 
-const RegisterSeller = () => {
+const RegisterProperty = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
     address: '',
@@ -47,6 +47,8 @@ const RegisterSeller = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
+
+  const navigate = useNavigate();
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
@@ -96,11 +98,11 @@ const RegisterSeller = () => {
     setCurrentStep(prev => prev - 1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateStep(currentStep)) {
-      console.log('Form submitted:', formData);
       // Handle form submission
+      navigate('/seller-dashboard');
     }
   };
 
@@ -627,4 +629,4 @@ const RegisterSeller = () => {
   );
 };
 
-export default RegisterSeller;
+export default RegisterProperty;

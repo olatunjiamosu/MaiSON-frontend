@@ -3,6 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../../config/firebase';
+import { Mail, Lock, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Login = () => {
   const { login, resetPassword } = useAuth();
@@ -26,110 +28,164 @@ const Login = () => {
     e.preventDefault();
     try {
       await login(email, password);
-      // After successful login, go to home page where they'll see logged-in state
-      navigate('/');
-    } catch (err: any) {
-      setError(err.message);
-      console.error('Login error:', err);
+      navigate('/buyer-dashboard');
+    } catch (error: any) {
+      setError(error.message || 'Failed to log in');
+      console.error('Login error:', error);
     }
   };
 
-  const handleResetPassword = async () => {
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Please enter your email first!');
+      return;
+    }
     try {
-      if (!email) {
-        setError('Please enter your email address');
-        return;
-      }
       await resetPassword(email);
-      setError('');
-      setMessage('Check your email for password reset instructions');
-    } catch (err: any) {
-      setError(err.message);
+      setError(''); // Clear any existing errors
+      navigate('/verification');
+    } catch (error: any) {
+      setError(error.message || 'Failed to send reset email');
       setMessage('');
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-        <h2 className="text-2xl font-bold text-center">Login to MaiSON</h2>
-        
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center">
+      {/* Back to Home Button */}
+      <div className="absolute top-4 left-4">
+        <Link to="/" className="text-gray-600 hover:text-gray-900">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </Link>
+      </div>
 
-        {message && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-            {message}
-          </div>
-        )}
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold">
+            <span>M</span>
+            <span className="text-emerald-600">ai</span>
+            <span>SON</span>
+          </h2>
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+            Welcome Back
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Enter your details to access your account
+          </p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border rounded-md"
-              required
-            />
-          </div>
+        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            {error && (
+              <div className="mb-4 text-red-600 text-sm text-center">
+                {error}
+              </div>
+            )}
+            
+            {message && (
+              <div className="mb-4 text-emerald-600 text-sm text-center">
+                {message}
+              </div>
+            )}
+            
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              {/* Email Field */}
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Email address
+                </label>
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    className="block w-full pl-10 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
 
-          <div className="space-y-2">
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
-                required
-              />
-              <label className="flex items-center mt-1">
-                <input
-                  type="checkbox"
-                  checked={showPassword}
-                  onChange={(e) => setShowPassword(e.target.checked)}
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-600">Show password</span>
-              </label>
+              <div className="space-y-2">
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                    required
+                  />
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={showPassword}
+                        onChange={e => setShowPassword(e.target.checked)}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-600">Show password</span>
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="text-sm text-emerald-600 hover:text-emerald-700"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Login Button */}
+              <div>
+                <button
+                  type="submit"
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                >
+                  Sign in
+                </button>
+              </div>
+            </form>
+
+            {/* Register Section */}
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">
+                    Don't have an account?
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <Link
+                  to="/signup"
+                  className="w-full flex justify-center py-3 px-4 border border-emerald-600 rounded-md shadow-sm text-sm font-medium text-emerald-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                >
+                  Create an account
+                </Link>
+              </div>
             </div>
           </div>
-
-          <button
-            type="submit"
-            className="w-full bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700"
-          >
-            Login
-          </button>
-
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={handleResetPassword}
-              className="text-emerald-600 hover:text-emerald-700 text-sm"
-            >
-              Forgot password?
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );
 };
 
 export default Login;
-
-<div className="text-center mt-4">
-  <span className="text-gray-600">Don't have an account? </span>
-  <a 
-    href="/sign-up" 
-    className="text-emerald-600 hover:text-emerald-700"
-  >
-    Sign up
-  </a>
-</div>

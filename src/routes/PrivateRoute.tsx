@@ -1,15 +1,19 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const PrivateRoute = ({ children }) => {
+interface PrivateRouteProps {
+  children: React.ReactNode;
+}
+
+const PrivateRoute = ({ children }: PrivateRouteProps) => {
   const { user, loading } = useAuth();
 
   if (loading) {
     return <div>Loading...</div>; // Or your loading spinner component
   }
 
+  // Redirect to login if not authenticated
   if (!user) {
-    // Redirect to login if not authenticated
     return <Navigate to="/login" />;
   }
 

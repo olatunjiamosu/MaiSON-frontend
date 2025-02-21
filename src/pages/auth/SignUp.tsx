@@ -4,6 +4,7 @@ import { Calendar, MessageSquare, BarChart } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import { UserData } from '../../types/user';
 
 // Add these interfaces at the top of the file
 interface FeatureProps {
@@ -19,15 +20,15 @@ const checkPhoneExists = async (phoneNumber: string) => {
     console.log('Checking phone:', cleanPhone);
     const phoneQuery = query(
       collection(db, 'users'),
-      where('phone', '==', cleanPhone)  // Note: using 'phone' instead of 'phoneNumber'
+      where('phone', '==', cleanPhone)
     );
     const phoneSnapshot = await getDocs(phoneQuery);
     const exists = !phoneSnapshot.empty;
     console.log('Phone exists?', exists);
     return exists;
-  } catch (error) {
+  } catch (error: any) { // Type assertion for error
     console.error('Phone check error:', error);
-    throw new Error('Error checking phone number: ' + error.message);
+    throw new Error('Error checking phone number: ' + (error.message || 'Unknown error'));
   }
 };
 
@@ -98,66 +99,43 @@ const SignUp = () => {
     return null;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    // Validate phone format first
-    const phoneError = validatePhone(formData.phone);
-    if (phoneError) {
-      setError(phoneError);
-      return;
-    }
 
     try {
-      // Check if phone already exists
+      // Check if phone number already exists
       const phoneExists = await checkPhoneExists(formData.phone);
       if (phoneExists) {
         setError('This phone number is already registered');
         return;
       }
 
-      // Only proceed with signup if phone check passes
-      const result = await signup(
+      // Prepare user data according to UserData type
+      const userData: Partial<UserData> = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        preferences: {
+          emailUpdates: formData.emailUpdates,
+          smsUpdates: formData.smsUpdates,
+        },
+      };
+
+      // Use signup from AuthContext
+      await signup(
         formData.email,
         formData.password,
         formData.firstName,
         formData.lastName,
-        {
-          phone: formData.phone,
-          preferences: {
-            emailUpdates: formData.emailUpdates,
-            smsUpdates: formData.smsUpdates
-          }
-        }
+        userData
       );
 
-      // Only navigate if signup was successful
-      if (result) {
-        navigate('/select-user-type');
-      }
-    } catch (err: any) {
-      const errorMessage = (() => {
-        if (err.message?.includes('Error checking phone number')) {
-          return 'Unable to verify phone number. Please try again.';
-        }
-        switch (err.code) {
-          case 'auth/email-already-in-use':
-            return 'An account with this email already exists. Please try logging in instead.';
-          case 'auth/invalid-email':
-            return 'Please enter a valid email address.';
-          case 'auth/operation-not-allowed':
-            return 'Account creation is currently disabled. Please try again later.';
-          case 'auth/weak-password':
-            return 'This password is too weak. Please choose a stronger password.';
-          default:
-            return `Something went wrong: ${err.message}`;
-        }
-      })();
-      
-      setError(errorMessage);
-      console.error('Signup error:', err);
-      return;
+      // Navigate to user type selection after successful signup
+      navigate('/select-user-type');
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      setError(error.message || 'An error occurred during signup');
     }
   };
 

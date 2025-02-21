@@ -159,6 +159,8 @@ const MaisonLanding = () => {
         <p className="text-gray-500 text-sm mt-8">
           Mia can make mistakes. Check important info.
         </p>
+
+
       </main>
     </div>
   );

@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from '../../context/AuthContext';
 
 const Login = () => {
   const { login, resetPassword, signInWithGoogle } = useAuth();
@@ -173,3 +176,79 @@ const Login = () => {
       </div>
     </div>
   );
+};
+
+export default Login;
+
+// Mock the AuthContext to simulate a logged-out user
+jest.mock('../../context/AuthContext', () => ({
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+  useAuth: () => ({
+    login: jest.fn(() => Promise.resolve()),
+    resetPassword: jest.fn(() => Promise.resolve()),
+    signInWithGoogle: jest.fn(() => Promise.resolve()),
+    user: null, // Simulate no user logged in
+    loading: false, // Simulate that loading is complete
+  }),
+}));
+
+describe('Login Component', () => {
+  it('renders login form', async () => {
+    render(
+      <AuthProvider>
+        <BrowserRouter>
+          <Login />
+        </BrowserRouter>
+      </AuthProvider>
+    );
+
+    // Wait for the form to render
+    const loginText = await screen.findByText(/login to maison/i);
+    expect(loginText).toBeInTheDocument();
+  });
+
+  it('handles email and password input', async () => {
+    render(
+      <AuthProvider>
+        <BrowserRouter>
+          <Login />
+        </BrowserRouter>
+      </AuthProvider>
+    );
+
+    // Wait for the inputs to render
+    const emailInput = await screen.findByPlaceholderText('Email');
+    const passwordInput = await screen.findByPlaceholderText('Password');
+
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+
+    expect(emailInput).toHaveValue('test@example.com');
+    expect(passwordInput).toHaveValue('password123');
+  });
+
+  it('handles form submission', async () => {
+    render(
+      <AuthProvider>
+        <BrowserRouter>
+          <Login />
+        </BrowserRouter>
+      </AuthProvider>
+    );
+
+    // Wait for the inputs and button to render
+    const emailInput = await screen.findByPlaceholderText('Email');
+    const passwordInput = await screen.findByPlaceholderText('Password');
+    const submitButton = await screen.findByText('Login');
+
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    fireEvent.click(submitButton);
+
+    // Add assertions for successful login behavior
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+  });
+});
+  

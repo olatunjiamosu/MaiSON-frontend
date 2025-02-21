@@ -1,3 +1,4 @@
+import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LandingPage from '../pages/LandingPage';
 import Login from '../pages/auth/Login';
@@ -8,7 +9,7 @@ import PublicRoute from './PublicRoute';
 import BuyerDashboard from '../pages/dashboard/BuyerDashboard';
 import SelectUserType from '../pages/auth/SelectUserType';
 import RegisterBuyer from '../pages/auth/RegisterBuyer';
-import RegisterSeller from '../pages/auth/RegisterSeller';
+import RegisterProperty from '../pages/auth/RegisterProperty';
 import PropertyChats from '../pages/dashboard/buyer-sections/PropertyChats';
 import SignUp from '../pages/auth/SignUp';
 import PropertyDetails from '../pages/property/PropertyDetails';
@@ -18,6 +19,7 @@ import PublicListings from '../pages/PublicListings';
 import FeaturesPage from '../pages/FeaturesPage';
 import AboutPage from '../pages/AboutPage';
 import ContactPage from '../pages/ContactPage';
+import SellerDashboard from '../pages/dashboard/SellerDashboard';
 
 // Add mock property data for testing
 const mockProperty = {
@@ -63,7 +65,7 @@ const AppRoutes = () => (
     <Route
       path="/login"
       element={
-        <PublicRoute>
+        <PublicRoute protected>
           <Login />
         </PublicRoute>
       }
@@ -71,7 +73,7 @@ const AppRoutes = () => (
     <Route
       path="/sign-up"
       element={
-        <PublicRoute>
+        <PublicRoute alwaysAccessible>
           <SignUp />
         </PublicRoute>
       }
@@ -103,10 +105,10 @@ const AppRoutes = () => (
       }
     />
     <Route
-      path="/register-seller"
+      path="/register-property"
       element={
         <PrivateRoute>
-          <RegisterSeller />
+          <RegisterProperty />
         </PrivateRoute>
       }
     />
@@ -165,6 +167,15 @@ const AppRoutes = () => (
     <Route
       path="/property/:id"
       element={<PropertyDetails property={mockProperty} />}
+    />
+
+    <Route
+      path="/seller-dashboard/*"
+      element={
+        <PrivateRoute>
+          <SellerDashboard />
+        </PrivateRoute>
+      }
     />
   </Routes>
 );

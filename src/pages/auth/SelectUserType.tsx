@@ -1,9 +1,35 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Home, Image, Users } from 'lucide-react';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
+import { useAuth } from '../../context/AuthContext';
 
 const SelectUserType = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleUserTypeSelection = async (userType: 'buyer' | 'seller' | 'both') => {
+    try {
+      if (!user) return;
+      
+      // Update user document in Firestore
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        userType: userType,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Navigate to register-property for both seller and both options
+      if (userType === 'seller' || userType === 'both') {
+        navigate('/register-property');
+      } else {
+        navigate('/register-buyer');
+      }
+    } catch (error) {
+      console.error('Error updating user type:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -40,7 +66,7 @@ const SelectUserType = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl w-full">
           {/* Buyer Option */}
           <button 
-            onClick={() => navigate('/register-buyer')}
+            onClick={() => handleUserTypeSelection('buyer')}
             className="flex flex-col items-center p-10 border-2 border-emerald-600 rounded-xl hover:bg-emerald-50 hover:-translate-y-1 transition-all duration-300"
           >
             <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center mb-6">
@@ -54,7 +80,7 @@ const SelectUserType = () => {
 
           {/* Seller Option */}
           <button 
-            onClick={() => navigate('/register-seller')}
+            onClick={() => handleUserTypeSelection('seller')}
             className="flex flex-col items-center p-10 border-2 border-blue-600 rounded-xl hover:bg-blue-50 hover:-translate-y-1 transition-all duration-300"
           >
             <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-6">
@@ -68,7 +94,7 @@ const SelectUserType = () => {
 
           {/* Both Option */}
           <button 
-            onClick={() => navigate('/register-both')}
+            onClick={() => handleUserTypeSelection('both')}
             className="flex flex-col items-center p-10 border-2 border-purple-600 rounded-xl hover:bg-purple-50 hover:-translate-y-1 transition-all duration-300"
           >
             <div className="w-20 h-20 rounded-full bg-purple-50 flex items-center justify-center mb-6">
