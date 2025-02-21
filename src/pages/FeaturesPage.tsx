@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, Brain, Clock, Shield, Home, MessageCircle, Calendar, FileText, BarChart, Scale, TrendingUp, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navigation from '../components/layout/Navigation';
+import PersistentChat from '../components/chat/PersistentChat';
 
 const FeaturesPage = () => {
   const features = [
@@ -53,14 +54,14 @@ const FeaturesPage = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="pb-24">
       <Navigation />
 
       {/* Hero Section */}
       <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4">
           <h1 className="text-4xl font-bold text-center mb-8">
-            Revolutionising Buying and Selling Property with AI
+            Revolutionising Property with AI
           </h1>
           <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto">
             Discover how MaiSON's innovative features make property hunting smarter, faster, and more efficient.
@@ -102,6 +103,8 @@ const FeaturesPage = () => {
           </Link>
         </div>
       </div>
+
+      <PersistentChat />
     </div>
   );
 };

@@ -1,0 +1,12 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- House outline -->
+  <path d="M28 14L16 4L4 14V28H28V14Z" 
+        stroke="#059669" 
+        stroke-width="2" 
+        fill="none"/>
+  <!-- Door -->
+  <path d="M13 28V18H19V28" 
+        stroke="#059669" 
+        stroke-width="2" 
+        fill="none"/>
+</svg> 

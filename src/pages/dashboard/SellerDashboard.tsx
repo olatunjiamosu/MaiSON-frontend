@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import PersistentChat from '../../components/chat/PersistentChat';
 
 // Add interfaces for the components
 interface NavItemProps {
@@ -45,6 +46,7 @@ const SellerDashboard = () => {
   const [activeSection, setActiveSection] = useState('properties');
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMessagesSection = location.pathname.includes('/seller-dashboard/messages');
 
   // Mock user data
   const userData = {
@@ -94,6 +96,11 @@ const SellerDashboard = () => {
     },
   ];
 
+  const handleLogoClick = () => {
+    // Navigate to landing page
+    navigate('/');
+  };
+
   const renderActiveSection = () => {
     switch (activeSection) {
       case 'properties':
@@ -119,7 +126,10 @@ const SellerDashboard = () => {
       >
         {/* Logo & Menu Toggle */}
         <div className="p-4 border-b flex items-center justify-between">
-          <div className="flex items-center space-x-2 cursor-pointer">
+          <div
+            className="flex items-center space-x-2 cursor-pointer"
+            onClick={handleLogoClick}
+          >
             <Home className="h-6 w-6 text-emerald-600" />
             <span className="text-xl font-bold tracking-tight">
               <span>M</span>
@@ -232,6 +242,8 @@ const SellerDashboard = () => {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      <PersistentChat hide={isMessagesSection} />
     </div>
   );
 };

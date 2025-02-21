@@ -14,6 +14,7 @@ import {
   Handshake,
 } from 'lucide-react';
 import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
+import PersistentChat from '../../components/chat/PersistentChat';
 
 // Import Sections (from `buyer-sections`)
 import ListingsSection from './buyer-sections/ListingsSection';
@@ -88,6 +89,9 @@ const BuyerDashboard = () => {
   // Add console.log to debug
   console.log('Rendering BuyerDashboard');
   console.log('Mock Properties:', mockProperties);
+
+  const isMessagesSection = location.pathname.includes('/chats') || 
+                           location.pathname.includes('/messages');
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -219,7 +223,7 @@ const BuyerDashboard = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden pb-24 relative">
         <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-7xl mx-auto">
             <Routes>
@@ -235,6 +239,7 @@ const BuyerDashboard = () => {
             </Routes>
           </div>
         </main>
+        <PersistentChat hide={isMessagesSection} isDashboard={true} />
       </div>
 
       {/* Mobile Overlay */}

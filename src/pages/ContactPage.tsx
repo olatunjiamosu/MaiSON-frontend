@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Navigation from '../components/layout/Navigation';
 import { Mail, Phone, MapPin } from 'lucide-react';
+import PersistentChat from '../components/chat/PersistentChat';
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -38,7 +39,7 @@ const ContactPage = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pb-24">
       <Navigation />
 
       <main className="flex-1 bg-white">
@@ -138,6 +139,7 @@ const ContactPage = () => {
           </form>
         </div>
       </main>
+      <PersistentChat />
     </div>
   );
 };

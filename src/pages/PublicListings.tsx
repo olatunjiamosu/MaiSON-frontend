@@ -3,6 +3,7 @@ import { Search, Home, Bed, Bath, Square, SlidersHorizontal } from 'lucide-react
 import { useNavigate } from 'react-router-dom';
 import Navigation from '../components/layout/Navigation';
 import FilterModal from '../components/search/FilterModal';
+import PersistentChat from '../components/chat/PersistentChat';
 
 // Use the same property interface as your ListingsSection
 interface Property {
@@ -84,7 +85,7 @@ const PublicListings = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pb-24">
       <Navigation />
 
       {/* Main Content */}
@@ -173,6 +174,8 @@ const PublicListings = () => {
         onApply={handleApplyFilters}
         currentFilters={filters}
       />
+
+      <PersistentChat isDashboard={false} />
     </div>
   );
 };

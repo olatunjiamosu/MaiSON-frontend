@@ -1,6 +1,7 @@
 import React from 'react';
 import Navigation from '../components/layout/Navigation';
 import { Building2, Users2, Trophy, Target } from 'lucide-react';
+import PersistentChat from '../components/chat/PersistentChat';
 
 const AboutPage = () => {
   const stats = [
@@ -35,120 +36,129 @@ const AboutPage = () => {
 
   const teamMembers = [
     {
-      name: 'Team Member 1',
-      role: 'CEO & Founder',
-      image: 'https://via.placeholder.com/150',
-      description: 'Brief description about the team member and their background.'
+      name: "John Smith",
+      role: "CEO & Founder",
+      image: "/team/john.jpg"
     },
     {
-      name: 'Team Member 2',
-      role: 'CTO',
-      image: 'https://via.placeholder.com/150',
-      description: 'Brief description about the team member and their background.'
+      name: "Sarah Johnson",
+      role: "Head of Technology",
+      image: "/team/sarah.jpg"
     },
     {
-      name: 'Team Member 3',
-      role: 'Head of AI',
-      image: 'https://via.placeholder.com/150',
-      description: 'Brief description about the team member and their background.'
+      name: "Michael Chen",
+      role: "Lead AI Engineer",
+      image: "/team/michael.jpg"
     },
     {
-      name: 'Team Member 4',
-      role: 'Lead Developer',
-      image: 'https://via.placeholder.com/150',
-      description: 'Brief description about the team member and their background.'
+      name: "Emma Wilson",
+      role: "Property Director",
+      image: "/team/emma.jpg"
+    },
+    {
+      name: "David Thompson",
+      role: "Head of Operations",
+      image: "/team/david.jpg"
     }
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navigation />
+    <div className="pb-24">
+      <div className="min-h-screen flex flex-col">
+        <Navigation />
 
-      <main className="flex-1 bg-white">
-        {/* Hero Section */}
-        <div className="py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <h1 className="text-4xl font-bold text-center mb-6">
-              About MaiSON
-            </h1>
-            <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto">
-              We're transforming the property market through artificial intelligence,
-              making buying and selling homes simpler, faster, and more transparent.
-            </p>
-          </div>
-        </div>
-
-        {/* Stats Section */}
-        <div className="bg-gray-50 py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="text-4xl font-bold text-emerald-600 mb-2">
-                    {stat.number}
-                  </div>
-                  <div className="text-gray-600">{stat.label}</div>
-                </div>
-              ))}
+        <main className="flex-1 bg-white">
+          {/* Hero Section */}
+          <div className="py-16">
+            <div className="max-w-7xl mx-auto px-4">
+              <h1 className="text-4xl font-bold text-center mb-6">
+                About MaiSON
+              </h1>
+              <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto">
+                We're transforming the property market through artificial intelligence,
+                making buying and selling homes simpler, faster, and more transparent.
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* Values Section */}
-        <div className="py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">Our Values</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {values.map((value, index) => (
-                <div key={index} className="text-center">
-                  <div className="flex justify-center mb-4">
-                    {value.icon}
+          {/* Stats Section */}
+          <div className="bg-gray-50 py-16">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                {stats.map((stat, index) => (
+                  <div key={index} className="text-center">
+                    <div className="text-4xl font-bold text-emerald-600 mb-2">
+                      {stat.number}
+                    </div>
+                    <div className="text-gray-600">{stat.label}</div>
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">{value.title}</h3>
-                  <p className="text-gray-600">{value.description}</p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Team Section */}
-        <div className="py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-4">Our Team</h2>
-            <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto mb-12">
-              Meet the people behind MaiSON who are revolutionizing the property market.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {teamMembers.map((member, index) => (
-                <div key={index} className="text-center">
-                  <div className="mb-4">
-                    <img
-                      src={member.image}
-                      alt={member.name}
-                      className="w-32 h-32 rounded-full mx-auto object-cover"
-                    />
+          {/* Values Section */}
+          <div className="py-16">
+            <div className="max-w-7xl mx-auto px-4">
+              <h2 className="text-3xl font-bold text-center mb-12">Our Values</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {values.map((value, index) => (
+                  <div key={index} className="text-center">
+                    <div className="flex justify-center mb-4">
+                      {value.icon}
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">{value.title}</h3>
+                    <p className="text-gray-600">{value.description}</p>
                   </div>
-                  <h3 className="text-xl font-semibold mb-1">{member.name}</h3>
-                  <p className="text-emerald-600 font-medium mb-2">{member.role}</p>
-                  <p className="text-gray-600 text-sm">{member.description}</p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Mission Section */}
-        <div className="bg-gray-50 py-16">
-          <div className="max-w-7xl mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              To make property transactions intelligent, efficient, and accessible to everyone
-              through innovative technology and exceptional service.
-            </p>
+          {/* Team Section - Updated Grid */}
+          <section className="py-16 bg-white">
+            <div className="max-w-7xl mx-auto px-4">
+              <h2 className="text-3xl font-bold text-center mb-12">Meet Our Team</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {teamMembers.slice(0, 3).map((member) => (
+                  <div 
+                    key={member.name}
+                    className="bg-white p-6 rounded-lg shadow-sm border hover:shadow-md transition-shadow"
+                  >
+                    <div className="w-32 h-32 mx-auto rounded-full bg-gray-200 mb-4" />
+                    <h3 className="text-xl font-semibold text-center">{member.name}</h3>
+                    <p className="text-gray-600 text-center">{member.role}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 md:px-[16.666%]">
+                {teamMembers.slice(3).map((member) => (
+                  <div 
+                    key={member.name}
+                    className="bg-white p-6 rounded-lg shadow-sm border hover:shadow-md transition-shadow"
+                  >
+                    <div className="w-32 h-32 mx-auto rounded-full bg-gray-200 mb-4" />
+                    <h3 className="text-xl font-semibold text-center">{member.name}</h3>
+                    <p className="text-gray-600 text-center">{member.role}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Mission Section */}
+          <div className="bg-gray-50 py-16">
+            <div className="max-w-7xl mx-auto px-4 text-center">
+              <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                To make property transactions intelligent, efficient, and accessible to everyone
+                through innovative technology and exceptional service.
+              </p>
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+        <PersistentChat />
+      </div>
     </div>
   );
 };
