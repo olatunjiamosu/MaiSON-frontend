@@ -14,8 +14,9 @@ const firebaseConfig = {
 
 // Add this console log (remove in production)
 console.log('Firebase Config:', {
-  ...firebaseConfig,
-  apiKey: firebaseConfig.apiKey ? 'exists' : 'missing'
+  apiKey: firebaseConfig.apiKey?.substring(0, 5) + '...',  // Show first 5 chars only
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
 });
 
 const app = initializeApp(firebaseConfig);
