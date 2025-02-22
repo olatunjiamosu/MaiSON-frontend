@@ -2,13 +2,29 @@ import React, { useState } from 'react';
 import { Home, CircleUserRound, Send, Search, Trash2, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+interface Message {
+  id: number;
+  sender: 'user' | 'ai';
+  content: string;
+  timestamp: string;
+}
+
+interface PropertyChat {
+  id: number;
+  address: string;
+  price: string;
+  lastMessage: string;
+  unread: number;
+  messages: Message[];
+}
+
 const PropertyChats = () => {
   const navigate = useNavigate();
-  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [selectedProperty, setSelectedProperty] = useState<PropertyChat | null>(null);
   const [message, setMessage] = useState('');
 
   // Example property chats
-  const propertyChats = [
+  const propertyChats: PropertyChat[] = [
     {
       id: 1,
       address: '123 Park Avenue',
@@ -18,7 +34,7 @@ const PropertyChats = () => {
       messages: [
         {
           id: 1,
-          sender: 'ai',
+          sender: 'ai' as const,
           content: 'Hello! I can help you with information about 123 Park Avenue. What would you like to know?',
           timestamp: '10:30 AM'
         },
@@ -66,9 +82,9 @@ const PropertyChats = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-2rem)] max-h-[800px]">
+    <div className="flex h-full">
       {/* Property List Sidebar */}
-      <div className="w-80 border-r bg-white">
+      <div className="w-80 border-r bg-white flex flex-col">
         <div className="p-4 border-b">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -79,8 +95,7 @@ const PropertyChats = () => {
             />
           </div>
         </div>
-
-        <div className="overflow-y-auto h-full">
+        <div className="flex-1 overflow-y-auto">
           {propertyChats.map((property) => (
             <button
               key={property.id}
@@ -112,11 +127,11 @@ const PropertyChats = () => {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-gray-50">
+      <div className="flex-1 flex flex-col bg-white">
         {selectedProperty ? (
           <>
             {/* Enhanced Chat Header with Actions */}
-            <div className="p-4 bg-white border-b">
+            <div className="shrink-0 p-4 bg-white border-b">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Home className="h-5 w-5 text-emerald-600" />
@@ -174,7 +189,7 @@ const PropertyChats = () => {
             </div>
 
             {/* Message Input */}
-            <div className="p-4 bg-white border-t">
+            <div className="shrink-0 p-4 bg-white border-t">
               <div className="flex space-x-2">
                 <input
                   value={message}
@@ -183,7 +198,6 @@ const PropertyChats = () => {
                   className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
                 <button 
-                  onClick={() => {/* handle send */}}
                   className="bg-emerald-600 text-white p-2 rounded-lg hover:bg-emerald-700 transition-colors"
                 >
                   <Send className="h-4 w-4" />

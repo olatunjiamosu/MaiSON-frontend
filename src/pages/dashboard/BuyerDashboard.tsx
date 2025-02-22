@@ -12,20 +12,29 @@ import {
   Menu,
   List,
   Handshake,
+  X,
 } from 'lucide-react';
 import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
 import PersistentChat from '../../components/chat/PersistentChat';
 
 // Import Sections (from `buyer-sections`)
 import ListingsSection from './buyer-sections/ListingsSection';
-import MatchesSection from './buyer-sections/MatchesSection';
+//import MatchesSection from './buyer-sections/MatchesSection';
 import SavedPropertiesSection from './buyer-sections/SavedPropertiesSection';
 import ViewingsSection from './buyer-sections/ViewingsSection';
 import ApplicationsSection from './buyer-sections/ApplicationsSection';
 import PropertyChats from './buyer-sections/PropertyChats';
 import NotificationsSection from './buyer-sections/NotificationsSection';
-import PreferencesSection from './buyer-sections/PreferencesSection';
+//import PreferencesSection from './buyer-sections/PreferencesSection';
 import DocumentsSection from './buyer-sections/DocumentsSection';
+
+// Add this interface near the top
+interface ChatHistory {
+  id: string;
+  question: string;
+  timestamp: string;
+  isActive?: boolean;
+}
 
 const mockProperties = [
   {
@@ -58,6 +67,28 @@ const BuyerDashboard = () => {
     name: 'John Doe',
     email: 'john.doe@example.com',
   };
+
+  // Add this state
+  const [chatHistory] = useState<ChatHistory[]>([
+    {
+      id: '1',
+      question: "What areas in London have the best schools?",
+      timestamp: "2 days ago"
+    },
+    {
+      id: '2',
+      question: "What documents do I need for a mortgage application?",
+      timestamp: "1 day ago"
+    },
+    {
+      id: '3',
+      question: "Average house prices in Greenwich?",
+      timestamp: "5 hours ago"
+    }
+  ]);
+
+  // Add state for selected chat
+  const [selectedChat, setSelectedChat] = useState<ChatHistory | null>(null);
 
   // Update active section based on location
   useEffect(() => {
@@ -129,7 +160,7 @@ const BuyerDashboard = () => {
           </button>
         </div>
 
-        {/* Navigation Links (Updated Order) */}
+        {/* Navigation Links */}
         <nav className="p-4 space-y-1">
           <NavItem
             icon={<List />}
@@ -138,13 +169,13 @@ const BuyerDashboard = () => {
             onClick={() => setActiveSection('listings')}
             path="/buyer-dashboard"
           />
-          <NavItem
+          {/* <NavItem
             icon={<Handshake />}
             label="Property Matches"
             active={activeSection === 'matches'}
             onClick={() => setActiveSection('matches')}
             path="/buyer-dashboard/matches"
-          />
+          /> */}
           <NavItem
             icon={<Heart />}
             label="Saved Properties"
@@ -186,13 +217,13 @@ const BuyerDashboard = () => {
             onClick={() => setActiveSection('notifications')}
             path="/buyer-dashboard/notifications"
           />
-          <NavItem
+          {/* <NavItem
             icon={<Settings />}
             label="Preferences"
             active={activeSection === 'preferences'}
             onClick={() => setActiveSection('preferences')}
             path="/buyer-dashboard/preferences"
-          />
+          /> */}
           <NavItem
             icon={<FileText />}
             label="Documents"
@@ -201,6 +232,30 @@ const BuyerDashboard = () => {
             path="/buyer-dashboard/documents"
           />
         </nav>
+
+        {/* Mia Chat History */}
+        <div className="px-4 py-3 border-t">
+          <h3 className="text-sm font-medium text-gray-600 mb-2">Chats with Mia</h3>
+          <div className="space-y-2 max-h-[200px] overflow-y-auto">
+            {chatHistory.map((chat) => (
+              <button
+                key={chat.id}
+                onClick={() => setSelectedChat(chat)}
+                className="w-full text-left p-2 rounded-lg hover:bg-gray-50 group"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-5 h-5 mt-1 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <span className="text-xs font-medium text-emerald-700">M</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-900 truncate">{chat.question}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{chat.timestamp}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Profile Section */}
         <div className="absolute bottom-0 w-64 border-t p-4">
@@ -223,9 +278,15 @@ const BuyerDashboard = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden pb-24 relative">
-        <main className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-7xl mx-auto">
+      <div className={`flex-1 flex flex-col overflow-hidden ${
+        activeSection === 'messages' ? '' : 'pb-24'  // Only add padding when not in messages
+      } relative`}>
+        <main className={`flex-1 overflow-y-auto ${
+          activeSection === 'messages' ? 'p-0' : 'p-8'
+        }`}>
+          <div className={`${
+            activeSection === 'messages' ? 'w-full h-full' : 'max-w-7xl mx-auto'
+          }`}>
             <Routes>
               <Route
                 index
@@ -235,6 +296,7 @@ const BuyerDashboard = () => {
               <Route path="viewings" element={<ViewingsSection />} />
               <Route path="messages" element={<PropertyChats />} />
               <Route path="applications" element={<ApplicationsSection />} />
+              <Route path="notifications" element={<NotificationsSection />} />
               <Route path="documents" element={<DocumentsSection />} />
             </Routes>
           </div>
@@ -248,6 +310,80 @@ const BuyerDashboard = () => {
           className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-10"
           onClick={() => setSidebarOpen(false)}
         />
+      )}
+
+      {/* Selected Chat Modal */}
+      {selectedChat && (
+        <div 
+          className="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+          onClick={() => setSelectedChat(null)}
+        >
+          <div 
+            className="bg-white rounded-xl w-[800px] max-h-[80vh] flex flex-col ml-32"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header with title and close button */}
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-xl font-semibold">{selectedChat.question}</h2>
+              <button 
+                onClick={() => setSelectedChat(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Mia Profile Header */}
+            <div className="p-4 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                <span className="text-emerald-700 font-semibold">M</span>
+              </div>
+              <div>
+                <h3 className="font-semibold">Mia</h3>
+                <p className="text-sm text-gray-500">AI Assistant</p>
+              </div>
+            </div>
+
+            {/* Chat Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex justify-end">
+                <div className="bg-emerald-600 text-white rounded-lg p-3 max-w-[80%]">
+                  {selectedChat.question}
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <span className="text-emerald-700 font-semibold">M</span>
+                </div>
+                <div className="bg-gray-100 rounded-lg p-3 max-w-[80%]">
+                  Sorry, I encountered an error. Please try again.
+                </div>
+              </div>
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 border-t">
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Ask Mia about anything..."
+                  className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <button className="p-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path 
+                      d="M22 2L2 9L11 13L22 2ZM22 2L15 22L11 13L22 2Z" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
