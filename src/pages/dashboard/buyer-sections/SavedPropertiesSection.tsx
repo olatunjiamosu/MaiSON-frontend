@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Grid, List, Search, PencilLine } from 'lucide-react';
 import PropertyCard from '../../../components/property/PropertyCard';
-import { toast, Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 // Mock data (will be replaced with API call)
 const mockSavedProperties = [
@@ -62,21 +62,20 @@ const SavedPropertiesSection = () => {
     console.log('Unsaving property:', propertyId);
 
     toast.success(
-      t => (
+      (toastData: { id: string }) => (
         <div className="flex items-center gap-4">
           <span>Property removed from saved</span>
           <button
             onClick={() => {
               console.log('Undoing unsave for:', propertyId);
-              toast.dismiss(t.id);
+              toast.dismiss(toastData.id);
             }}
             className="px-2 py-1 text-sm bg-white text-emerald-600 rounded-lg border border-emerald-600 hover:bg-emerald-50"
           >
             Undo
           </button>
         </div>
-      ),
-      { duration: 5000, position: 'bottom-right' }
+      )
     );
   };
 
@@ -292,8 +291,6 @@ const SavedPropertiesSection = () => {
           </div>
         ))}
       </div>
-
-      <Toaster />
     </div>
   );
 };

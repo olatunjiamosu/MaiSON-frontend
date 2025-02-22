@@ -134,8 +134,11 @@ const SignUp = () => {
       // Navigate to user type selection after successful signup
       navigate('/select-user-type');
     } catch (error: any) {
-      console.error('Signup error:', error);
-      setError(error.message || 'An error occurred during signup');
+      if (error.code === 'auth/email-already-in-use') {
+        setError('An account with this email already exists. Please try signing in or use a different email address.');
+      } else {
+        setError(error.message || 'An error occurred during signup');
+      }
     }
   };
 

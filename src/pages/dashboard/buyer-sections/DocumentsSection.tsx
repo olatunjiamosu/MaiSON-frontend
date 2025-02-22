@@ -230,11 +230,11 @@ const DocumentsSection = () => {
                       onClick={() => handleSpecificDocumentUpload(docType)}
                       className="p-4 hover:bg-gray-50 flex items-center justify-between cursor-pointer"
                     >
-                      <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-4">
                         <div className="p-2 bg-gray-100 rounded">
                           <File className="h-6 w-6 text-gray-600" />
                         </div>
-                        <div>
+                  <div>
                           <h4 className="text-sm font-medium text-gray-900">
                             {docType.name}
                             {docType.required && 
@@ -250,9 +250,9 @@ const DocumentsSection = () => {
                               </span>
                             </div>
                           )}
-                        </div>
-                      </div>
-
+                  </div>
+                </div>
+                
                       <div className="flex items-center gap-2">
                         {uploadedDoc ? (
                           <>
@@ -307,8 +307,8 @@ const DocumentsSection = () => {
                             Uploaded {new Date(document.uploadedAt).toLocaleDateString()}
                           </span>
                         </div>
-                      </div>
-                    </div>
+              </div>
+          </div>
 
                     <div className="flex items-center gap-2">
                       <button
@@ -331,8 +331,8 @@ const DocumentsSection = () => {
                       >
                         <Trash2 className="h-5 w-5" />
                       </button>
-                    </div>
-                  </div>
+              </div>
+              </div>
                 ))}
 
               {filteredDocuments.length === 0 && 
@@ -342,7 +342,7 @@ const DocumentsSection = () => {
                 <div className="text-center py-12">
                   <FolderOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500">No documents found</p>
-                </div>
+              </div>
               )}
             </div>
           </div>

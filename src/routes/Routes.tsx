@@ -8,7 +8,6 @@ import PrivateRoute from './PrivateRoute';
 import PublicRoute from './PublicRoute';
 import BuyerDashboard from '../pages/dashboard/BuyerDashboard';
 import SelectUserType from '../pages/auth/SelectUserType';
-import RegisterBuyer from '../pages/auth/RegisterBuyer';
 import RegisterProperty from '../pages/auth/RegisterProperty';
 import PropertyChats from '../pages/dashboard/buyer-sections/PropertyChats';
 import SignUp from '../pages/auth/SignUp';
@@ -20,6 +19,7 @@ import FeaturesPage from '../pages/FeaturesPage';
 import AboutPage from '../pages/AboutPage';
 import ContactPage from '../pages/ContactPage';
 import SellerDashboard from '../pages/dashboard/SellerDashboard';
+import RoleRoute from './RoleRoute';
 
 // Add mock property data for testing
 const mockProperty = {
@@ -53,127 +53,43 @@ The first floor offers four well-proportioned bedrooms and two modern bathrooms 
 
 const AppRoutes = () => (
   <Routes>
-    {/* Public Routes - Redirect Authenticated Users to Dashboard */}
-    <Route
-      path="/"
-      element={
-        <PublicRoute>
-          <LandingPage />
-        </PublicRoute>
-      }
-    />
-    <Route
-      path="/login"
-      element={
-        <PublicRoute protected>
-          <Login />
-        </PublicRoute>
-      }
-    />
-    <Route
-      path="/sign-up"
-      element={
-        <PublicRoute alwaysAccessible>
-          <SignUp />
-        </PublicRoute>
-      }
-    />
-    <Route
-      path="/verification"
-      element={
-        <PublicRoute>
-          <Verification />
-        </PublicRoute>
-      }
-    />
-    <Route
-      path="/reset-password"
-      element={
-        <PublicRoute>
-          <ResetPassword />
-        </PublicRoute>
-      }
-    />
+    {/* Public Routes */}
+    <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
+    <Route path="/features" element={<PublicRoute><FeaturesPage /></PublicRoute>} />
+    <Route path="/about" element={<PublicRoute><AboutPage /></PublicRoute>} />
+    <Route path="/listings" element={<PublicRoute><PublicListings /></PublicRoute>} />
+    <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+    <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+    <Route path="/contact" element={<PublicRoute><ContactPage /></PublicRoute>} />
 
-    {/* Protected Routes - Only accessible after authentication */}
-    <Route
-      path="/select-user-type"
+    {/* Protected Routes with Role Check */}
+    <Route 
+      path="/buyer-dashboard/*" 
       element={
         <PrivateRoute>
-          <SelectUserType />
-        </PrivateRoute>
-      }
-    />
-    <Route
-      path="/register-property"
-      element={
-        <PrivateRoute>
-          <RegisterProperty />
-        </PrivateRoute>
-      }
-    />
-    <Route
-      path="/register-buyer"
-      element={
-        <PrivateRoute>
-          <RegisterBuyer />
-        </PrivateRoute>
-      }
-    />
-    <Route
-      path="/listings"
-      element={
-        <PublicRoute>
-          <PublicListings />
-        </PublicRoute>
-      }
-    />
-    <Route
-      path="/features"
-      element={
-        <PublicRoute>
-          <FeaturesPage />
-        </PublicRoute>
-      }
-    />
-    <Route
-      path="/about"
-      element={
-        <PublicRoute>
-          <AboutPage />
-        </PublicRoute>
-      }
-    />
-    <Route
-      path="/contact"
-      element={
-        <PublicRoute>
-          <ContactPage />
-        </PublicRoute>
-      }
-    />
-
-    {/* Protected Routes */}
-    <Route
-      path="/buyer-dashboard/*"
-      element={
-        <PrivateRoute>
-          <BuyerDashboard />
+          <RoleRoute allowedRoles={['buyer', 'both']}>
+            <BuyerDashboard />
+          </RoleRoute>
         </PrivateRoute>
       }
     />
 
-    {/* Property details route */}
-    <Route
-      path="/property/:id"
-      element={<PropertyDetails property={mockProperty} />}
-    />
-
-    <Route
-      path="/seller-dashboard/*"
+    <Route 
+      path="/seller-dashboard/*" 
       element={
         <PrivateRoute>
-          <SellerDashboard />
+          <RoleRoute allowedRoles={['seller', 'both']}>
+            <SellerDashboard />
+          </RoleRoute>
+        </PrivateRoute>
+      }
+    />
+
+    <Route 
+      path="/property/:id" 
+      element={
+        <PrivateRoute>
+          <PropertyDetails />
         </PrivateRoute>
       }
     />

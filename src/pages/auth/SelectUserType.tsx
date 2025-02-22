@@ -24,7 +24,7 @@ const SelectUserType = () => {
       if (userType === 'seller' || userType === 'both') {
         navigate('/register-property');
       } else {
-        navigate('/register-buyer');
+        navigate('/buyer-dashboard');
       }
     } catch (error) {
       console.error('Error updating user type:', error);
