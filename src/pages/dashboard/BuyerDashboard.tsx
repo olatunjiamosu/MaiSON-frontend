@@ -235,7 +235,7 @@ const BuyerDashboard = () => {
 
         {/* Mia Chat History */}
         <div className="px-4 py-3 border-t">
-          <h3 className="text-sm font-medium text-gray-600 mb-2">Chats with Mia</h3>
+          <h3 className="text-sm font-medium text-gray-600 mb-2">Previous Chats</h3>
           <div className="space-y-2 max-h-[200px] overflow-y-auto">
             {chatHistory.map((chat) => (
               <button
@@ -315,11 +315,11 @@ const BuyerDashboard = () => {
       {/* Selected Chat Modal */}
       {selectedChat && (
         <div 
-          className="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
           onClick={() => setSelectedChat(null)}
         >
           <div 
-            className="bg-white rounded-xl w-[800px] max-h-[80vh] flex flex-col ml-32"
+            className="bg-white rounded-xl w-[800px] max-h-[80vh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             {/* Header with title and close button */}

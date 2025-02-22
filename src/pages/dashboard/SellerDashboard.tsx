@@ -16,10 +16,22 @@ import {
   Search,
   Filter,
   ArrowUpRight,
+  X,
+  TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Routes, Route } from 'react-router-dom';
 import PersistentChat from '../../components/chat/PersistentChat';
+// Import all section components
+import MyPropertiesSection from './seller-sections/ListingsManagementSection';
+import AddPropertySection from './seller-sections/AddPropertySection';
+import OffersSection from './seller-sections/OffersSection';
+import ViewingsSection from './seller-sections/ViewingRequestsSection';
+//import MessagesSection from './seller-sections/PropertyChats';
+import AnalyticsSection from './seller-sections/AnalyticsSection';
+import MarketInsightsSection from './seller-sections/MarketInsightsSection';
+import NotificationsSection from './seller-sections/NotificationsSection';
+import DocumentsSection from './seller-sections/DocumentsSection';
 
 // Add interfaces for the components
 interface NavItemProps {
@@ -27,6 +39,7 @@ interface NavItemProps {
   label: string;
   active: boolean;
   onClick: () => void;
+  path: string;
 }
 
 interface Property {
@@ -34,11 +47,26 @@ interface Property {
   status: 'active' | 'pending' | 'sold' | 'withdrawn';
   image: string;
   price: string;
-  address: string;
+  road: string;
+  city: string;
+  postcode: string;
+  beds: number;
+  baths: number;
+  reception: number;
+  sqft: number;
+  propertyType: string;
+  epcRating: string;
   viewings: number;
   favorites: number;
   inquiries: number;
-  // Add other property fields as needed
+  dateAdded: string;
+}
+
+interface ChatHistory {
+  id: string;
+  question: string;
+  timestamp: string;
+  isActive?: boolean;
 }
 
 const SellerDashboard = () => {
@@ -69,7 +97,7 @@ const SellerDashboard = () => {
       sqft: 1200,
       propertyType: 'Terraced',
       epcRating: 'C',
-      status: 'active',
+      status: 'active' as const,
       dateAdded: '2023-05-15',
       viewings: 12,
       favorites: 8,
@@ -88,13 +116,32 @@ const SellerDashboard = () => {
       sqft: 1050,
       propertyType: 'Flat',
       epcRating: 'B',
-      status: 'pending',
+      status: 'pending' as const,
       dateAdded: '2023-04-20',
       viewings: 18,
       favorites: 15,
       inquiries: 5,
     },
   ];
+
+  const [chatHistory] = useState<ChatHistory[]>([
+    {
+      id: '1',
+      question: "What's the average selling time in this area?",
+      timestamp: "2 days ago"
+    },
+    {
+      id: '2',
+      question: "How should I price my property?",
+      timestamp: "1 day ago"
+    },
+    {
+      id: '3',
+      question: "What documents do I need for listing?",
+      timestamp: "5 hours ago"
+    }
+  ]);
+  const [selectedChat, setSelectedChat] = useState<ChatHistory | null>(null);
 
   const handleLogoClick = () => {
     // Navigate to landing page
@@ -152,62 +199,95 @@ const SellerDashboard = () => {
             label="My Properties"
             active={activeSection === 'properties'}
             onClick={() => setActiveSection('properties')}
+            path="/seller-dashboard"
           />
           <NavItem
             icon={<Plus />}
             label="Add Property"
             active={activeSection === 'add-property'}
             onClick={() => setActiveSection('add-property')}
+            path="/seller-dashboard/add-property"
           />
           <NavItem
-            icon={<List />}
-            label="Inquiries"
-            active={activeSection === 'inquiries'}
-            onClick={() => setActiveSection('inquiries')}
+            icon={<DollarSign />}
+            label="Offers"
+            active={activeSection === 'offers'}
+            onClick={() => setActiveSection('offers')}
+            path="/seller-dashboard/offers"
           />
           <NavItem
             icon={<Calendar />}
             label="Viewings"
             active={activeSection === 'viewings'}
             onClick={() => setActiveSection('viewings')}
+            path="/seller-dashboard/viewings"
           />
-          <NavItem
+          {/* <NavItem
             icon={<MessageCircle />}
             label="Messages"
             active={activeSection === 'messages'}
             onClick={() => setActiveSection('messages')}
-          />
+            path="/seller-dashboard/messages"
+          /> */}
           <NavItem
             icon={<BarChart4 />}
             label="Analytics"
             active={activeSection === 'analytics'}
             onClick={() => setActiveSection('analytics')}
+            path="/seller-dashboard/analytics"
           />
           <NavItem
-            icon={<DollarSign />}
+            icon={<TrendingUp />}
             label="Market Insights"
             active={activeSection === 'market-insights'}
             onClick={() => setActiveSection('market-insights')}
+            path="/seller-dashboard/market-insights"
           />
           <NavItem
             icon={<Bell />}
             label="Notifications"
             active={activeSection === 'notifications'}
             onClick={() => setActiveSection('notifications')}
+            path="/seller-dashboard/notifications"
           />
-          <NavItem
+          {/* <NavItem
             icon={<Settings />}
             label="Preferences"
             active={activeSection === 'preferences'}
             onClick={() => setActiveSection('preferences')}
-          />
+          /> */}
           <NavItem
             icon={<FileText />}
             label="Documents"
             active={activeSection === 'documents'}
             onClick={() => setActiveSection('documents')}
+            path="/seller-dashboard/documents"
           />
         </nav>
+
+        {/* Previous Chats */}
+        <div className="px-4 py-3 border-t">
+          <h3 className="text-sm font-medium text-gray-600 mb-2">Previous Chats</h3>
+          <div className="space-y-2 max-h-[200px] overflow-y-auto">
+            {chatHistory.map((chat) => (
+              <button
+                key={chat.id}
+                onClick={() => setSelectedChat(chat)}
+                className="w-full text-left p-2 rounded-lg hover:bg-gray-50 group"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-5 h-5 mt-1 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <span className="text-xs font-medium text-emerald-700">M</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-900 truncate">{chat.question}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{chat.timestamp}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Profile Section */}
         <div className="absolute bottom-0 w-full border-t p-4">
@@ -227,12 +307,28 @@ const SellerDashboard = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-7xl mx-auto">
-            {renderActiveSection()}
+      <div className={`flex-1 flex flex-col overflow-hidden ${
+        activeSection === 'messages' ? '' : 'pb-24'  // Only add padding when not in messages
+      } relative`}>
+        <main className={`flex-1 overflow-y-auto ${
+          activeSection === 'messages' ? 'p-0' : 'p-8'
+        }`}>
+          <div className={`${
+            activeSection === 'messages' ? 'w-full h-full' : 'max-w-7xl mx-auto'
+          }`}>
+            <Routes>
+              <Route index element={<MyPropertiesSection />} />
+              <Route path="add-property" element={<AddPropertySection />} />
+              <Route path="offers" element={<OffersSection />} />
+              <Route path="viewings" element={<ViewingsSection />} />
+              <Route path="analytics" element={<AnalyticsSection />} />
+              <Route path="market-insights" element={<MarketInsightsSection />} />
+              <Route path="notifications" element={<NotificationsSection />} />
+              <Route path="documents" element={<DocumentsSection />} />
+            </Routes>
           </div>
         </main>
+        <PersistentChat hide={isMessagesSection} isDashboard={true} />
       </div>
 
       {/* Mobile Overlay */}
@@ -243,16 +339,95 @@ const SellerDashboard = () => {
         />
       )}
 
-      <PersistentChat hide={isMessagesSection} />
+      {/* Selected Chat Modal */}
+      {selectedChat && (
+        <div 
+          className="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+          onClick={() => setSelectedChat(null)}
+        >
+          <div 
+            className="bg-white rounded-xl w-[800px] max-h-[80vh] flex flex-col ml-32"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header with title and close button */}
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-xl font-semibold">{selectedChat.question}</h2>
+              <button 
+                onClick={() => setSelectedChat(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Mia Profile Header */}
+            <div className="p-4 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                <span className="text-emerald-700 font-semibold">M</span>
+              </div>
+              <div>
+                <h3 className="font-semibold">Mia</h3>
+                <p className="text-sm text-gray-500">AI Assistant</p>
+              </div>
+            </div>
+
+            {/* Chat Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex justify-end">
+                <div className="bg-emerald-600 text-white rounded-lg p-3 max-w-[80%]">
+                  {selectedChat.question}
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <span className="text-emerald-700 font-semibold">M</span>
+                </div>
+                <div className="bg-gray-100 rounded-lg p-3 max-w-[80%]">
+                  Sorry, I encountered an error. Please try again.
+                </div>
+              </div>
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 border-t">
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Ask Mia about anything..."
+                  className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <button className="p-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path 
+                      d="M22 2L2 9L11 13L22 2ZM22 2L15 22L11 13L22 2Z" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // NavItem component
-const NavItem: React.FC<NavItemProps> = ({ icon, label, active, onClick }) => {
+const NavItem: React.FC<NavItemProps> = ({ icon, label, active, onClick, path }) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(path);
+    onClick();
+  };
+
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
         active
           ? 'bg-emerald-50 text-emerald-600'

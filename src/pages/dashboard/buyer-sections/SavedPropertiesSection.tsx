@@ -186,7 +186,7 @@ const SavedPropertiesSection = () => {
                   }`}
                 >
                   {categories.find(c => c.id === property.category)?.label ||
-                    'Uncategorized'}
+                    'Uncategorised'}
                 </span>
                 <button
                   onClick={() => setEditingCategory(property.id)}
@@ -198,7 +198,7 @@ const SavedPropertiesSection = () => {
 
               {/* Category Edit Modal */}
               {editingCategory === property.id && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
                   <div className="bg-white rounded-lg p-6 max-w-md w-full m-4">
                     <h3 className="text-lg font-semibold mb-4">
                       Update Category

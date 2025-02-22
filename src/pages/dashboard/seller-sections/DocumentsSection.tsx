@@ -8,9 +8,7 @@ import {
   Plus,
   FolderOpen,
   File,
-  Home,
-  Wallet,
-  FileCheck
+  Home
 } from 'lucide-react';
 
 interface Document {
@@ -19,7 +17,7 @@ interface Document {
   type: string;
   size: string;
   uploadedAt: string;
-  category: 'mortgage' | 'offers' | 'identity' | 'other';
+  category: 'property' | 'legal' | 'financial' | 'other';
 }
 
 interface DocumentType {
@@ -33,66 +31,94 @@ interface DocumentType {
 const mockDocuments: Document[] = [
   {
     id: '1',
-    name: 'Mortgage Agreement in Principle.pdf',
+    name: 'Property Deed.pdf',
     type: 'PDF',
     size: '2.4 MB',
     uploadedAt: '2024-02-20',
-    category: 'mortgage'
+    category: 'property'
   },
   {
     id: '2',
-    name: 'Property Offer Letter.pdf',
+    name: 'Energy Performance Certificate.pdf',
     type: 'PDF',
     size: '1.8 MB',
     uploadedAt: '2024-02-19',
-    category: 'offers'
+    category: 'property'
   },
   {
     id: '3',
-    name: 'Passport Scan.pdf',
+    name: 'Sales Contract.pdf',
     type: 'PDF',
     size: '3.2 MB',
     uploadedAt: '2024-02-18',
-    category: 'identity'
+    category: 'legal'
   },
   {
     id: '4',
-    name: 'Bank Statements.pdf',
+    name: 'Property Valuation.pdf',
     type: 'PDF',
     size: '1.5 MB',
     uploadedAt: '2024-02-17',
-    category: 'mortgage'
+    category: 'financial'
   }
 ];
 
 const documentTypes: DocumentType[] = [
   {
-    id: 'mortgage_agreement',
-    name: 'Mortgage Agreement in Principle',
-    description: 'Upload your mortgage agreement from your lender',
-    category: 'mortgage',
+    id: 'property_deed',
+    name: 'Property Deed',
+    description: 'Title deed or proof of ownership document',
+    category: 'property',
     required: true
   },
   {
-    id: 'bank_statements',
-    name: 'Bank Statements',
-    description: 'Last 3 months of bank statements',
-    category: 'mortgage',
+    id: 'epc_certificate',
+    name: 'Energy Performance Certificate',
+    description: 'Valid EPC for your property',
+    category: 'property',
     required: true
   },
   {
-    id: 'passport',
-    name: 'Passport/ID',
-    description: 'Valid passport or government-issued ID',
-    category: 'identity',
+    id: 'gas_certificate',
+    name: 'Gas Safety Certificate',
+    description: 'Current gas safety certificate if applicable',
+    category: 'property',
+    required: false
+  },
+  {
+    id: 'electrical_certificate',
+    name: 'Electrical Safety Certificate',
+    description: 'Current electrical installation certificate',
+    category: 'property',
+    required: true
+  },
+  {
+    id: 'floor_plan',
+    name: 'Floor Plan',
+    description: 'Detailed floor plan of your property',
+    category: 'property',
+    required: true
+  },
+  {
+    id: 'id_verification',
+    name: 'ID Verification',
+    description: 'Government-issued ID for verification',
+    category: 'legal',
     required: true
   },
   {
     id: 'proof_address',
     name: 'Proof of Address',
-    description: 'Utility bill or bank statement showing your address',
-    category: 'identity',
+    description: 'Recent utility bill or bank statement',
+    category: 'legal',
     required: true
+  },
+  {
+    id: 'property_valuation',
+    name: 'Property Valuation Report',
+    description: 'Professional valuation of your property',
+    category: 'financial',
+    required: false
   }
 ];
 
@@ -142,17 +168,17 @@ const DocumentsSection = () => {
 
   const categories = [
     { id: 'all', label: 'All Documents', icon: FileText },
-    { id: 'mortgage', label: 'Mortgage Documents', icon: Wallet },
-    { id: 'offers', label: 'Offer Documents', icon: FileCheck },
-    { id: 'identity', label: 'Identity Documents', icon: FileText },
+    { id: 'property', label: 'Property Documents', icon: Home },
+    { id: 'legal', label: 'Legal Documents', icon: FileText },
+    { id: 'financial', label: 'Financial Documents', icon: FileText },
     { id: 'other', label: 'Other', icon: FileText },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">My Documents</h2>
-        <p className="text-gray-500">Manage your property purchase documents</p>
+        <h2 className="text-2xl font-bold text-gray-900">Documents</h2>
+        <p className="text-gray-500">Manage your property-related documents</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">
@@ -312,20 +338,14 @@ const DocumentsSection = () => {
 
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownload(document.id);
-                        }}
+                        onClick={() => handleDownload(document.id)}
                         className="p-1 text-gray-400 hover:text-gray-600"
                         title="Download"
                       >
                         <Download className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(document.id);
-                        }}
+                        onClick={() => handleDelete(document.id)}
                         className="p-1 text-gray-400 hover:text-red-600"
                         title="Delete"
                       >
@@ -352,4 +372,4 @@ const DocumentsSection = () => {
   );
 };
 
-export default DocumentsSection;
+export default DocumentsSection; 
