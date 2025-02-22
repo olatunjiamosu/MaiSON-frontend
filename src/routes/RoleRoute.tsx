@@ -4,7 +4,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 
 interface RoleRouteProps {
   children: React.ReactNode;
-  allowedRoles: ('buyer' | 'seller')[];
+  allowedRoles: ('buyer' | 'seller' | 'both')[];
 }
 
 const RoleRoute: React.FC<RoleRouteProps> = ({ children, allowedRoles }) => {

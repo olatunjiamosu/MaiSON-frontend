@@ -89,7 +89,16 @@ const AppRoutes = () => (
       path="/property/:id" 
       element={
         <PrivateRoute>
-          <PropertyDetails />
+          <PropertyDetails property={mockProperty} />
+        </PrivateRoute>
+      }
+    />
+
+    <Route
+      path="/register-property"
+      element={
+        <PrivateRoute>
+          <RegisterProperty />
         </PrivateRoute>
       }
     />
