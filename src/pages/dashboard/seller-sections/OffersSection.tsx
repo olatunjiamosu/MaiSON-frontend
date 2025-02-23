@@ -106,7 +106,7 @@ const OffersSection = () => {
       </div>
 
       {/* Market Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white p-6 rounded-lg border shadow-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -187,8 +187,8 @@ const OffersSection = () => {
             return (
               <div key={offer.id} className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-medium text-gray-900">{formatPrice(offer.amount)}</h4>
                       <span className={`text-sm ${offerStrength.color}`}>
                         ({offerStrength.strength} offer)
@@ -198,7 +198,7 @@ const OffersSection = () => {
                     <p className="text-sm text-gray-500">from {offer.buyerName}</p>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-2 text-sm">
                       <Info className="h-4 w-4 text-gray-400" />
                       <span className="text-gray-600">
@@ -216,20 +216,14 @@ const OffersSection = () => {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-                    >
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    <button className="w-full sm:w-auto px-4 py-2 bg-emerald-600 text-white rounded-lg">
                       Accept
                     </button>
-                    <button
-                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
+                    <button className="w-full sm:w-auto px-4 py-2 border rounded-lg">
                       Counter
                     </button>
-                    <button
-                      className="px-4 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-50"
-                    >
+                    <button className="w-full sm:w-auto px-4 py-2 border border-red-600 text-red-600 rounded-lg">
                       Reject
                     </button>
                   </div>

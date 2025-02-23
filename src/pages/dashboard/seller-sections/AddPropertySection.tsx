@@ -82,7 +82,7 @@ const AddPropertySection = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto px-4 sm:px-0">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Add New Property</h2>
         <p className="text-gray-500">Enter your property details below</p>
@@ -140,7 +140,7 @@ const AddPropertySection = () => {
         {/* Address */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium text-gray-900">Address</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Road</label>
               <input
@@ -177,7 +177,7 @@ const AddPropertySection = () => {
         {/* Property Details */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium text-gray-900">Property Details</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Bedrooms</label>
               <input
@@ -269,7 +269,7 @@ const AddPropertySection = () => {
 
           {/* Image Previews */}
           {previewImages.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-4">
               {previewImages.map((url, index) => (
                 <div key={index} className="relative">
                   <img

@@ -9,16 +9,14 @@ const PrivateRoute = ({ children }: PrivateRouteProps) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>; // Or your loading spinner component
+    return <div>Loading...</div>;
   }
 
-  // Redirect to login if not authenticated
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
 
-  // User is authenticated, show the protected content
-  return children;
+  return <>{children}</>;
 };
 
 export default PrivateRoute;

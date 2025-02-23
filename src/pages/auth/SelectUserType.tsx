@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Home, Image, Users } from 'lucide-react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 
 const SelectUserType = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [error, setError] = useState('');
 
   const handleUserTypeSelection = async (userType: 'buyer' | 'seller' | 'both') => {
     try {
@@ -15,19 +16,24 @@ const SelectUserType = () => {
       
       // Update user document in Firestore
       const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        userType: userType,
+      await setDoc(userRef, {
+        role: userType,
+        email: user.email,
         updatedAt: new Date().toISOString()
-      });
+      }, { merge: true });
 
-      // Navigate to register-property for both seller and both options
-      if (userType === 'seller' || userType === 'both') {
-        navigate('/register-property');
+      // Navigate based on role
+      if (userType === 'buyer') {
+        navigate('/buyer-dashboard');
+      } else if (userType === 'seller') {
+        navigate('/seller-dashboard');
       } else {
+        // For 'both' type users
         navigate('/buyer-dashboard');
       }
     } catch (error) {
-      console.error('Error updating user type:', error);
+      console.error('Error setting user role:', error);
+      setError('Failed to set user role. Please try again.');
     }
   };
 

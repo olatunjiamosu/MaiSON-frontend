@@ -70,7 +70,7 @@ interface ChatHistory {
 }
 
 const SellerDashboard = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('properties');
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -169,7 +169,7 @@ const SellerDashboard = () => {
       <aside
         className={`fixed md:static inset-y-0 left-0 w-64 bg-white shadow-sm border-r transform transition-transform duration-200 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0 z-20`}
+        } md:translate-x-0 z-30`}
       >
         {/* Logo & Menu Toggle */}
         <div className="p-4 border-b flex items-center justify-between">
@@ -184,12 +184,6 @@ const SellerDashboard = () => {
               <span>SON</span>
             </span>
           </div>
-          <button
-            className="md:hidden text-gray-600"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            <Menu className="h-6 w-6" />
-          </button>
         </div>
 
         {/* Navigation Links */}
@@ -290,7 +284,7 @@ const SellerDashboard = () => {
         </div>
 
         {/* Profile Section */}
-        <div className="absolute bottom-0 w-full border-t p-4">
+        <div className="relative md:absolute bottom-0 w-full border-t p-4">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
               <span className="text-gray-600 font-medium">{userData.name[0]}</span>
@@ -306,12 +300,20 @@ const SellerDashboard = () => {
         </div>
       </aside>
 
+      {/* Add overlay for closing sidebar on mobile */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-20"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Main Content Area */}
       <div className={`flex-1 flex flex-col overflow-hidden ${
         activeSection === 'messages' ? '' : 'pb-24'  // Only add padding when not in messages
       } relative`}>
         <main className={`flex-1 overflow-y-auto ${
-          activeSection === 'messages' ? 'p-0' : 'p-8'
+          activeSection === 'messages' ? 'p-0' : 'p-4 sm:p-8'
         }`}>
           <div className={`${
             activeSection === 'messages' ? 'w-full h-full' : 'max-w-7xl mx-auto'
@@ -331,13 +333,13 @@ const SellerDashboard = () => {
         <PersistentChat hide={isMessagesSection} isDashboard={true} />
       </div>
 
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-10"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* Mobile Menu Trigger Button */}
+      <button
+        className="fixed bottom-20 right-4 md:hidden z-20 p-3 bg-emerald-600 text-white rounded-full shadow-lg"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        <Menu className="h-6 w-6" />
+      </button>
 
       {/* Selected Chat Modal */}
       {selectedChat && (
@@ -346,7 +348,7 @@ const SellerDashboard = () => {
           onClick={() => setSelectedChat(null)}
         >
           <div 
-            className="bg-white rounded-xl w-[800px] max-h-[80vh] flex flex-col ml-32"
+            className="bg-white rounded-xl w-full md:w-[800px] max-h-[80vh] flex flex-col mx-4 md:mx-0"
             onClick={e => e.stopPropagation()}
           >
             {/* Header with title and close button */}

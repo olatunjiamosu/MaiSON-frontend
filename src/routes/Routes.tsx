@@ -60,9 +60,12 @@ const AppRoutes = () => (
     <Route path="/listings" element={<PublicRoute><PublicListings /></PublicRoute>} />
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/sign-up" element={<PublicRoute><SignUp /></PublicRoute>} />
+    <Route path="/verification" element={<PublicRoute><Verification /></PublicRoute>} />
+    <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
     <Route path="/contact" element={<PublicRoute><ContactPage /></PublicRoute>} />
+    <Route path="/select-user-type" element={<PrivateRoute><SelectUserType /></PrivateRoute>} />
 
-    {/* Protected Routes with Role Check */}
+    {/* Protected Routes */}
     <Route 
       path="/buyer-dashboard/*" 
       element={

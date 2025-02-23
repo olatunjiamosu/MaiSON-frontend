@@ -58,7 +58,7 @@ const mockProperties = [
 
 const BuyerDashboard = () => {
   const [activeSection, setActiveSection] = useState('listings');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -128,16 +128,9 @@ const BuyerDashboard = () => {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <aside
-        className={`
-          fixed md:static
-          inset-y-0 left-0
-          w-64 
-          bg-white shadow-sm border-r 
-          transform transition-transform duration-200
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          md:translate-x-0
-          z-20
-        `}
+        className={`fixed md:static inset-y-0 left-0 w-64 bg-white shadow-sm border-r transform transition-transform duration-200 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0 z-30`}
       >
         {/* Logo & Menu Toggle */}
         <div className="p-4 border-b flex items-center justify-between">
@@ -152,12 +145,6 @@ const BuyerDashboard = () => {
               <span>SON</span>
             </span>
           </div>
-          <button
-            className="md:hidden text-gray-600"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            <Menu className="h-6 w-6" />
-          </button>
         </div>
 
         {/* Navigation Links */}
@@ -277,6 +264,14 @@ const BuyerDashboard = () => {
         </div>
       </aside>
 
+      {/* Add overlay for closing sidebar on mobile */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-20"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Main Content Area */}
       <div className={`flex-1 flex flex-col overflow-hidden ${
         activeSection === 'messages' ? '' : 'pb-24'  // Only add padding when not in messages
@@ -304,13 +299,13 @@ const BuyerDashboard = () => {
         <PersistentChat hide={isMessagesSection} isDashboard={true} />
       </div>
 
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-10"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* Mobile Menu Trigger Button */}
+      <button
+        className="fixed bottom-20 right-4 md:hidden z-20 p-3 bg-emerald-600 text-white rounded-full shadow-lg"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        <Menu className="h-6 w-6" />
+      </button>
 
       {/* Selected Chat Modal */}
       {selectedChat && (

@@ -95,27 +95,29 @@ const ViewingRequestsSection = () => {
       </div>
 
       {/* Viewings List */}
-      <div className="space-y-4">
-        {filteredViewings.map((viewing) => (
-          <div 
-            key={viewing.id}
-            className="bg-white rounded-lg border shadow-sm overflow-hidden"
-          >
-            <div className="flex flex-col md:flex-row">
-              {/* Property Image */}
-              <div className="w-full md:w-48 h-48 md:h-auto">
-                <img
-                  src={viewing.propertyImage}
-                  alt={viewing.propertyAddress}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              {/* Viewing Details */}
-              <div className="flex-1 p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
+      <div className="hidden sm:block">
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="inline-block min-w-full align-middle">
+            <table className="min-w-full divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredViewings.map((viewing) => (
+                  <tr key={viewing.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {viewing.propertyAddress}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {viewing.buyerName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {viewing.buyerEmail}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(viewing.requestedDate).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {viewing.requestedTime}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <span className={`px-3 py-1 rounded-full text-sm font-medium
                         ${viewing.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                           viewing.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' :
@@ -123,62 +125,76 @@ const ViewingRequestsSection = () => {
                       >
                         {viewing.status.charAt(0).toUpperCase() + viewing.status.slice(1)}
                       </span>
-                    </div>
-                    <h3 className="font-medium text-gray-900">{viewing.propertyAddress}</h3>
-                    <div className="mt-2 space-y-1 text-sm text-gray-500">
-                      <p className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        {new Date(viewing.requestedDate).toLocaleDateString()}
-                      </p>
-                      <p className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        {viewing.requestedTime}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <h4 className="text-sm font-medium text-gray-900">Buyer Details</h4>
-                  <p className="text-sm text-gray-600">{viewing.buyerName}</p>
-                  <p className="text-sm text-gray-500">{viewing.buyerEmail}</p>
-                  {viewing.notes && (
-                    <p className="mt-2 text-sm text-gray-600 italic">
-                      Note: {viewing.notes}
-                    </p>
-                  )}
-                </div>
-
-                {/* Actions */}
-                {viewing.status === 'pending' && (
-                  <div className="mt-4 flex items-center gap-2">
-                    <button
-                      onClick={() => handleAccept(viewing.id)}
-                      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-                    >
-                      <Check className="h-4 w-4" />
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => handleDecline(viewing.id)}
-                      className="flex items-center gap-2 px-4 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-50"
-                    >
-                      <X className="h-4 w-4" />
-                      Decline
-                    </button>
-                  </div>
-                )}
-              </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {viewing.status === 'pending' && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleAccept(viewing.id)}
+                            className="text-emerald-600 hover:text-emerald-900"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleDecline(viewing.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div className="sm:hidden">
+        {filteredViewings.map((viewing) => (
+          <div key={viewing.id} className="bg-white rounded-lg border mb-4 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium
+                ${viewing.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                  viewing.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' :
+                  'bg-red-100 text-red-700'}`}
+              >
+                {viewing.status.charAt(0).toUpperCase() + viewing.status.slice(1)}
+              </span>
             </div>
+            <h3 className="font-medium text-gray-900">{viewing.propertyAddress}</h3>
+            <div className="mt-2 space-y-1 text-sm text-gray-500">
+              <p>Buyer: {viewing.buyerName}</p>
+              <p>Email: {viewing.buyerEmail}</p>
+              <p>Date: {new Date(viewing.requestedDate).toLocaleDateString()}</p>
+              <p>Time: {viewing.requestedTime}</p>
+            </div>
+            {viewing.status === 'pending' && (
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => handleAccept(viewing.id)}
+                  className="flex-1 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={() => handleDecline(viewing.id)}
+                  className="flex-1 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-50"
+                >
+                  Decline
+                </button>
+              </div>
+            )}
           </div>
         ))}
-
-        {filteredViewings.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-lg border">
-            <p className="text-gray-500">No viewing requests found</p>
-          </div>
-        )}
       </div>
+
+      {filteredViewings.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-lg border">
+          <p className="text-gray-500">No viewing requests found</p>
+        </div>
+      )}
     </div>
   );
 };

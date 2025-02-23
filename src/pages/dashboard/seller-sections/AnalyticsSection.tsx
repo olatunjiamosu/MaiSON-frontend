@@ -53,7 +53,7 @@ const AnalyticsSection = () => {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white p-6 rounded-lg border shadow-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -128,50 +128,52 @@ const AnalyticsSection = () => {
         <div className="p-6 border-b">
           <h3 className="text-lg font-semibold text-gray-900">Property Performance</h3>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Views</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Saved</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inquiries</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Time</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {mockAnalytics.map((property) => (
-                <tr key={property.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{property.address}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className="text-sm text-gray-900">{property.viewsThisWeek}</span>
-                      <span className={`ml-2 text-xs ${property.viewsTrend >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {property.viewsTrend > 0 ? '+' : ''}{property.viewsTrend}%
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className="text-sm text-gray-900">{property.savedCount}</span>
-                      <span className={`ml-2 text-xs ${property.savedTrend >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {property.savedTrend > 0 ? '+' : ''}{property.savedTrend}%
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className="text-sm text-gray-900">{property.inquiries}</span>
-                      <span className={`ml-2 text-xs ${property.inquiriesTrend >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {property.inquiriesTrend > 0 ? '+' : ''}{property.inquiriesTrend}%
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{property.averageTimeOnPage}</td>
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="inline-block min-w-full align-middle">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Views</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Saved</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inquiries</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Time</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {mockAnalytics.map((property) => (
+                  <tr key={property.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{property.address}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span className="text-sm text-gray-900">{property.viewsThisWeek}</span>
+                        <span className={`ml-2 text-xs ${property.viewsTrend >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {property.viewsTrend > 0 ? '+' : ''}{property.viewsTrend}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span className="text-sm text-gray-900">{property.savedCount}</span>
+                        <span className={`ml-2 text-xs ${property.savedTrend >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {property.savedTrend > 0 ? '+' : ''}{property.savedTrend}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span className="text-sm text-gray-900">{property.inquiries}</span>
+                        <span className={`ml-2 text-xs ${property.inquiriesTrend >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {property.inquiriesTrend > 0 ? '+' : ''}{property.inquiriesTrend}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{property.averageTimeOnPage}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

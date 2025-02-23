@@ -181,9 +181,9 @@ const DocumentsSection = () => {
         <p className="text-gray-500">Manage your property-related documents</p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Categories Sidebar */}
-        <div className="w-full md:w-64 space-y-2">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Sidebar */}
+        <div className="w-full lg:w-64 space-y-2">
           {categories.map((category) => (
             <button
               key={category.id}
@@ -217,9 +217,9 @@ const DocumentsSection = () => {
             </label>
           </div>
         </div>
-
-        {/* Documents List */}
-        <div className="flex-1">
+        
+        {/* Main content */}
+        <div className="flex-1 min-w-0">
           {/* Search */}
           <div className="mb-4">
             <input

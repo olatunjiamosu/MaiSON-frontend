@@ -28,9 +28,43 @@ const Login = () => {
     e.preventDefault();
     try {
       await login(email, password);
-      navigate('/buyer-dashboard');
+      // Let's add some console logs to debug
+      console.log('Login successful');
+      // Check if we have a user role before navigating
+      const userDoc = await getDoc(doc(db, 'users', auth.currentUser?.uid || ''));
+      const userData = userDoc.data();
+      console.log('User data:', userData);
+      
+      // Navigate based on user role
+      if (userData?.role === 'buyer') {
+        navigate('/buyer-dashboard');
+      } else if (userData?.role === 'seller') {
+        navigate('/seller-dashboard');
+      } else {
+        navigate('/select-user-type');
+      }
     } catch (error: any) {
-      setError(error.message || 'Failed to log in');
+      // Convert Firebase error codes to user-friendly messages
+      const errorCode = error.code;
+      switch (errorCode) {
+        case 'auth/invalid-credential':
+          setError('Invalid email or password. Please try again.');
+          break;
+        case 'auth/user-not-found':
+          setError('No account found with this email. Please sign up first.');
+          break;
+        case 'auth/wrong-password':
+          setError('Incorrect password. Please try again.');
+          break;
+        case 'auth/invalid-email':
+          setError('Please enter a valid email address.');
+          break;
+        case 'auth/too-many-requests':
+          setError('Too many failed attempts. Please try again later.');
+          break;
+        default:
+          setError('Failed to log in. Please try again.');
+      }
       console.error('Login error:', error);
     }
   };
@@ -43,7 +77,13 @@ const Login = () => {
     try {
       await resetPassword(email);
       setError(''); // Clear any existing errors
-      navigate('/verification');
+      navigate('/verification', { 
+        state: { 
+          email,
+          message: 'Password reset email sent. Please check your inbox.',
+          type: 'reset-password'
+        }
+      });
     } catch (error: any) {
       setError(error.message || 'Failed to send reset email');
       setMessage('');
