@@ -25,7 +25,7 @@ const MaisonLanding = () => {
     setChatHistory(prev => [...prev, { type: 'user', message: userMessage }]);
 
     try {
-      const response = await ChatService.sendMessage(userMessage);
+      const response = await ChatService.sendMessage(userMessage, false);
       // Add bot response to chat history
       setChatHistory(prev => [...prev, { type: 'bot', message: response.message }]);
     } catch (error) {

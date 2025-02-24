@@ -20,15 +20,16 @@ class ChatService {
   constructor() {
     this.baseUrl = getEnvVar(
       'VITE_API_BASE_URL',
-      'https://maisonbot-api.xyz/api/v1'
+      'https://maisonbot-api.xyz'
     );
     this.currentSessionId = null;
   }
 
-  async sendMessage(message: string): Promise<ChatResponse> {
+  async sendMessage(message: string, isPropertyChat: boolean = false): Promise<ChatResponse> {
     try {
+      const endpoint = isPropertyChat ? '/api/v1/chat/property' : '/api/v1/chat/general';
       const response = await fetch(
-        `${this.baseUrl}/chat`,
+        `${this.baseUrl}${endpoint}`,
         {
           method: 'POST',
           headers: {
@@ -64,6 +65,31 @@ class ChatService {
 
   clearSession(): void {
     this.currentSessionId = null;
+  }
+
+  async getChatHistory(conversationId: number, isPropertyChat: boolean = false): Promise<ChatMessage[]> {
+    try {
+      const endpoint = isPropertyChat 
+        ? `/api/v1/conversations/property/${conversationId}/history` 
+        : `/api/v1/conversations/general/${conversationId}/history`;
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.messages;
+    } catch (error) {
+      console.error('Chat history error:', error);
+      throw error;
+    }
   }
 }
 

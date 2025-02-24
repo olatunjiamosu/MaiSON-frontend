@@ -1,22 +1,30 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X } from 'lucide-react';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-}
+import { useAuth } from '../../context/AuthContext';
+import { API_CONFIG } from '../../config/api';
+import { ChatMessage, ChatResponse, GeneralChatPayload, PropertyChatPayload } from '../../types/chat';
 
 interface PersistentChatProps {
   hide?: boolean;
   isDashboard?: boolean;
+  propertyId?: string;
+  counterpartId?: string;
+  role?: 'buyer' | 'seller';
 }
 
-const PersistentChat: React.FC<PersistentChatProps> = ({ hide = false, isDashboard = false }) => {
+const PersistentChat: React.FC<PersistentChatProps> = ({ 
+  hide = false, 
+  isDashboard = false,
+  propertyId,
+  counterpartId,
+  role 
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const chatRef = useRef<HTMLDivElement>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const { user } = useAuth();
 
   // Add click outside handler
   useEffect(() => {
@@ -30,24 +38,82 @@ const PersistentChat: React.FC<PersistentChatProps> = ({ hide = false, isDashboa
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSendMessage = () => {
-    if (inputMessage.trim()) {
-      // Add user message
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        role: 'user',
-        content: inputMessage
-      }]);
+  useEffect(() => {
+    const savedMessages = localStorage.getItem('chatMessages');
+    if (savedMessages) {
+      setMessages(JSON.parse(savedMessages));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('chatMessages', JSON.stringify(messages));
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return;
+
+    try {
+      const endpoint = `${API_CONFIG.BASE_URL}${API_CONFIG.API_VERSION}${isDashboard ? API_CONFIG.CHAT.PROPERTY : API_CONFIG.CHAT.GENERAL}`;
       
-      // Add assistant response (mock)
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: "Sorry, I encountered an error. Please try again."
-      }]);
-      
+      const basePayload = {
+        message: inputMessage,
+        session_id: sessionId,
+        user_id: user?.uid
+      };
+
+      const payload: GeneralChatPayload | PropertyChatPayload = isDashboard
+        ? {
+            ...basePayload,
+            property_id: propertyId!,
+            role: role!,
+            counterpart_id: counterpartId!,
+          } as PropertyChatPayload
+        : basePayload as GeneralChatPayload;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data: ChatResponse = await response.json();
+
+      if (data.session_id) {
+        setSessionId(data.session_id);
+      }
+
+      setMessages(prev => [
+        ...prev,
+        { 
+          id: Date.now().toString(), 
+          role: 'user', 
+          content: inputMessage,
+          timestamp: new Date().toISOString()
+        },
+        { 
+          id: (Date.now() + 1).toString(), 
+          role: 'assistant', 
+          content: data.message,
+          timestamp: new Date().toISOString()
+        }
+      ]);
+
       setInputMessage('');
       setIsExpanded(true);
+
+    } catch (error) {
+      console.error('Chat error:', error);
+      setMessages(prev => [
+        ...prev,
+        { 
+          id: Date.now().toString(), 
+          role: 'assistant', 
+          content: 'Sorry, I encountered an error. Please try again.',
+          timestamp: new Date().toISOString()
+        }
+      ]);
     }
   };
 
