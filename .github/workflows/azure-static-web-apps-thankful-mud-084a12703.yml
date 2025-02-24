@@ -32,6 +32,11 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_API_VERSION: ${{ secrets.VITE_API_VERSION }}
+          VITE_CHAT_GENERAL_ENDPOINT: ${{ secrets.VITE_CHAT_GENERAL_ENDPOINT }}
+          VITE_CHAT_PROPERTY_ENDPOINT: ${{ secrets.VITE_CHAT_PROPERTY_ENDPOINT }}
+          VITE_CHAT_HISTORY_ENDPOINT: ${{ secrets.VITE_CHAT_HISTORY_ENDPOINT }}
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_THANKFUL_MUD_084A12703 }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
