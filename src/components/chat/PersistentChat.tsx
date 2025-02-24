@@ -3,6 +3,7 @@ import { MessageCircle, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { API_CONFIG } from '../../config/api';
 import { ChatMessage, ChatResponse, GeneralChatPayload, PropertyChatPayload } from '../../types/chat';
+import ReactMarkdown from 'react-markdown';
 
 interface PersistentChatProps {
   hide?: boolean;
@@ -53,7 +54,8 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
     if (!inputMessage.trim()) return;
 
     try {
-      const endpoint = `${API_CONFIG.BASE_URL}${API_CONFIG.API_VERSION}${isDashboard ? API_CONFIG.CHAT.PROPERTY : API_CONFIG.CHAT.GENERAL}`;
+      // Always use general chat endpoint for persistent chat
+      const endpoint = `${API_CONFIG.BASE_URL}${API_CONFIG.API_VERSION}${API_CONFIG.CHAT.GENERAL}`;
       
       const basePayload = {
         message: inputMessage,
@@ -61,21 +63,12 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
         user_id: user?.uid
       };
 
-      const payload: GeneralChatPayload | PropertyChatPayload = isDashboard
-        ? {
-            ...basePayload,
-            property_id: propertyId!,
-            role: role!,
-            counterpart_id: counterpartId!,
-          } as PropertyChatPayload
-        : basePayload as GeneralChatPayload;
-
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(basePayload),
       });
 
       const data: ChatResponse = await response.json();
@@ -160,13 +153,21 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
                   </div>
                 )}
                 <div 
-                  className={`max-w-[80%] rounded-lg p-3 ${
+                  className={`max-w-[80%] rounded-lg p-3 prose ${
                     message.role === 'user' 
-                      ? 'bg-emerald-600 text-white' 
+                      ? 'bg-emerald-600 text-white prose-invert'
                       : 'bg-gray-100 text-gray-800'
                   }`}
                 >
-                  {message.content}
+                  <ReactMarkdown
+                    components={{
+                      li: ({node, ...props}) => <li className="list-disc ml-4" {...props} />,
+                      strong: ({node, ...props}) => <span className="font-bold" {...props} />,
+                      p: ({node, ...props}) => <p className="m-0" {...props} />
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
                 </div>
               </div>
             ))}

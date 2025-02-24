@@ -11,7 +11,7 @@ describe('ChatService', () => {
   });
 
   describe('sendMessage', () => {
-    test('successfully sends a message and receives response', async () => {
+    it('successfully sends a message and receives response', async () => {
       const mockResponse = {
         message: 'Hello! How can I help you today?',
         sessionId: '12345'
@@ -23,7 +23,7 @@ describe('ChatService', () => {
         json: () => Promise.resolve(mockResponse)
       });
 
-      const response = await ChatService.sendMessage('Hi');
+      const response = await ChatService.sendMessage('Hi', false);
 
       // Verify the response
       expect(response).toEqual(mockResponse);
@@ -31,7 +31,7 @@ describe('ChatService', () => {
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringMatching(/\/chat$/),
+        expect.stringMatching(/\/chat\/general$/),
         {
           method: 'POST',
           headers: {
@@ -49,7 +49,7 @@ describe('ChatService', () => {
       );
     });
 
-    test('maintains session ID across multiple messages', async () => {
+    it('maintains session ID across multiple messages', async () => {
       const mockResponses = [
         { message: 'First response', sessionId: '12345' },
         { message: 'Second response', sessionId: '12345' }
@@ -67,15 +67,15 @@ describe('ChatService', () => {
         });
 
       // Send first message
-      await ChatService.sendMessage('First message');
+      await ChatService.sendMessage('First message', false);
       expect(ChatService.getSessionId()).toBe('12345');
 
       // Send second message
-      const secondResponse = await ChatService.sendMessage('Second message');
+      const secondResponse = await ChatService.sendMessage('Second message', false);
       
       // Verify second message was sent with the session ID
       expect(global.fetch).toHaveBeenLastCalledWith(
-        expect.stringMatching(/\/chat$/),
+        expect.stringMatching(/\/chat\/general$/),
         {
           method: 'POST',
           headers: {
@@ -95,7 +95,7 @@ describe('ChatService', () => {
       expect(secondResponse).toEqual(mockResponses[1]);
     });
 
-    test('handles API errors appropriately', async () => {
+    it('handles API errors appropriately', async () => {
       // Mock failed fetch response
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
@@ -103,19 +103,19 @@ describe('ChatService', () => {
       });
 
       // Expect the sendMessage call to throw an error
-      await expect(ChatService.sendMessage('Hi'))
+      await expect(ChatService.sendMessage('Hi', false))
         .rejects
         .toThrow('API error: 500');
     });
 
-    test('handles network errors appropriately', async () => {
+    it('handles network errors appropriately', async () => {
       // Mock network error
       (global.fetch as jest.Mock).mockRejectedValueOnce(
         new Error('Network error')
       );
 
       // Expect the sendMessage call to throw an error
-      await expect(ChatService.sendMessage('Hi'))
+      await expect(ChatService.sendMessage('Hi', false))
         .rejects
         .toThrow('Network error');
     });
@@ -135,7 +135,7 @@ describe('ChatService', () => {
       });
 
       // Send a message to get a session ID
-      await ChatService.sendMessage('Hi');
+      await ChatService.sendMessage('Hi', false);
       expect(ChatService.getSessionId()).toBe('12345');
 
       // Clear the session

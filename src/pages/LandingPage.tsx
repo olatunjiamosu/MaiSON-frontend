@@ -3,6 +3,7 @@ import { Send } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import ChatService from '../services/ChatService';
 import Navigation from '../components/layout/Navigation';
+import ReactMarkdown from 'react-markdown';
 
 const MaisonLanding = () => {
   const [message, setMessage] = useState('');
@@ -58,25 +59,32 @@ const MaisonLanding = () => {
             <div className="mb-4 bg-white border rounded-lg w-full">
               <div className="max-h-[400px] overflow-y-auto p-4 space-y-4">
                 {chatHistory.map((chat, index) => (
-                  <div key={index} className={`flex ${chat.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    {chat.type === 'bot' ? (
-                      <div className="w-full">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                            <span className="text-emerald-600 text-sm font-medium">M</span>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">Mia</p>
-                            <p className="text-xs text-gray-500">AI Assistant</p>
-                          </div>
-                        </div>
-                        <p className="text-gray-800">{chat.message}</p>
-                      </div>
-                    ) : (
-                      <div className="bg-emerald-600 text-white rounded-lg max-w-[80%] p-4">
-                        {chat.message}
+                  <div
+                    key={index}
+                    className={`flex ${chat.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    {chat.type === 'bot' && (
+                      <div className="bg-emerald-100 w-8 h-8 rounded-full flex items-center justify-center mr-2">
+                        <span className="text-emerald-700 font-semibold">M</span>
                       </div>
                     )}
+                    <div 
+                      className={`max-w-[80%] rounded-lg p-3 prose ${
+                        chat.type === 'user' 
+                          ? 'bg-emerald-600 text-white prose-invert' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      <ReactMarkdown
+                        components={{
+                          li: ({node, ...props}) => <li className="list-disc ml-4" {...props} />,
+                          strong: ({node, ...props}) => <span className="font-bold" {...props} />,
+                          p: ({node, ...props}) => <p className="m-0" {...props} />
+                        }}
+                      >
+                        {chat.message}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 ))}
                 {isLoading && (

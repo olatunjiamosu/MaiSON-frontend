@@ -1,3 +1,5 @@
+import { ChatMessage } from '../types/chat';
+
 export interface ChatResponse {
   message: string;
   sessionId: string;
