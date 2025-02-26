@@ -1,9 +1,4 @@
-import { ChatMessage } from '../types/chat';
-
-export interface ChatResponse {
-  message: string;
-  sessionId: string;
-}
+import { ChatMessage, ChatResponse } from '../types/chat';
 
 const getEnvVar = (key: string, defaultValue: string): string => {
   if (typeof process !== 'undefined' && process.env[key]) {
@@ -53,7 +48,7 @@ class ChatService {
       }
 
       const data = await response.json();
-      this.currentSessionId = data.sessionId;
+      this.currentSessionId = data.session_id;
       return data;
     } catch (error) {
       console.error('Chat error:', error);
@@ -91,6 +86,33 @@ class ChatService {
     } catch (error) {
       console.error('Chat history error:', error);
       throw error;
+    }
+  }
+
+  async getAllConversations(isPropertyChat: boolean = false): Promise<any[]> {
+    try {
+      const endpoint = isPropertyChat 
+        ? '/api/v1/conversations/property' 
+        : '/api/v1/conversations/general';
+      
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.conversations || [];
+    } catch (error) {
+      console.error('Get all conversations error:', error);
+      // Return empty array instead of throwing to make it easier to handle in UI
+      return [];
     }
   }
 }

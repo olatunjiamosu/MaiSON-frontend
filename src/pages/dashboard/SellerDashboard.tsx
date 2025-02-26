@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Home,
   Building,
@@ -20,8 +20,13 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate, Routes, Route } from 'react-router-dom';
+import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
 import PersistentChat from '../../components/chat/PersistentChat';
+import ChatService from '../../services/ChatService';
+import { formatDistanceToNow } from 'date-fns';
+import { useChat } from '../../context/ChatContext';
+import { API_CONFIG } from '../../config/api';
+import ReactMarkdown from 'react-markdown';
 // Import all section components
 import MyPropertiesSection from './seller-sections/ListingsManagementSection';
 import AddPropertySection from './seller-sections/AddPropertySection';
@@ -67,6 +72,14 @@ interface ChatHistory {
   question: string;
   timestamp: string;
   isActive?: boolean;
+  conversation_id?: number;
+}
+
+interface ChatMessageDisplay {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp?: string;
 }
 
 const SellerDashboard = () => {
@@ -74,7 +87,11 @@ const SellerDashboard = () => {
   const [activeSection, setActiveSection] = useState('properties');
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isMessagesSection = location.pathname.includes('/seller-dashboard/messages');
+
+  // Get chat history from context
+  const { chatHistory, isLoadingChats, addConversation } = useChat();
 
   // Mock user data
   const userData = {
@@ -124,24 +141,143 @@ const SellerDashboard = () => {
     },
   ];
 
-  const [chatHistory] = useState<ChatHistory[]>([
-    {
-      id: '1',
-      question: "What's the average selling time in this area?",
-      timestamp: "2 days ago"
-    },
-    {
-      id: '2',
-      question: "How should I price my property?",
-      timestamp: "1 day ago"
-    },
-    {
-      id: '3',
-      question: "What documents do I need for listing?",
-      timestamp: "5 hours ago"
-    }
-  ]);
+  // Add state for selected chat
   const [selectedChat, setSelectedChat] = useState<ChatHistory | null>(null);
+  const [selectedChatMessages, setSelectedChatMessages] = useState<ChatMessageDisplay[]>([]);
+  const [isLoadingChatMessages, setIsLoadingChatMessages] = useState(false);
+
+  // Add state for the new message input in the modal
+  const [modalInputMessage, setModalInputMessage] = useState('');
+
+  // Add a ref for the chat messages container
+  const chatMessagesRef = useRef<HTMLDivElement>(null);
+
+  // Add state for sending message loading
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+
+  // Fetch chat messages when a chat is selected
+  useEffect(() => {
+    if (selectedChat && selectedChat.conversation_id) {
+      const fetchChatMessages = async () => {
+        setIsLoadingChatMessages(true);
+        try {
+          // Using non-null assertion since we've already checked that conversation_id exists
+          const messages = await ChatService.getChatHistory(selectedChat.conversation_id!, false);
+          setSelectedChatMessages(messages);
+        } catch (error) {
+          console.error('Failed to fetch chat messages:', error);
+          setSelectedChatMessages([
+            {
+              id: '1',
+              role: 'user',
+              content: selectedChat.question,
+              timestamp: selectedChat.timestamp
+            },
+            {
+              id: '2',
+              role: 'assistant',
+              content: 'I apologize, but I could not retrieve the full conversation history. How can I help you today?',
+              timestamp: 'now'
+            }
+          ]);
+        } finally {
+          setIsLoadingChatMessages(false);
+        }
+      };
+      
+      fetchChatMessages();
+    } else if (selectedChat) {
+      // For mock data without conversation_id
+      setSelectedChatMessages([
+        {
+          id: '1',
+          role: 'user',
+          content: selectedChat.question,
+          timestamp: selectedChat.timestamp
+        },
+        {
+          id: '2',
+          role: 'assistant',
+          content: 'This is a mock conversation. In the real app, you would see the full conversation history here.',
+          timestamp: 'now'
+        }
+      ]);
+    }
+  }, [selectedChat]);
+
+  // Add a useEffect to scroll to the bottom when messages change
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  }, [selectedChatMessages]);
+
+  // Add a function to handle sending a message in the modal
+  const handleSendModalMessage = async () => {
+    if (!modalInputMessage.trim() || !selectedChat?.conversation_id || isSendingMessage) return;
+
+    try {
+      setIsSendingMessage(true);
+      
+      // Add the user message to the UI immediately for better UX
+      const userMessage: ChatMessageDisplay = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: modalInputMessage,
+        timestamp: new Date().toISOString()
+      };
+      
+      setSelectedChatMessages(prev => [...prev, userMessage]);
+      
+      // Clear the input right away for better UX
+      const messageToSend = modalInputMessage;
+      setModalInputMessage('');
+      
+      // Call the API to send the message
+      const endpoint = `${API_CONFIG.BASE_URL}${API_CONFIG.API_VERSION}${API_CONFIG.CHAT.GENERAL}`;
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: messageToSend,
+          conversation_id: selectedChat.conversation_id,
+          user_id: "guest" // Use a default guest ID since we're not using Firebase auth here
+        }),
+      });
+
+      const data = await response.json();
+      
+      // Add the assistant's response to the UI
+      const assistantMessage: ChatMessageDisplay = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.message,
+        timestamp: new Date().toISOString()
+      };
+      
+      setSelectedChatMessages(prev => [...prev, assistantMessage]);
+      
+      // Update the conversation in the sidebar with the latest message
+      addConversation(messageToSend, selectedChat.conversation_id);
+      
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      // Add an error message
+      const errorMessage: ChatMessageDisplay = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date().toISOString()
+      };
+      
+      setSelectedChatMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
 
   const handleLogoClick = () => {
     // Navigate to landing page
@@ -169,7 +305,7 @@ const SellerDashboard = () => {
       <aside
         className={`fixed md:static inset-y-0 left-0 w-64 bg-white shadow-sm border-r transform transition-transform duration-200 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0 z-30`}
+        } md:translate-x-0 z-30 flex flex-col`}
       >
         {/* Logo & Menu Toggle */}
         <div className="p-4 border-b flex items-center justify-between">
@@ -184,6 +320,12 @@ const SellerDashboard = () => {
               <span>SON</span>
             </span>
           </div>
+          <button
+            className="md:hidden text-gray-500 hover:text-gray-600"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="h-6 w-6" />
+          </button>
         </div>
 
         {/* Navigation Links */}
@@ -260,31 +402,42 @@ const SellerDashboard = () => {
         </nav>
 
         {/* Previous Chats */}
-        <div className="px-4 py-3 border-t">
+        <div className="px-4 py-3 border-t flex-grow flex flex-col overflow-hidden">
           <h3 className="text-sm font-medium text-gray-600 mb-2">Previous Chats</h3>
-          <div className="space-y-2 max-h-[200px] overflow-y-auto">
-            {chatHistory.map((chat) => (
-              <button
-                key={chat.id}
-                onClick={() => setSelectedChat(chat)}
-                className="w-full text-left p-2 rounded-lg hover:bg-gray-50 group"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-5 h-5 mt-1 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <span className="text-xs font-medium text-emerald-700">M</span>
+          {isLoadingChats ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-pulse h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="animate-pulse h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
+            </div>
+          ) : chatHistory.length > 0 ? (
+            <div className="space-y-2 overflow-y-auto flex-grow pr-1">
+              {chatHistory.map((chat: ChatHistory) => (
+                <button
+                  key={chat.id}
+                  onClick={() => setSelectedChat(chat)}
+                  className="w-full text-left p-2 rounded-lg hover:bg-gray-50 group"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-5 h-5 mt-1 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <span className="text-xs font-medium text-emerald-700">M</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900 truncate">{chat.question}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{chat.timestamp}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900 truncate">{chat.question}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{chat.timestamp}</p>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-gray-500 py-2">
+              No previous chats found. Start a conversation with Mia!
+            </div>
+          )}
         </div>
 
         {/* Profile Section */}
-        <div className="relative md:absolute bottom-0 w-full border-t p-4">
+        <div className="mt-auto border-t p-4">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
               <span className="text-gray-600 font-medium">{userData.name[0]}</span>
@@ -344,11 +497,11 @@ const SellerDashboard = () => {
       {/* Selected Chat Modal */}
       {selectedChat && (
         <div 
-          className="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
           onClick={() => setSelectedChat(null)}
         >
           <div 
-            className="bg-white rounded-xl w-full md:w-[800px] max-h-[80vh] flex flex-col mx-4 md:mx-0"
+            className="bg-white rounded-xl w-[800px] max-h-[80vh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             {/* Header with title and close button */}
@@ -374,40 +527,71 @@ const SellerDashboard = () => {
             </div>
 
             {/* Chat Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <div className="flex justify-end">
-                <div className="bg-emerald-600 text-white rounded-lg p-3 max-w-[80%]">
-                  {selectedChat.question}
+            <div 
+              ref={chatMessagesRef}
+              className="flex-1 overflow-y-auto p-4 space-y-4"
+            >
+              {isLoadingChatMessages ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-pulse space-y-4 w-full">
+                    <div className="h-10 bg-gray-200 rounded w-3/4 ml-auto"></div>
+                    <div className="h-20 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-16 bg-gray-200 rounded w-1/2 ml-auto"></div>
+                    <div className="h-24 bg-gray-200 rounded w-3/4"></div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                  <span className="text-emerald-700 font-semibold">M</span>
-                </div>
-                <div className="bg-gray-100 rounded-lg p-3 max-w-[80%]">
-                  Sorry, I encountered an error. Please try again.
-                </div>
-              </div>
+              ) : (
+                selectedChatMessages.map((msg) => (
+                  <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'items-start gap-3'}`}>
+                    {msg.role === 'assistant' && (
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <span className="text-emerald-700 font-semibold">M</span>
+                      </div>
+                    )}
+                    <div 
+                      className={`${
+                        msg.role === 'user' 
+                          ? 'bg-emerald-600 text-white prose-invert' 
+                          : 'bg-gray-100 text-gray-800'
+                      } rounded-lg p-3 max-w-[80%] prose`}
+                    >
+                      <ReactMarkdown
+                        components={{
+                          li: ({node, ...props}) => <li className="list-disc ml-4" {...props} />,
+                          strong: ({node, ...props}) => <span className="font-bold" {...props} />,
+                          p: ({node, ...props}) => <p className="m-0" {...props} />
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
-            {/* Input Area */}
+            {/* Input area - Now active */}
             <div className="p-4 border-t">
               <div className="flex gap-2">
                 <input 
                   type="text" 
-                  placeholder="Ask Mia about anything..."
-                  className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  value={modalInputMessage}
+                  onChange={(e) => setModalInputMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendModalMessage()}
+                  placeholder="Continue your conversation with Mia..."
+                  className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  disabled={isSendingMessage}
                 />
-                <button className="p-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-white">
-                    <path 
-                      d="M22 2L2 9L11 13L22 2ZM22 2L15 22L11 13L22 2Z" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                <button 
+                  onClick={handleSendModalMessage}
+                  className={`px-4 py-2 rounded-lg ${
+                    isSendingMessage 
+                      ? 'bg-emerald-400 text-white cursor-not-allowed' 
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                  disabled={isSendingMessage}
+                >
+                  {isSendingMessage ? 'Sending...' : 'Send'}
                 </button>
               </div>
             </div>

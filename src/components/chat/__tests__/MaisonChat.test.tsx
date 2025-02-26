@@ -34,7 +34,10 @@ describe('MaisonChat', () => {
   it('sends message when user types and clicks send', async () => {
     const mockResponse = {
       message: 'I can help you with that!',
-      sessionId: '123'
+      session_id: '123',
+      conversation_id: 1,
+      intent: 'greeting',
+      context: {}
     };
     (ChatService.sendMessage as jest.Mock).mockResolvedValueOnce(mockResponse);
 
@@ -97,7 +100,10 @@ describe('MaisonChat', () => {
   it('sends message when Enter key is pressed', async () => {
     const mockResponse = {
       message: 'I can help you with that!',
-      sessionId: '123'
+      session_id: '123',
+      conversation_id: 1,
+      intent: 'greeting',
+      context: {}
     };
     (ChatService.sendMessage as jest.Mock).mockResolvedValueOnce(mockResponse);
 

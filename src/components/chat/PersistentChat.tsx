@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { API_CONFIG } from '../../config/api';
 import { ChatMessage, ChatResponse, GeneralChatPayload, PropertyChatPayload } from '../../types/chat';
 import ReactMarkdown from 'react-markdown';
+import { useChat } from '../../context/ChatContext';
 
 interface PersistentChatProps {
   hide?: boolean;
@@ -26,6 +27,7 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
   const chatRef = useRef<HTMLDivElement>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const { user } = useAuth();
+  const { addConversation } = useChat();
 
   // Add click outside handler
   useEffect(() => {
@@ -92,6 +94,10 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
           timestamp: new Date().toISOString()
         }
       ]);
+
+      if (data.conversation_id) {
+        addConversation(inputMessage, data.conversation_id);
+      }
 
       setInputMessage('');
       setIsExpanded(true);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   Heart,
@@ -10,11 +10,14 @@ import {
   Maximize2,
   Minimize2,
 } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import SinglePropertyMap from '../../components/map/SinglePropertyMap';
+import PropertyService from '../../services/PropertyService';
+import { PropertyDetail } from '../../types/property';
+import { formatPrice, formatDate } from '../../lib/formatters';
 
 interface PropertyDetailsProps {
-  property: {
+  property?: {
     id: string;
     images: string[];
     price: string;
@@ -34,11 +37,72 @@ interface PropertyDetailsProps {
   };
 }
 
-const PropertyDetails = ({ property }: PropertyDetailsProps) => {
+const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { id } = useParams<{ id: string }>();
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [property, setProperty] = useState<any>(propProperty);
+
+  useEffect(() => {
+    // If property is provided via props, use that
+    if (propProperty) {
+      setProperty(propProperty);
+      setLoading(false);
+      return;
+    }
+    
+    // Otherwise, fetch from API
+    const fetchPropertyDetails = async () => {
+      if (!id) {
+        setError('Property ID is missing');
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        const propertyData = await PropertyService.getPropertyById(id);
+        
+        // Transform API data to component format
+        const transformedProperty = {
+          id: propertyData.id,
+          images: propertyData.image_urls || 
+                 (propertyData.main_image_url ? [propertyData.main_image_url] : 
+                 ['https://images.unsplash.com/photo-1568605114967-8130f3a36994']),
+          price: formatPrice(propertyData.price),
+          road: propertyData.address.street,
+          city: propertyData.address.city,
+          postcode: propertyData.address.postcode,
+          beds: propertyData.specs.bedrooms,
+          baths: propertyData.specs.bathrooms,
+          reception: propertyData.specs.reception_rooms || 1,
+          sqft: propertyData.specs.square_footage,
+          propertyType: propertyData.specs.property_type,
+          epcRating: propertyData.specs.epc_rating || 'N/A',
+          description: propertyData.details?.description || 'No description available',
+          floorPlan: propertyData.floorplan_url || 'https://images.unsplash.com/photo-1536483229849-91bbb16321cd',
+          lat: propertyData.address.latitude || 51.5074,
+          lng: propertyData.address.longitude || -0.1278,
+          createdAt: propertyData.created_at ? formatDate(propertyData.created_at) : 'N/A',
+        };
+        
+        setProperty(transformedProperty);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching property details:', err);
+        setError('Failed to load property details. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchPropertyDetails();
+  }, [id, propProperty]);
 
   const handleBack = () => {
     // Check if we came from saved properties
@@ -50,16 +114,37 @@ const PropertyDetails = ({ property }: PropertyDetailsProps) => {
   };
 
   const nextImage = () => {
-    setSelectedImage(prev =>
-      prev === property.images.length - 1 ? 0 : prev + 1
-    );
+    setSelectedImage((prev) => (prev + 1) % property.images.length);
   };
 
   const previousImage = () => {
-    setSelectedImage(prev =>
-      prev === 0 ? property.images.length - 1 : prev - 1
-    );
+    setSelectedImage((prev) => (prev - 1 + property.images.length) % property.images.length);
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !property) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded mb-4 max-w-md text-center">
+          <p className="font-bold mb-2">Error</p>
+          <p>{error || 'Property not found'}</p>
+        </div>
+        <button 
+          onClick={handleBack}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Go Back
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

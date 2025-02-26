@@ -6,7 +6,14 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5137
+    port: 5137,
+    proxy: {
+      '/api': {
+        target: 'https://maison-api.jollybush-a62cec71.uksouth.azurecontainerapps.io',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   resolve: {
     alias: {

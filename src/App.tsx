@@ -7,31 +7,34 @@ import Login from './pages/auth/Login';
 import SelectUserType from './pages/auth/SelectUserType';
 import AppRoutes from './routes/Routes';
 import Home from './pages/LandingPage';
+import { ChatProvider } from './context/ChatContext';
 
 const App = () => {
   return (
     <Router>
-      <div>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/login" element={<Login />} />
-          
-          {/* Protected routes */}
-          <Route 
-            path="/select-user-type" 
-            element={
-              <ProtectedRoute>
-                <SelectUserType />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Add other protected routes here */}
-          <Route path="/*" element={<AppRoutes />} />
-        </Routes>
-      </div>
+      <ChatProvider>
+        <div>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/login" element={<Login />} />
+            
+            {/* Protected routes */}
+            <Route 
+              path="/select-user-type" 
+              element={
+                <ProtectedRoute>
+                  <SelectUserType />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Add other protected routes here */}
+            <Route path="/*" element={<AppRoutes />} />
+          </Routes>
+        </div>
+      </ChatProvider>
     </Router>
   );
 };

@@ -1,16 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, X, MessageCircle } from 'lucide-react';
 import ChatService from '../../services/ChatService';
+import { ChatResponse } from '../../types/chat';
 
 // Add these interfaces at the top of the file
 interface ChatMessage {
   type: 'user' | 'bot';
   message: string;
-}
-
-interface ChatResponse {
-  message: string;
-  sessionId: string;
 }
 
 const MaisonChat = () => {

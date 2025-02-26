@@ -11,6 +11,7 @@ MaiSON is an AI-powered property marketplace designed to connect buyers and sell
 - [Testing](#-testing)
 - [Contributing](#-contributing)
 - [Troubleshooting](#-troubleshooting)
+- [Property Listings API Integration](#-property-listings-api-integration)
 
 ## 🚀 Quick Start
 
@@ -147,4 +148,42 @@ This project is licensed under the MIT License.
 ---
 
 Built with ❤️ by the MaiSON team
+
+## Property Listings API Integration
+
+The application now integrates with the Property Listings API to display real property data. The integration includes:
+
+### API Configuration
+- Environment variables for API endpoints in `.env`
+- TypeScript interfaces for property data structures
+
+### Core Features
+- Fetching and displaying property listings
+- Filtering properties by various criteria
+- Viewing detailed property information
+- Support for property creation, updating, and deletion
+
+### Implementation Details
+- `PropertyService`: Service for handling API calls to property endpoints
+- Updated components to use real data from the API
+- Fallback to mock data when API is unavailable
+- Loading states and error handling
+
+### Usage
+To use the property listings API:
+
+1. Ensure the API is running at the URL specified in `.env` (default: http://localhost:8000)
+2. The frontend will automatically connect to the API endpoints
+3. Property listings will be displayed on the listings page
+4. Property details can be viewed by clicking on a property
+
+### API Endpoints
+The following endpoints are used:
+
+- `GET /api/properties`: Get all properties with optional filters
+- `GET /api/properties/{id}`: Get details of a specific property
+- `GET /api/properties/user/{user_id}`: Get all properties for a specific user
+- `POST /api/properties`: Create a new property listing
+- `PUT /api/properties/{id}`: Update an existing property
+- `DELETE /api/properties/{id}`: Delete a property
 

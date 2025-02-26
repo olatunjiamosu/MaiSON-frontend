@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropertyCard from '../../../components/property/PropertyCard';
 import {
   Grid,
@@ -13,6 +13,9 @@ import {
 import SaveSearchModal from '../../../components/search/SaveSearchModal';
 import PropertyMap from '../../../components/map/PropertyMap';
 import PersistentChat from '../../../components/chat/PersistentChat';
+import PropertyService from '../../../services/PropertyService';
+import { PropertySummary, PropertyFilters } from '../../../types/property';
+import { formatPrice } from '../../../lib/formatters';
 
 // Mock data
 const mockProperties = [
@@ -66,6 +69,24 @@ const mockProperties = [
   },
 ];
 
+// Define the Property interface for display
+interface PropertyDisplay {
+  id: string;
+  image: string;
+  price: string;
+  road: string;
+  city: string;
+  postcode: string;
+  beds: number;
+  baths: number;
+  reception: number;
+  sqft: number;
+  propertyType: string;
+  epcRating: string;
+  lat: number;
+  lng: number;
+}
+
 // Expand sort options
 type SortOption =
   | 'newest'
@@ -90,35 +111,17 @@ const sortOptions = [
 
 type ViewMode = 'grid' | 'list' | 'map';
 
-// Define the Property interface
-interface Property {
-  id: string;
-  image: string;
-  price: string;
-  road: string;
-  city: string;
-  postcode: string;
-  beds: number;
-  baths: number;
-  reception: number;
-  sqft: number;
-  propertyType: string;
-  epcRating: string;
-  lat: number;
-  lng: number;
-}
-
 // Update the ListingsSection props
 interface ListingsSectionProps {
-  properties: Property[];
+  initialProperties?: PropertyDisplay[];
 }
 
-const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
-  // Ensure properties is an array
-  console.log('Received Properties:', properties);
+const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) => {
+  const [properties, setProperties] = useState<PropertyDisplay[]>(initialProperties || []);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showFilters, setShowFilters] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // Start with false
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     priceRange: { min: 0, max: 2000000 },
     location: '',
@@ -130,9 +133,68 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
     propertyType: 'any',
     gardenPreference: 'any',
   });
+  const [apiFilters, setApiFilters] = useState<PropertyFilters>({});
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [showSaveSearchModal, setShowSaveSearchModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<string>();
+
+  // Fetch properties from API
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        setIsLoading(true);
+        const apiProperties = await PropertyService.getProperties(apiFilters);
+        
+        // Transform API properties to the display format
+        const transformedProperties = apiProperties.map(property => {
+          // Create a safe property specs object with defaults
+          const specs = {
+            reception_rooms: 1,
+            epc_rating: 'C',
+            ...property.specs
+          };
+          
+          // Create a safe address object with defaults
+          const address = {
+            latitude: 51.5074,
+            longitude: -0.1278,
+            ...property.address
+          };
+          
+          return {
+            id: property.id,
+            image: property.main_image_url || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994',
+            price: formatPrice(property.price),
+            road: property.address.street,
+            city: property.address.city,
+            postcode: property.address.postcode,
+            beds: property.bedrooms,
+            baths: property.bathrooms,
+            reception: specs.reception_rooms,
+            sqft: property.specs.square_footage,
+            propertyType: property.specs.property_type,
+            epcRating: specs.epc_rating,
+            lat: address.latitude,
+            lng: address.longitude,
+          };
+        });
+        
+        setProperties(transformedProperties);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching properties:', err);
+        setError('Failed to load properties. Please try again later.');
+        // Use mock data as fallback if no initial properties
+        if (!initialProperties || initialProperties.length === 0) {
+          setProperties(mockProperties);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, [apiFilters, initialProperties]);
 
   // Add sorting function
   const getSortedProperties = () => {
@@ -169,6 +231,25 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
     }, 500);
   };
 
+  // Convert UI filters to API filters
+  const applyFilters = () => {
+    setIsLoading(true);
+    
+    // Transform UI filters to API filters
+    const newApiFilters: PropertyFilters = {
+      min_price: filters.priceRange.min > 0 ? filters.priceRange.min : undefined,
+      max_price: filters.priceRange.max < 2000000 ? filters.priceRange.max : undefined,
+      bedrooms: filters.bedrooms !== 'any' ? parseInt(filters.bedrooms) : undefined,
+      bathrooms: filters.bathrooms !== 'any' ? parseInt(filters.bathrooms) : undefined,
+      city: filters.location || undefined,
+      property_type: filters.propertyType !== 'any' ? filters.propertyType : undefined,
+      has_garden: filters.gardenPreference === 'required' ? true : undefined
+    };
+    
+    setApiFilters(newApiFilters);
+    setShowFilters(false);
+  };
+
   // Add save search handler
   const handleSaveSearch = (name: string, notifyNewMatches: boolean) => {
     // This will eventually connect to your backend
@@ -183,6 +264,7 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
 
     console.log('Saving search:', searchToSave);
     // TODO: Save to backend
+    setShowSaveSearchModal(false);
   };
 
   return (
@@ -283,6 +365,13 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
             </button>
           </div>
         </div>
+
+        {/* Error message */}
+        {error && !isLoading && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <p>{error}</p>
+          </div>
+        )}
 
         {/* Updated Filters Panel */}
         {showFilters && (
@@ -531,11 +620,20 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ properties }) => {
             <div className="mt-6 flex justify-end">
               <button
                 className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
-                onClick={() => setShowFilters(false)}
+                onClick={applyFilters}
               >
                 Apply Filters
               </button>
             </div>
+          </div>
+        )}
+
+        {/* No properties found */}
+        {!isLoading && properties.length === 0 && (
+          <div className="text-center py-12">
+            <div className="mx-auto h-16 w-16 text-gray-400">🏠</div>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">No properties found</h3>
+            <p className="mt-1 text-gray-500">Try adjusting your search or filter criteria.</p>
           </div>
         )}
 
