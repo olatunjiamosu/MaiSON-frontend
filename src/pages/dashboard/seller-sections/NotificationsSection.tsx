@@ -8,7 +8,8 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  MoreVertical
+  MoreVertical,
+  PoundSterling
 } from 'lucide-react';
 
 interface Notification {

@@ -105,4 +105,5 @@ export interface PropertyFilters {
 export interface ErrorResponse {
   error?: string;
   errors?: string[];
+  message?: string;
 } 

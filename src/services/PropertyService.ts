@@ -26,6 +26,21 @@ class PropertyService {
     }
   }
 
+  private async getHeaders(requiresAuth: boolean = false): Promise<HeadersInit> {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    if (requiresAuth) {
+      const token = await this.getAuthToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
+    return headers;
+  }
+
   private buildUrl(path: string = '', queryParams?: Record<string, any>): string {
     const baseUrl = `${PROPERTY_API_URL}${PROPERTY_API_ENDPOINT}${path}`;
     
@@ -42,15 +57,16 @@ class PropertyService {
     return queryString ? `${baseUrl}?${queryString}` : baseUrl;
   }
 
-  // Get all properties with optional filters
+  // Public endpoints (no auth required)
   async getProperties(filters?: PropertyFilters): Promise<PropertySummary[]> {
     try {
       const url = this.buildUrl('', filters);
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: await this.getHeaders(false)
+      });
       
       if (!response.ok) {
-        const errorData: ErrorResponse = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch properties');
+        throw new Error('Failed to fetch properties');
       }
       
       return await response.json();
@@ -60,60 +76,55 @@ class PropertyService {
     }
   }
 
-  // Get a specific property by ID
   async getPropertyById(id: string): Promise<PropertyDetail> {
     try {
       const url = this.buildUrl(`/${id}`);
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: await this.getHeaders(false)
+      });
       
       if (!response.ok) {
-        const errorData: ErrorResponse = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch property');
+        throw new Error('Failed to fetch property details');
       }
       
       return await response.json();
     } catch (error) {
-      console.error(`Error fetching property with ID ${id}:`, error);
+      console.error('Error fetching property details:', error);
       throw error;
     }
   }
 
-  // Get properties for a specific user
-  async getUserProperties(userId: number): Promise<PropertySummary[]> {
+  // Private endpoints (auth required)
+  async getUserProperties(): Promise<PropertySummary[]> {
     try {
-      const url = this.buildUrl(`/user/${userId}`);
-      const response = await fetch(url);
+      const url = this.buildUrl('/user');
+      const response = await fetch(url, {
+        headers: await this.getHeaders(true)
+      });
       
       if (!response.ok) {
-        const errorData: ErrorResponse = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch user properties');
+        throw new Error('Failed to fetch user properties');
       }
       
       return await response.json();
     } catch (error) {
-      console.error(`Error fetching properties for user ${userId}:`, error);
+      console.error('Error fetching user properties:', error);
       throw error;
     }
   }
 
-  // Create a new property
-  async createProperty(propertyData: CreatePropertyRequest): Promise<PropertyResponse> {
+  async createProperty(property: CreatePropertyRequest): Promise<PropertyResponse> {
     try {
-      const token = await this.getAuthToken();
       const url = this.buildUrl();
-      
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        body: JSON.stringify(propertyData)
+        headers: await this.getHeaders(true),
+        body: JSON.stringify(property)
       });
       
       if (!response.ok) {
         const errorData: ErrorResponse = await response.json();
-        throw new Error(errorData.error || errorData.errors?.join(', ') || 'Failed to create property');
+        throw new Error(errorData.message || 'Failed to create property');
       }
       
       return await response.json();
@@ -123,102 +134,40 @@ class PropertyService {
     }
   }
 
-  // Create a property with images (multipart form data)
-  async createPropertyWithImages(
-    propertyData: CreatePropertyRequest, 
-    mainImage: File, 
-    additionalImages?: File[]
-  ): Promise<PropertyResponse> {
+  async updateProperty(id: string, property: Partial<CreatePropertyRequest>): Promise<PropertyResponse> {
     try {
-      const token = await this.getAuthToken();
-      const url = this.buildUrl();
-      
-      const formData = new FormData();
-      formData.append('data', JSON.stringify(propertyData));
-      formData.append('main_image', mainImage);
-      
-      if (additionalImages && additionalImages.length > 0) {
-        additionalImages.forEach(image => {
-          formData.append('additional_images', image);
-        });
-      }
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        body: formData
-      });
-      
-      if (!response.ok) {
-        const errorData: ErrorResponse = await response.json();
-        throw new Error(errorData.error || errorData.errors?.join(', ') || 'Failed to create property with images');
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating property with images:', error);
-      throw error;
-    }
-  }
-
-  // Update a property
-  async updateProperty(id: string, propertyData: Partial<CreatePropertyRequest>): Promise<PropertyResponse> {
-    try {
-      const token = await this.getAuthToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-      
       const url = this.buildUrl(`/${id}`);
-      
       const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(propertyData)
+        headers: await this.getHeaders(true),
+        body: JSON.stringify(property)
       });
       
       if (!response.ok) {
         const errorData: ErrorResponse = await response.json();
-        throw new Error(errorData.error || 'Failed to update property');
+        throw new Error(errorData.message || 'Failed to update property');
       }
       
       return await response.json();
     } catch (error) {
-      console.error(`Error updating property with ID ${id}:`, error);
+      console.error('Error updating property:', error);
       throw error;
     }
   }
 
-  // Delete a property
-  async deleteProperty(id: string): Promise<{ message: string }> {
+  async deleteProperty(id: string): Promise<void> {
     try {
-      const token = await this.getAuthToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-      
       const url = this.buildUrl(`/${id}`);
-      
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: await this.getHeaders(true)
       });
       
       if (!response.ok) {
-        const errorData: ErrorResponse = await response.json();
-        throw new Error(errorData.error || 'Failed to delete property');
+        throw new Error('Failed to delete property');
       }
-      
-      return await response.json();
     } catch (error) {
-      console.error(`Error deleting property with ID ${id}:`, error);
+      console.error('Error deleting property:', error);
       throw error;
     }
   }

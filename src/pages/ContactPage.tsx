@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Navigation from '../components/layout/Navigation';
 import { Mail, Phone, MapPin } from 'lucide-react';
 import PersistentChat from '../components/chat/PersistentChat';
+import Footer from '../components/layout/Footer';
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -39,10 +40,10 @@ const ContactPage = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col pb-24">
+    <div className="min-h-screen flex flex-col">
       <Navigation />
 
-      <main className="flex-1 bg-white">
+      <main className="flex-grow bg-white">
         {/* Hero Section */}
         <div className="py-16">
           <div className="max-w-7xl mx-auto px-4">
@@ -139,7 +140,9 @@ const ContactPage = () => {
           </form>
         </div>
       </main>
+
       <PersistentChat />
+      <Footer />
     </div>
   );
 };

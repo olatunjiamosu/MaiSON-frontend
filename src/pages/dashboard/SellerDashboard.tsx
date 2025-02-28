@@ -474,6 +474,7 @@ const SellerDashboard = () => {
             <Routes>
               <Route index element={<MyPropertiesSection />} />
               <Route path="add-property" element={<AddPropertySection />} />
+              <Route path="edit-property/:propertyId" element={<AddPropertySection />} />
               <Route path="offers" element={<OffersSection />} />
               <Route path="viewings" element={<ViewingsSection />} />
               <Route path="analytics" element={<AnalyticsSection />} />

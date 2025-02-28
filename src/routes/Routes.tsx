@@ -8,7 +8,6 @@ import PrivateRoute from './PrivateRoute';
 import PublicRoute from './PublicRoute';
 import BuyerDashboard from '../pages/dashboard/BuyerDashboard';
 import SelectUserType from '../pages/auth/SelectUserType';
-import RegisterProperty from '../pages/auth/RegisterProperty';
 import PropertyChats from '../pages/dashboard/buyer-sections/PropertyChats';
 import SignUp from '../pages/auth/SignUp';
 import PropertyDetails from '../pages/property/PropertyDetails';
@@ -65,15 +64,6 @@ const AppRoutes = () => (
       element={
         <PrivateRoute>
           <PropertyDetails />
-        </PrivateRoute>
-      }
-    />
-
-    <Route
-      path="/register-property"
-      element={
-        <PrivateRoute>
-          <RegisterProperty />
         </PrivateRoute>
       }
     />

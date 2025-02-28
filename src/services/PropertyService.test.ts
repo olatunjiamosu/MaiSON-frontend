@@ -65,14 +65,14 @@ jest.mock('./PropertyService', () => ({
     }
   })),
   
-  getUserProperties: jest.fn((userId) => Promise.resolve([{
+  getUserProperties: jest.fn(() => Promise.resolve([{
     id: '123e4567-e89b-12d3-a456-426614174000',
     price: 350000,
     bedrooms: 3,
     bathrooms: 2,
     main_image_url: 'https://example.com/image.jpg',
     created_at: '2024-02-22T12:00:00Z',
-    owner_id: userId,
+    owner_id: 1,
     address: {
       street: 'Sample Street',
       city: 'London',
@@ -94,9 +94,7 @@ jest.mock('./PropertyService', () => ({
     message: 'Property updated successfully'
   })),
   
-  deleteProperty: jest.fn(() => Promise.resolve({
-    message: 'Property deleted successfully'
-  }))
+  deleteProperty: jest.fn(() => Promise.resolve())
 }));
 
 describe('PropertyService', () => {
@@ -155,10 +153,9 @@ describe('PropertyService', () => {
   });
 
   it('should get user properties', async () => {
-    const userId = 1;
-    const result = await PropertyService.getUserProperties(userId);
+    const result = await PropertyService.getUserProperties();
     expect(result).toHaveLength(1);
-    expect(PropertyService.getUserProperties).toHaveBeenCalledWith(userId);
+    expect(PropertyService.getUserProperties).toHaveBeenCalled();
   });
 
   it('should update a property', async () => {
@@ -173,8 +170,7 @@ describe('PropertyService', () => {
   it('should delete a property', async () => {
     const propertyId = '123e4567-e89b-12d3-a456-426614174000';
     
-    const result = await PropertyService.deleteProperty(propertyId);
-    expect(result.message).toBe('Property deleted successfully');
+    await PropertyService.deleteProperty(propertyId);
     expect(PropertyService.deleteProperty).toHaveBeenCalledWith(propertyId);
   });
 }); 
