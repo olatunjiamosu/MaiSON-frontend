@@ -74,7 +74,9 @@ const PublicListings = () => {
     minSqft: '',
     maxSqft: '',
     garden: 'Any',
-    epcRating: 'Any'
+    epcRating: 'Any',
+    parkingSpaces: 'Any',
+    receptionRooms: 'Any'
   });
 
   // Load saved filters and settings from localStorage on component mount
@@ -306,7 +308,9 @@ const PublicListings = () => {
       minSqft: '',
       maxSqft: '',
       garden: 'Any',
-      epcRating: 'Any'
+      epcRating: 'Any',
+      parkingSpaces: 'Any',
+      receptionRooms: 'Any'
     });
     setSearchTerm('');
     setCurrentPage(1);
@@ -413,24 +417,47 @@ const PublicListings = () => {
         
         {/* Loading state */}
         {loading && (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+          <div className="flex flex-col justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mb-4"></div>
+            <p className="text-gray-600">Loading properties...</p>
           </div>
         )}
         
-        {/* Error state */}
+        {/* Error state with retry button */}
         {error && !loading && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 flex items-center justify-between">
             <p>{error}</p>
+            <button 
+              onClick={handleRefresh} 
+              className="ml-4 px-3 py-1 bg-red-50 border border-red-300 rounded text-red-700 hover:bg-red-100 flex items-center"
+            >
+              <RefreshCw size={16} className="mr-1" /> Retry
+            </button>
           </div>
         )}
         
-        {/* Property listings */}
+        {/* No properties found state */}
         {!loading && !error && properties.length === 0 && (
-          <div className="text-center py-12">
-            <Home className="mx-auto h-16 w-16 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">No properties found</h3>
-            <p className="mt-1 text-gray-500">Try adjusting your search or filter criteria.</p>
+          <div className="text-center py-12 bg-gray-50 rounded-lg border">
+            <div className="flex justify-center mb-4">
+              <SlidersHorizontal className="h-16 w-16 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No properties found</h3>
+            <p className="text-gray-600 mb-6">
+              {(filters.min_price || filters.max_price || filters.bedrooms || filters.bathrooms || 
+               filters.property_type || filters.city || filters.has_garden || filters.parking_spaces)
+                ? 'Try adjusting your filters to see more properties' 
+                : 'There are currently no properties matching your criteria'}
+            </p>
+            {(filters.min_price || filters.max_price || filters.bedrooms || filters.bathrooms || 
+             filters.property_type || filters.city || filters.has_garden || filters.parking_spaces) && (
+              <button
+                onClick={clearAllFilters}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+              >
+                Clear All Filters
+              </button>
+            )}
           </div>
         )}
         
@@ -472,10 +499,16 @@ const PublicListings = () => {
                     const target = e.target as HTMLImageElement;
                     target.src = '/placeholder-property.jpg';
                   }}
+                  loading="lazy"
                 />
                 <div className="absolute bottom-0 left-0 bg-emerald-600 text-white px-4 py-2 font-semibold">
                   {property.price}
                 </div>
+                {property.propertyType && (
+                  <div className="absolute top-0 right-0 bg-black bg-opacity-60 text-white text-xs px-2 py-1 m-2 rounded">
+                    {property.propertyType}
+                  </div>
+                )}
               </div>
               <div className="p-5">
                 <div className="flex justify-between items-start mb-2">
@@ -483,9 +516,6 @@ const PublicListings = () => {
                     <h3 className="font-semibold text-lg">{property.address}</h3>
                     <p className="text-gray-500 text-sm">{property.postcode}</p>
                   </div>
-                  <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-md">
-                    {property.propertyType}
-                  </span>
                 </div>
                 
                 <div className="flex items-center gap-6 mt-4 text-gray-700">

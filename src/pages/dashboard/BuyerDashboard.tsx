@@ -325,7 +325,7 @@ const BuyerDashboard = () => {
           />
           <NavItem
             icon={<ClipboardList />}
-            label="Applications"
+            label="Offers"
             active={activeSection === 'applications'}
             onClick={() => setActiveSection('applications')}
             path="/buyer-dashboard/applications"

@@ -49,6 +49,8 @@ export interface PropertySummary {
     street: string;
     city: string;
     postcode: string;
+    latitude: number;
+    longitude: number;
   };
   specs: {
     property_type: string;

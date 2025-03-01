@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PropertyCard from '../../../components/property/PropertyCard';
 import {
   Grid,
@@ -9,6 +9,7 @@ import {
   Loader2,
   Bell,
   Map,
+  RefreshCw,
 } from 'lucide-react';
 import SaveSearchModal from '../../../components/search/SaveSearchModal';
 import PropertyMap from '../../../components/map/PropertyMap';
@@ -16,58 +17,6 @@ import PersistentChat from '../../../components/chat/PersistentChat';
 import PropertyService from '../../../services/PropertyService';
 import { PropertySummary, PropertyFilters } from '../../../types/property';
 import { formatPrice } from '../../../lib/formatters';
-
-// Mock data
-const mockProperties = [
-  {
-    id: '1',
-    image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994',
-    price: '£800,000',
-    road: '123 Park Avenue',
-    city: 'London',
-    postcode: 'SE22 9QA',
-    beds: 2,
-    baths: 2,
-    reception: 1,
-    sqft: 1200,
-    propertyType: 'Terraced',
-    epcRating: 'C',
-    lat: 51.5074,
-    lng: -0.1278,
-  },
-  {
-    id: '2',
-    image: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be',
-    price: '£950,000',
-    road: '456 Oak Street',
-    city: 'London',
-    postcode: 'NW3 5TB',
-    beds: 3,
-    baths: 2,
-    reception: 2,
-    sqft: 1500,
-    propertyType: 'Semi-Detached',
-    epcRating: 'B',
-    lat: 51.5074,
-    lng: -0.1278,
-  },
-  {
-    id: '3',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
-    price: '£1,200,000',
-    road: '789 Maple Road',
-    city: 'London',
-    postcode: 'W1 7YX',
-    beds: 4,
-    baths: 3,
-    reception: 2,
-    sqft: 2000,
-    propertyType: 'Detached',
-    epcRating: 'A',
-    lat: 51.5074,
-    lng: -0.1278,
-  },
-];
 
 // Define the Property interface for display
 interface PropertyDisplay {
@@ -111,142 +60,180 @@ const sortOptions = [
 
 type ViewMode = 'grid' | 'list' | 'map';
 
+// Default filter values
+const DEFAULT_FILTERS = {
+  priceRange: { min: 0, max: 2000000 },
+  location: '',
+  squareFootage: { min: 0, max: 10000 },
+  epcRating: 'any',
+  bedrooms: 'any',
+  bathrooms: 'any',
+  receptionRooms: 'any',
+  propertyType: 'any',
+  gardenPreference: 'any',
+  parkingSpaces: 'any',
+};
+
 // Update the ListingsSection props
 interface ListingsSectionProps {
-  initialProperties?: PropertyDisplay[];
+  initialProperties?: PropertySummary[];
+}
+
+// Match the PropertyMap component's Property interface
+interface MapProperty {
+  id: string;
+  lat: number;
+  lng: number;
+  price: string;
+  image: string;
+  beds: number;
+  propertyType: string;
 }
 
 const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) => {
-  const [properties, setProperties] = useState<PropertyDisplay[]>(initialProperties || []);
+  const [properties, setProperties] = useState<PropertySummary[]>(initialProperties || []);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState({
-    priceRange: { min: 0, max: 2000000 },
-    location: '',
-    squareFootage: { min: 0, max: 10000 },
-    epcRating: 'any',
-    bedrooms: 'any',
-    bathrooms: 'any',
-    receptionRooms: 'any',
-    propertyType: 'any',
-    gardenPreference: 'any',
-  });
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [apiFilters, setApiFilters] = useState<PropertyFilters>({});
-  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [sortOption, setSortOption] = useState<string>('price-asc');
   const [showSaveSearchModal, setShowSaveSearchModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<string>();
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [activeFilterCount, setActiveFilterCount] = useState(0);
+
+  // Load filters from localStorage on component mount
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('propertyFilters');
+    if (savedFilters) {
+      try {
+        const parsedFilters = JSON.parse(savedFilters);
+        setFilters(parsedFilters);
+        // Apply saved filters immediately
+        convertFiltersToApiFormat(parsedFilters);
+      } catch (e) {
+        console.error('Error parsing saved filters', e);
+        // If there's an error, just use default filters
+        localStorage.removeItem('propertyFilters');
+      }
+    }
+    
+    const savedSort = localStorage.getItem('propertySortBy');
+    if (savedSort) {
+      setSortOption(savedSort as string);
+    }
+    
+    const savedViewMode = localStorage.getItem('propertyViewMode');
+    if (savedViewMode) {
+      setViewMode(savedViewMode as ViewMode);
+    }
+  }, []);
+  
+  // Convert UI filters to API format
+  const convertFiltersToApiFormat = (uiFilters: typeof filters) => {
+    // Transform UI filters to API filters
+    const newApiFilters: PropertyFilters = {
+      min_price: uiFilters.priceRange.min > 0 ? uiFilters.priceRange.min : undefined,
+      max_price: uiFilters.priceRange.max < 2000000 ? uiFilters.priceRange.max : undefined,
+      bedrooms: uiFilters.bedrooms !== 'any' ? parseInt(uiFilters.bedrooms) : undefined,
+      bathrooms: uiFilters.bathrooms !== 'any' ? parseInt(uiFilters.bathrooms) : undefined,
+      city: uiFilters.location || undefined,
+      property_type: uiFilters.propertyType !== 'any' ? uiFilters.propertyType : undefined,
+      has_garden: uiFilters.gardenPreference === 'required' ? true : undefined,
+      parking_spaces: uiFilters.parkingSpaces !== 'any' ? parseInt(uiFilters.parkingSpaces) : undefined,
+    };
+    
+    setApiFilters(newApiFilters);
+    
+    // Count active filters for display
+    let count = 0;
+    if (uiFilters.priceRange.min > 0) count++;
+    if (uiFilters.priceRange.max < 2000000) count++;
+    if (uiFilters.location) count++;
+    if (uiFilters.bedrooms !== 'any') count++;
+    if (uiFilters.bathrooms !== 'any') count++;
+    if (uiFilters.propertyType !== 'any') count++;
+    if (uiFilters.gardenPreference !== 'any') count++;
+    if (uiFilters.parkingSpaces !== 'any') count++;
+    setActiveFilterCount(count);
+  };
 
   // Fetch properties from API
   useEffect(() => {
     const fetchProperties = async () => {
       try {
         setIsLoading(true);
-        const apiProperties = await PropertyService.getProperties(apiFilters);
-        
-        // Transform API properties to the display format
-        const transformedProperties = apiProperties.map(property => {
-          // Create a safe property specs object with defaults
-          const specs = {
-            reception_rooms: 1,
-            epc_rating: 'C',
-            ...property.specs
-          };
-          
-          // Create a safe address object with defaults
-          const address = {
-            latitude: 51.5074,
-            longitude: -0.1278,
-            ...property.address
-          };
-          
-          return {
-            id: property.id,
-            image: property.main_image_url || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994',
-            price: formatPrice(property.price),
-            road: property.address.street,
-            city: property.address.city,
-            postcode: property.address.postcode,
-            beds: property.bedrooms,
-            baths: property.bathrooms,
-            reception: specs.reception_rooms,
-            sqft: property.specs.square_footage,
-            propertyType: property.specs.property_type,
-            epcRating: specs.epc_rating,
-            lat: address.latitude,
-            lng: address.longitude,
-          };
-        });
-        
-        setProperties(transformedProperties);
         setError(null);
+        const apiProperties = await PropertyService.getProperties(apiFilters);
+        setProperties(apiProperties);
       } catch (err) {
         console.error('Error fetching properties:', err);
-        setError('Failed to load properties. Please try again later.');
-        // Use mock data as fallback if no initial properties
-        if (!initialProperties || initialProperties.length === 0) {
-          setProperties(mockProperties);
-        }
+        setError('Failed to fetch properties. Please try again.');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProperties();
-  }, [apiFilters, initialProperties]);
+  }, [apiFilters]);
+
+  // Save sort option to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('propertySortBy', sortOption);
+  }, [sortOption]);
+  
+  // Save view mode to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('propertyViewMode', viewMode);
+  }, [viewMode]);
 
   // Add sorting function
   const getSortedProperties = () => {
     return [...properties].sort((a, b) => {
-      switch (sortBy) {
+      switch (sortOption) {
         case 'price-asc':
-          return (
-            parseInt(a.price.replace(/[^0-9]/g, '')) -
-            parseInt(b.price.replace(/[^0-9]/g, ''))
-          );
+          return a.price - b.price;
         case 'price-desc':
-          return (
-            parseInt(b.price.replace(/[^0-9]/g, '')) -
-            parseInt(a.price.replace(/[^0-9]/g, ''))
-          );
+          return b.price - a.price;
+        case 'beds-asc':
+          return a.bedrooms - b.bedrooms;
         case 'beds-desc':
-          return b.beds - a.beds;
-        case 'size-desc':
-          return b.sqft - a.sqft;
+          return b.bedrooms - a.bedrooms;
         case 'newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         default:
-          return 0; // Will use backend sorting for newest
+          return 0;
       }
     });
   };
 
-  // Simulate loading when sorting changes
-  const handleSortChange = (newSort: SortOption) => {
+  // Handle sort change and save to localStorage
+  const handleSortChange = (newSort: string) => {
     setIsLoading(true);
-    setSortBy(newSort);
+    setSortOption(newSort);
+    localStorage.setItem('propertySortBy', newSort);
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
     }, 500);
   };
 
-  // Convert UI filters to API filters
+  // Apply filters and save to localStorage
   const applyFilters = () => {
     setIsLoading(true);
-    
-    // Transform UI filters to API filters
-    const newApiFilters: PropertyFilters = {
-      min_price: filters.priceRange.min > 0 ? filters.priceRange.min : undefined,
-      max_price: filters.priceRange.max < 2000000 ? filters.priceRange.max : undefined,
-      bedrooms: filters.bedrooms !== 'any' ? parseInt(filters.bedrooms) : undefined,
-      bathrooms: filters.bathrooms !== 'any' ? parseInt(filters.bathrooms) : undefined,
-      city: filters.location || undefined,
-      property_type: filters.propertyType !== 'any' ? filters.propertyType : undefined,
-      has_garden: filters.gardenPreference === 'required' ? true : undefined
-    };
-    
-    setApiFilters(newApiFilters);
+    convertFiltersToApiFormat(filters);
+    localStorage.setItem('propertyFilters', JSON.stringify(filters));
+    setShowFilters(false);
+  };
+  
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters(DEFAULT_FILTERS);
+    convertFiltersToApiFormat(DEFAULT_FILTERS);
+    localStorage.removeItem('propertyFilters');
     setShowFilters(false);
   };
 
@@ -258,7 +245,7 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
       name,
       notifyNewMatches,
       filters: { ...filters },
-      sortBy,
+      sortBy: sortOption,
       createdAt: new Date().toISOString(),
     };
 
@@ -266,24 +253,50 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
     // TODO: Save to backend
     setShowSaveSearchModal(false);
   };
+  
+  // Handle retry when API call fails
+  const handleRetry = () => {
+    setError(null);
+    setIsLoading(true);
+    // This will trigger the useEffect to fetch properties again
+    setApiFilters({...apiFilters});
+  };
+
+  // Transform properties for map view
+  const getMapProperties = (): MapProperty[] => {
+    return getSortedProperties().map(p => ({
+      id: p.id,
+      lat: p.address.latitude,
+      lng: p.address.longitude,
+      price: formatPrice(p.price),
+      image: p.main_image_url || '/placeholder-property.jpg',
+      beds: p.bedrooms,
+      propertyType: p.specs.property_type
+    }));
+  };
 
   return (
     <div className="pb-24">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
             Available Properties
             {isLoading && (
               <Loader2 className="ml-2 h-5 w-5 inline animate-spin text-emerald-600" />
+            )}
+            {activeFilterCount > 0 && (
+              <span className="ml-3 text-sm font-medium bg-emerald-100 text-emerald-800 py-1 px-2 rounded-full">
+                {activeFilterCount} {activeFilterCount === 1 ? 'filter' : 'filters'} active
+              </span>
             )}
           </h2>
           <div className="flex items-center gap-4">
             {/* Enhanced Sort Dropdown */}
             <div className="relative group">
               <select
-                value={sortBy}
-                onChange={e => handleSortChange(e.target.value as SortOption)}
+                value={sortOption}
+                onChange={e => handleSortChange(e.target.value)}
                 className="appearance-none bg-white px-4 py-2 pr-8 border rounded-lg 
                   hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500
                   transition-all duration-200 ease-in-out
@@ -348,11 +361,15 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
                 showFilters
                   ? 'bg-emerald-50 text-emerald-600 border-emerald-600'
                   : ''
+              } ${
+                activeFilterCount > 0 
+                  ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
+                  : ''
               }`}
               onClick={() => setShowFilters(!showFilters)}
             >
               <SlidersHorizontal className="h-5 w-5" />
-              <span>Filters</span>
+              <span>Filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}</span>
             </button>
 
             {/* Add Save Search button */}
@@ -366,10 +383,16 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
           </div>
         </div>
 
-        {/* Error message */}
+        {/* Error message with retry button */}
         {error && !isLoading && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 flex items-center justify-between">
             <p>{error}</p>
+            <button 
+              onClick={handleRetry}
+              className="flex items-center gap-1 text-sm font-medium bg-red-200 text-red-800 px-3 py-1 rounded hover:bg-red-300 transition-colors"
+            >
+              <RefreshCw className="h-4 w-4" /> Retry
+            </button>
           </div>
         )}
 
@@ -378,12 +401,20 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
           <div className="bg-white p-6 rounded-lg border shadow-sm">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Filters</h3>
-              <button
-                onClick={() => setShowFilters(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={clearFilters}
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  Clear All
+                </button>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -594,6 +625,29 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
                 </select>
               </div>
 
+              {/* Parking Spaces - Added new filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Parking Spaces
+                </label>
+                <select
+                  className="w-full p-2 border rounded"
+                  value={filters.parkingSpaces}
+                  onChange={e =>
+                    setFilters(prev => ({
+                      ...prev,
+                      parkingSpaces: e.target.value,
+                    }))
+                  }
+                >
+                  <option value="any">Any</option>
+                  <option value="1">1+</option>
+                  <option value="2">2+</option>
+                  <option value="3">3+</option>
+                  <option value="4">4+</option>
+                </select>
+              </div>
+
               {/* EPC Rating */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -607,20 +661,27 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
                   }
                 >
                   <option value="any">Any</option>
-                  <option value="a">A</option>
-                  <option value="b">B</option>
-                  <option value="c">C</option>
-                  <option value="d">D</option>
-                  <option value="e">E</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                  <option value="D">D</option>
+                  <option value="E">E</option>
+                  <option value="F">F</option>
+                  <option value="G">G</option>
                 </select>
               </div>
             </div>
 
-            {/* Apply Filters Button */}
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex justify-end space-x-4">
               <button
-                className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+                onClick={clearFilters}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+              >
+                Clear All
+              </button>
+              <button
                 onClick={applyFilters}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
               >
                 Apply Filters
               </button>
@@ -628,72 +689,113 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
           </div>
         )}
 
-        {/* No properties found */}
-        {!isLoading && properties.length === 0 && (
-          <div className="text-center py-12">
-            <div className="mx-auto h-16 w-16 text-gray-400">🏠</div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">No properties found</h3>
-            <p className="mt-1 text-gray-500">Try adjusting your search or filter criteria.</p>
-          </div>
-        )}
-
-        {/* Property Grid/List with animation */}
-        {viewMode === 'map' ? (
-          <div className="h-[calc(100vh-200px)]">
-            <PropertyMap
-              properties={properties}
-              selectedProperty={selectedProperty}
-              onPropertySelect={setSelectedProperty}
-            />
-          </div>
-        ) : (
-          <div
-            className={`
-              ${
-                viewMode === 'grid'
-                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-                  : 'space-y-4'
-              }
-              transition-all duration-300 ease-in-out
-            `}
-            style={{ opacity: isLoading ? 0.5 : 1 }}
-          >
-            {getSortedProperties().map(property => (
-              <div
-                key={property.id}
-                className="transition-all duration-300 ease-in-out transform"
-              >
-                <PropertyCard
-                  {...property}
-                  className={viewMode === 'list' ? 'flex' : ''}
-                />
+        {/* Properties Grid - Display Loading Skeletons */}
+        {isLoading && viewMode !== 'map' && (
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-6'}>
+            {[...Array(6)].map((_, index) => (
+              <div key={index} className={`animate-pulse ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
+                <div className={`bg-gray-200 rounded-md ${viewMode === 'list' ? 'w-64 h-36 flex-shrink-0' : 'aspect-video mb-3'}`}></div>
+                <div className={viewMode === 'list' ? 'flex-grow' : ''}>
+                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-5 bg-gray-200 rounded w-1/2 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                  <div className="mt-2 flex gap-2">
+                    <div className="h-4 bg-gray-200 rounded w-12"></div>
+                    <div className="h-4 bg-gray-200 rounded w-12"></div>
+                    <div className="h-4 bg-gray-200 rounded w-12"></div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* Loading overlay */}
-        {isLoading && (
-          <div className="fixed inset-0 bg-black/5 flex items-center justify-center pointer-events-none">
-            <div className="bg-white p-4 rounded-full shadow-lg">
-              <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-            </div>
+        {/* Properties Display */}
+        {!isLoading && (
+          <>
+            {/* Empty state when no properties are found */}
+            {properties.length === 0 && !isLoading && !error && (
+              <div className="text-center py-12 bg-gray-50 rounded-lg border">
+                <div className="mx-auto h-24 w-24 text-gray-400 mb-4">
+                  <SlidersHorizontal className="h-full w-full" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No properties found</h3>
+                <p className="text-gray-600 mb-6">
+                  {activeFilterCount > 0 
+                    ? 'Try adjusting your filters to see more properties' 
+                    : 'There are currently no properties matching your criteria'}
+                </p>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                  >
+                    Clear All Filters
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Grid View */}
+            {properties.length > 0 && viewMode === 'grid' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {getSortedProperties().map((property) => (
+                  <PropertyCard
+                    key={property.id}
+                    {...property}
+                    className="grid"
+                    showSaveButton={true}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* List View */}
+            {properties.length > 0 && viewMode === 'list' && (
+              <div className="space-y-6">
+                {getSortedProperties().map((property) => (
+                  <PropertyCard
+                    key={property.id}
+                    {...property}
+                    className="flex"
+                    showSaveButton={true}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Map View */}
+            {properties.length > 0 && viewMode === 'map' && (
+              <div className="h-[600px] relative rounded-lg overflow-hidden">
+                <PropertyMap
+                  properties={getMapProperties()}
+                  selectedProperty={selectedProperty}
+                  onPropertySelect={(id) => setSelectedProperty(id)}
+                />
+              </div>
+            )}
+          </>
+        )}
+        
+        {/* Pagination or Load More (future enhancement) */}
+        {properties.length > 0 && !isLoading && (
+          <div className="mt-8 flex justify-center">
+            <p className="text-gray-600">
+              Showing {properties.length} {properties.length === 1 ? 'property' : 'properties'}
+            </p>
           </div>
         )}
+      </div>
 
-        {/* Add SaveSearchModal */}
+      {/* Save Search Modal */}
+      {showSaveSearchModal && (
         <SaveSearchModal
           isOpen={showSaveSearchModal}
           onClose={() => setShowSaveSearchModal(false)}
           onSave={handleSaveSearch}
           currentFilters={filters}
         />
-      </div>
-
-      {/* Pagination */}
-      <div className="mt-6">
-        {/* Pagination controls */}
-      </div>
+      )}
     </div>
   );
 };

@@ -174,6 +174,26 @@ const FilterModal = ({ isOpen, onClose, onApply, currentFilters }: FilterModalPr
                 </select>
               </div>
 
+              {/* Parking Spaces - New Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Parking Spaces
+                </label>
+                <select 
+                  className="w-full p-2 border rounded-lg"
+                  value={filters.parkingSpaces || 'Any'}
+                  onChange={(e) => setFilters({...filters, parkingSpaces: e.target.value})}
+                >
+                  <option>Any</option>
+                  <option value="1">1+</option>
+                  <option value="2">2+</option>
+                  <option value="3">3+</option>
+                  <option value="4">4+</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
               {/* EPC Rating */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -193,7 +213,31 @@ const FilterModal = ({ isOpen, onClose, onApply, currentFilters }: FilterModalPr
             </div>
 
             {/* Apply Button */}
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => {
+                  // Clear filters
+                  const clearedFilters = {
+                    minPrice: '',
+                    maxPrice: '',
+                    bedrooms: 'Any',
+                    bathrooms: 'Any',
+                    propertyType: 'Any',
+                    location: '',
+                    minSqft: '',
+                    maxSqft: '',
+                    garden: 'Any',
+                    parkingSpaces: 'Any',
+                    epcRating: 'Any',
+                    receptionRooms: 'Any'
+                  };
+                  setFilters(clearedFilters);
+                  onApply(clearedFilters);
+                }}
+                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Clear All
+              </button>
               <button
                 onClick={() => {
                   onApply(filters);
