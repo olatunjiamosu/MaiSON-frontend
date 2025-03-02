@@ -26,18 +26,22 @@ class PropertyService {
     }
   }
 
-  private async getHeaders(requiresAuth: boolean = false): Promise<HeadersInit> {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    if (requiresAuth) {
+  private async getHeaders(requireAuth: boolean = false, includeContentType: boolean = true): Promise<Record<string, string>> {
+    const headers: Record<string, string> = {};
+    
+    if (includeContentType) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
+    if (requireAuth) {
       const token = await this.getAuthToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        throw new Error('Authentication required but no token available');
       }
     }
-
+    
     return headers;
   }
 
@@ -168,6 +172,77 @@ class PropertyService {
       }
     } catch (error) {
       console.error('Error deleting property:', error);
+      throw error;
+    }
+  }
+
+  async createPropertyWithImages(
+    property: CreatePropertyRequest,
+    mainImage: File, 
+    additionalImages?: File[]
+  ): Promise<PropertyResponse> {
+    try {
+      const url = this.buildUrl();
+      const formData = new FormData();
+      
+      // Create a modified version as a plain object
+      const propertyClone = { ...JSON.parse(JSON.stringify(property)) };
+      
+      // Convert square_footage to a float without forcing decimal places
+      propertyClone.specs.square_footage = parseFloat(propertyClone.specs.square_footage.toString());
+      
+      // Also convert garden_size to a float if it exists
+      if (propertyClone.features && propertyClone.features.garden_size !== undefined) {
+        propertyClone.features.garden_size = parseFloat(propertyClone.features.garden_size.toString());
+      }
+      
+      // Log what we're sending
+      console.log('Modified property data (raw):', propertyClone);
+      console.log('Modified property JSON:', JSON.stringify(propertyClone));
+      
+      // Add the property data as a JSON string under the 'data' key
+      formData.append('data', JSON.stringify(propertyClone));
+      
+      // Add the main image
+      formData.append('main_image', mainImage);
+      
+      // Add any additional images
+      if (additionalImages && additionalImages.length > 0) {
+        additionalImages.forEach(image => {
+          formData.append('additional_images', image);
+        });
+      }
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          // Don't set Content-Type, let the browser set it with the boundary
+          ...(await this.getHeaders(true, false)) // Add auth headers but skip content-type
+        },
+        body: formData
+      });
+      
+      // Log the raw response for debugging
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = 'Failed to create property with images';
+        
+        try {
+          const errorData = JSON.parse(errorText) as ErrorResponse;
+          errorMessage = errorData.message || errorData.error || (errorData.errors?.join(', ')) || errorMessage;
+        } catch (e) {
+          console.error('Could not parse error response:', errorText);
+        }
+        
+        console.error('API Error Response:', errorText);
+        throw new Error(errorMessage);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating property with images:', error);
       throw error;
     }
   }

@@ -15,8 +15,6 @@ const mockProperty: PropertySummary = {
     street: 'Test Road',
     city: 'Test City',
     postcode: 'TE1 1ST',
-    latitude: 51.5074,
-    longitude: -0.1278
   },
   specs: {
     property_type: 'Semi-Detached',
@@ -56,11 +54,6 @@ describe('PropertyCard', () => {
     const propertyWithoutImage: PropertySummary = {
       ...mockProperty,
       main_image_url: undefined,
-      address: {
-        ...mockProperty.address,
-        latitude: 51.5074,
-        longitude: -0.1278
-      }
     };
 
     render(

@@ -63,7 +63,7 @@ type ViewMode = 'grid' | 'list' | 'map';
 // Default filter values
 const DEFAULT_FILTERS = {
   priceRange: { min: 0, max: 2000000 },
-  location: '',
+  cityLocation: '',
   squareFootage: { min: 0, max: 10000 },
   epcRating: 'any',
   bedrooms: 'any',
@@ -134,13 +134,13 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
   
   // Convert UI filters to API format
   const convertFiltersToApiFormat = (uiFilters: typeof filters) => {
-    // Transform UI filters to API filters
+    // Transform UI filters to API filters - make sure field names match API exactly
     const newApiFilters: PropertyFilters = {
       min_price: uiFilters.priceRange.min > 0 ? uiFilters.priceRange.min : undefined,
       max_price: uiFilters.priceRange.max < 2000000 ? uiFilters.priceRange.max : undefined,
       bedrooms: uiFilters.bedrooms !== 'any' ? parseInt(uiFilters.bedrooms) : undefined,
       bathrooms: uiFilters.bathrooms !== 'any' ? parseInt(uiFilters.bathrooms) : undefined,
-      city: uiFilters.location || undefined,
+      city: uiFilters.cityLocation || undefined, // Now using cityLocation
       property_type: uiFilters.propertyType !== 'any' ? uiFilters.propertyType : undefined,
       has_garden: uiFilters.gardenPreference === 'required' ? true : undefined,
       parking_spaces: uiFilters.parkingSpaces !== 'any' ? parseInt(uiFilters.parkingSpaces) : undefined,
@@ -152,7 +152,7 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
     let count = 0;
     if (uiFilters.priceRange.min > 0) count++;
     if (uiFilters.priceRange.max < 2000000) count++;
-    if (uiFilters.location) count++;
+    if (uiFilters.cityLocation) count++; // Updated to cityLocation
     if (uiFilters.bedrooms !== 'any') count++;
     if (uiFilters.bathrooms !== 'any') count++;
     if (uiFilters.propertyType !== 'any') count++;
@@ -266,8 +266,8 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
   const getMapProperties = (): MapProperty[] => {
     return getSortedProperties().map(p => ({
       id: p.id,
-      lat: p.address.latitude,
-      lng: p.address.longitude,
+      lat: p.address.latitude || 51.5074 + (Math.random() - 0.5) * 0.1, // Default to London with slight randomization if no coords
+      lng: p.address.longitude || -0.1278 + (Math.random() - 0.5) * 0.1,
       price: formatPrice(p.price),
       image: p.main_image_url || '/placeholder-property.jpg',
       beds: p.bedrooms,
@@ -418,20 +418,20 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Location */}
+              {/* Location - renamed to City Location for clarity */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location
+                  City Location
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter postcode or area"
+                  placeholder="Enter city name"
                   className="w-full p-2 border rounded"
-                  value={filters.location}
+                  value={filters.cityLocation}
                   onChange={e =>
                     setFilters(prev => ({
                       ...prev,
-                      location: e.target.value,
+                      cityLocation: e.target.value,
                     }))
                   }
                 />

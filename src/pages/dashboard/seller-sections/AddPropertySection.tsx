@@ -201,14 +201,14 @@ const AddPropertySection = () => {
     }
     
     if (validFiles.length > 0) {
-      setFormData(prev => ({
-        ...prev,
+    setFormData(prev => ({
+      ...prev,
         images: [...prev.images, ...validFiles]
-      }));
+    }));
 
-      // Create preview URLs
+    // Create preview URLs
       const newPreviewUrls = validFiles.map(file => URL.createObjectURL(file));
-      setPreviewImages(prev => [...prev, ...newPreviewUrls]);
+    setPreviewImages(prev => [...prev, ...newPreviewUrls]);
     }
   };
 
@@ -245,10 +245,10 @@ const AddPropertySection = () => {
       
       const userId = user.uid;
       
-      // Prepare property data for API
+      // Prepare property data for API - ensure square_footage is parsed as a float
       const propertyData: CreatePropertyRequest = {
         price: Number(formData.price),
-        user_id: Number(userId) || 1, // Fallback to 1 if conversion fails
+        user_id: userId, // Keep user_id as a string (Firebase UID)
         address: {
           house_number: formData.houseNumber,
           street: formData.road,
@@ -259,7 +259,7 @@ const AddPropertySection = () => {
           bedrooms: Number(formData.beds),
           bathrooms: Number(formData.baths),
           reception_rooms: formData.reception ? Number(formData.reception) : undefined,
-          square_footage: Number(formData.sqft),
+          square_footage: parseFloat(formData.sqft || "0"), // Parse float and ensure it's not NaN
           property_type: formData.propertyType,
           epc_rating: formData.epcRating || undefined
         },
@@ -272,11 +272,15 @@ const AddPropertySection = () => {
         },
         features: {
           has_garden: formData.hasGarden,
-          garden_size: formData.gardenSize ? Number(formData.gardenSize) : undefined,
+          garden_size: formData.gardenSize ? parseFloat(formData.gardenSize) : undefined,
           has_garage: formData.hasGarage,
           parking_spaces: formData.parkingSpaces ? Number(formData.parkingSpaces) : undefined
         }
       };
+      
+      // Log the raw data and JSON for debugging
+      console.log('Raw property data:', propertyData);
+      console.log('Property JSON:', JSON.stringify(propertyData));
       
       let response;
       
@@ -297,22 +301,111 @@ const AddPropertySection = () => {
         if (formData.images.length > 0) {
           const mainImage = formData.images[0];
           const additionalImages = formData.images.slice(1);
-          response = await PropertyService.createPropertyWithImages(
-            propertyData,
-            mainImage,
-            additionalImages.length > 0 ? additionalImages : undefined
-          );
+          
+          // Validate image files
+          if (mainImage.size > MAX_IMAGE_SIZE) {
+            toast.error(`Main image exceeds maximum size of 5MB`);
+            setIsSubmitting(false);
+            return;
+          }
+          
+          if (!ALLOWED_IMAGE_TYPES.includes(mainImage.type)) {
+            toast.error(`Main image must be JPG, JPEG, PNG or GIF format`);
+            setIsSubmitting(false);
+            return;
+          }
+          
+          // Validate additional images
+          for (const img of additionalImages) {
+            if (img.size > MAX_IMAGE_SIZE) {
+              toast.error(`Additional image "${img.name}" exceeds maximum size of 5MB`);
+              setIsSubmitting(false);
+              return;
+            }
+            if (!ALLOWED_IMAGE_TYPES.includes(img.type)) {
+              toast.error(`Additional image "${img.name}" must be JPG, JPEG, PNG or GIF format`);
+              setIsSubmitting(false);
+              return;
+            }
+          }
+          
+          try {
+            console.log('Creating property with images:', {
+              propertyData,
+              mainImageType: mainImage.type,
+              mainImageSize: mainImage.size,
+              additionalImageCount: additionalImages.length
+            });
+            
+            // Log specifics about the square_footage to verify it's a float
+            console.log('Square footage value type:', typeof propertyData.specs.square_footage);
+            console.log('Square footage value:', propertyData.specs.square_footage);
+            
+            try {
+              response = await PropertyService.createPropertyWithImages(
+                propertyData,
+                mainImage,
+                additionalImages.length > 0 ? additionalImages : undefined
+              );
+              
+              console.log('Property created successfully:', response);
+              toast.success('Property added successfully!');
+            } catch (apiError: any) {
+              // Add more detailed logging for API errors
+              console.error('API Error details:', apiError);
+              
+              // Try a different approach if we're getting the same float error
+              if (apiError.message && apiError.message.includes('square_footage must be a float')) {
+                console.log('Attempting alternative approach for square_footage...');
+                
+                // Try directly modifying the property data to use a string with decimal
+                const altPropertyData = JSON.parse(JSON.stringify(propertyData));
+                altPropertyData.specs.square_footage = parseFloat(propertyData.specs.square_footage.toString()).toFixed(1);
+                
+                if (altPropertyData.features && altPropertyData.features.garden_size !== undefined) {
+                  altPropertyData.features.garden_size = parseFloat(
+                    propertyData.features?.garden_size?.toString() || '0'
+                  ).toFixed(1);
+                }
+                
+                console.log('Alternative property data:', altPropertyData);
+                
+                // Try the API call again with the modified data
+                response = await PropertyService.createPropertyWithImages(
+                  altPropertyData,
+                  mainImage,
+                  additionalImages.length > 0 ? additionalImages : undefined
+                );
+                
+                console.log('Property created successfully with alternative approach:', response);
+                toast.success('Property added successfully!');
+              } else {
+                // If it's not the float error, just throw it to be handled below
+                throw apiError;
+              }
+            }
+          } catch (err) {
+            console.error('Error in createPropertyWithImages:', err);
+            handleApiError(err);
+            setIsSubmitting(false);
+            return;
+          }
         } else {
-          response = await PropertyService.createProperty(propertyData);
+          try {
+            response = await PropertyService.createProperty(propertyData);
+            toast.success('Property added successfully!');
+          } catch (err) {
+            handleApiError(err);
+            setIsSubmitting(false);
+            return;
+          }
         }
-        
-        toast.success('Property added successfully!');
       }
       
       navigate('/seller-dashboard');
     } catch (error) {
       console.error(`Error ${isEditMode ? 'updating' : 'adding'} property:`, error);
-      toast.error(error instanceof Error ? error.message : `Failed to ${isEditMode ? 'update' : 'add'} property`);
+      handleApiError(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -325,8 +418,8 @@ const AddPropertySection = () => {
       // TODO: Replace with actual AI API call
       // For now, using a mock response
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
-      const mockResponse = "This stunning property offers a perfect blend of modern comfort and classic charm. Located in a sought-after area, it features spacious rooms with natural light throughout. The well-appointed kitchen and elegant bathrooms have been recently updated with high-quality fixtures.";
-      setFormData(prev => ({ ...prev, description: mockResponse }));
+    const mockResponse = "This stunning property offers a perfect blend of modern comfort and classic charm. Located in a sought-after area, it features spacious rooms with natural light throughout. The well-appointed kitchen and elegant bathrooms have been recently updated with high-quality fixtures.";
+    setFormData(prev => ({ ...prev, description: mockResponse }));
       toast.success('AI description generated!');
     } catch (error) {
       console.error('Error generating AI description:', error);
@@ -343,8 +436,8 @@ const AddPropertySection = () => {
       // TODO: Replace with actual AI API call
       // For now, using a mock response
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
-      const mockResponse = "495000";
-      setFormData(prev => ({ ...prev, price: mockResponse }));
+    const mockResponse = "495000";
+    setFormData(prev => ({ ...prev, price: mockResponse }));
       toast.success('AI price suggestion generated!');
     } catch (error) {
       console.error('Error generating AI price:', error);
@@ -353,6 +446,49 @@ const AddPropertySection = () => {
       setIsGeneratingAI(prev => ({ ...prev, price: false }));
     }
   };
+
+  // Add this function to handle API errors properly
+  const handleApiError = (error: any) => {
+    console.error('API Error:', error);
+    
+    // Display meaningful error message based on the error type
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+      
+      if (error.response.data) {
+        if (error.response.data.errors && Array.isArray(error.response.data.errors)) {
+          // Display each error as a separate toast
+          error.response.data.errors.forEach((err: string) => toast.error(err));
+        } else if (error.response.data.error) {
+          toast.error(error.response.data.error);
+        } else if (error.response.data.message) {
+          toast.error(error.response.data.message);
+        } else {
+          toast.error(`Server error: ${error.response.status}`);
+        }
+      } else {
+        toast.error(`Server error: ${error.response.status}`);
+      }
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('Request made but no response received');
+      toast.error('No response from server. Please check your network connection.');
+    } else if (error instanceof Error) {
+      // Something happened in setting up the request that triggered an Error
+      console.error('Error message:', error.message);
+      toast.error(error.message || 'An unexpected error occurred');
+    } else {
+      toast.error('An unexpected error occurred');
+    }
+    
+    // Also display a more visible error for users
+    toast.error('Failed to save property. Please check the console for details or try again later.', {
+      duration: 5000
+    });
+  }
 
   if (isLoading) {
     return (
@@ -752,7 +888,7 @@ const AddPropertySection = () => {
               {isGeneratingAI.description ? (
                 <Loader className="h-4 w-4 animate-spin" />
               ) : (
-                <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-4 w-4" />
               )}
               <span>Generate Mia Description</span>
             </button>
@@ -770,7 +906,7 @@ const AddPropertySection = () => {
           <div className="flex gap-2">
             <div className="relative flex-1">
               <span className="absolute left-3 top-2 text-gray-500">£</span>
-              <input
+            <input
                 type="text"
                 value={formData.price}
                 onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
@@ -779,9 +915,9 @@ const AddPropertySection = () => {
                 }`}
                 placeholder="Enter price"
               />
-            </div>
-            <button
-              type="button"
+          </div>
+                  <button
+                    type="button"
               onClick={getAIPrice}
               disabled={isGeneratingAI.price}
               className="flex items-center gap-2 px-4 py-2 text-emerald-600 border border-emerald-600 rounded-lg hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -792,8 +928,8 @@ const AddPropertySection = () => {
                 <Sparkles className="h-4 w-4" />
               )}
               <span>Get Mia's Suggestion</span>
-            </button>
-          </div>
+                  </button>
+                </div>
           {errors.price && (
             <p className="text-red-500 text-sm">{errors.price}</p>
           )}

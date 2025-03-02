@@ -49,8 +49,8 @@ export interface PropertySummary {
     street: string;
     city: string;
     postcode: string;
-    latitude: number;
-    longitude: number;
+    latitude?: number;
+    longitude?: number;
   };
   specs: {
     property_type: string;
@@ -77,7 +77,7 @@ export interface PropertyDetail {
 
 export interface CreatePropertyRequest {
   price: number;
-  user_id: number;
+  user_id: string | number;
   main_image_url?: string;
   address: PropertyAddress;
   specs: PropertySpecs;
