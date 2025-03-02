@@ -38,27 +38,27 @@ const AboutPage = () => {
   const teamMembers = [
     {
       name: "Alex Bull",
-      role: "Founder",
+      role: "Co-Founder",
       image: "/teamphotos/alex.jpeg"
     },
     {
       name: "Nell Norman",
-      role: "Founder",
+      role: "Co-Founder",
       image: "/teamphotos/nell.jpeg"
     },
     {
       name: "William Holy-Hasted",
-      role: "Founder",
+      role: "Co-Founder",
       image: "/teamphotos/will.jpeg"
     },
     {
       name: "Olatunji Amosu",
-      role: "Founder",
+      role: "Co-Founder",
       image: "/teamphotos/ola.jpeg"
     },
     {
       name: "Rob Lovegrove",
-      role: "Founder",
+      role: "Co-Founder",
       image: "/teamphotos/rob.jpeg"
     }
   ];
