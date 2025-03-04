@@ -29,7 +29,7 @@ import SavedPropertiesSection from './buyer-sections/SavedPropertiesSection';
 import ViewingsSection from './buyer-sections/ViewingsSection';
 import ApplicationsSection from './buyer-sections/ApplicationsSection';
 import PropertyChats from './buyer-sections/PropertyChats';
-import NotificationsSection from './buyer-sections/NotificationsSection';
+//import NotificationsSection from './buyer-sections/NotificationsSection';
 //import PreferencesSection from './buyer-sections/PreferencesSection';
 import DocumentsSection from './buyer-sections/DocumentsSection';
 
@@ -131,7 +131,7 @@ const BuyerDashboard = () => {
             {
               id: '2',
               role: 'assistant',
-              content: 'I apologize, but I could not retrieve the full conversation history. How can I help you today?',
+              content: 'I apologise, but I could not retrieve the full conversation history. How can I help you today?',
               timestamp: 'now'
             }
           ]);
@@ -330,13 +330,13 @@ const BuyerDashboard = () => {
             onClick={() => setActiveSection('applications')}
             path="/buyer-dashboard/applications"
           />
-          <NavItem
+          {/* <NavItem
             icon={<Bell />}
             label="Notifications"
             active={activeSection === 'notifications'}
             onClick={() => setActiveSection('notifications')}
             path="/buyer-dashboard/notifications"
-          />
+          /> */}
           {/* <NavItem
             icon={<Settings />}
             label="Preferences"
@@ -435,7 +435,7 @@ const BuyerDashboard = () => {
               <Route path="viewings" element={<ViewingsSection />} />
               <Route path="messages" element={<PropertyChats />} />
               <Route path="applications" element={<ApplicationsSection />} />
-              <Route path="notifications" element={<NotificationsSection />} />
+              {/* <Route path="notifications" element={<NotificationsSection />} /> */}
               <Route path="documents" element={<DocumentsSection />} />
             </Routes>
           </div>

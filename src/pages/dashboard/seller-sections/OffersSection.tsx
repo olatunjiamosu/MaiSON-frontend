@@ -36,6 +36,14 @@ interface PropertyStats {
   recentSoldPrice: number;
 }
 
+// Add PropertyDetailWithStatus interface to match what SellerDashboard passes
+interface PropertyDetailWithStatus {
+  id: string;
+  price: number;
+  status?: 'active' | 'pending' | 'sold' | 'withdrawn';
+  // Other property fields can be added as needed
+}
+
 const mockOffers: Offer[] = [
   {
     id: '1',
@@ -70,6 +78,7 @@ const mockOffers: Offer[] = [
   }
 ];
 
+// Keep mockStats but we'll only use parts we don't have real data for
 const mockStats: PropertyStats = {
   askingPrice: 500000,
   averageOffer: 480000,
@@ -79,11 +88,14 @@ const mockStats: PropertyStats = {
   recentSoldPrice: 488000
 };
 
-const OffersSection = () => {
+const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ property }) => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'pending' | 'accepted' | 'rejected'>('all');
 
+  // Use property.price if available, otherwise fallback to mock
+  const askingPrice = property?.price || mockStats.askingPrice;
+
   const getOfferStrength = (amount: number): { strength: string; color: string } => {
-    const percentageOfAsking = (amount / mockStats.askingPrice) * 100;
+    const percentageOfAsking = (amount / askingPrice) * 100;
     if (percentageOfAsking >= 98) return { strength: 'Strong', color: 'text-emerald-600' };
     if (percentageOfAsking >= 95) return { strength: 'Good', color: 'text-blue-600' };
     if (percentageOfAsking >= 90) return { strength: 'Fair', color: 'text-yellow-600' };
@@ -106,57 +118,60 @@ const OffersSection = () => {
       </div>
 
       {/* Market Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Asking Price</p>
-              <h3 className="text-2xl font-bold text-gray-900">{formatPrice(mockStats.askingPrice)}</h3>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-full">
-              <DollarSign className="h-6 w-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Highest Offer</p>
-              <h3 className="text-2xl font-bold text-gray-900">{formatPrice(mockStats.highestOffer)}</h3>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-full">
-              <TrendingUp className="h-6 w-6 text-blue-600" />
+      <div className="bg-white p-6 rounded-lg border shadow-sm">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Market Position</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Asking Price</p>
+                <h3 className="text-2xl font-bold text-gray-900">{formatPrice(askingPrice)}</h3>
+              </div>
+              <div className="p-3 bg-emerald-50 rounded-full">
+                <DollarSign className="h-6 w-6 text-emerald-600" />
+              </div>
             </div>
           </div>
-          <p className="mt-2 text-sm text-gray-500">
-            {((mockStats.highestOffer / mockStats.askingPrice) * 100).toFixed(1)}% of asking price
-          </p>
-        </div>
 
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Local Average</p>
-              <h3 className="text-2xl font-bold text-gray-900">{formatPrice(mockStats.averageLocalPrice)}</h3>
+          <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Highest Offer</p>
+                <h3 className="text-2xl font-bold text-gray-900">{formatPrice(mockStats.highestOffer)}</h3>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-full">
+                <TrendingUp className="h-6 w-6 text-blue-600" />
+              </div>
             </div>
-            <div className="p-3 bg-purple-50 rounded-full">
-              <BarChart className="h-6 w-6 text-purple-600" />
-            </div>
+            <p className="mt-2 text-sm text-gray-500">
+              {((mockStats.highestOffer / askingPrice) * 100).toFixed(1)}% of asking price
+            </p>
           </div>
-          <p className="mt-2 text-sm text-gray-500">
-            Based on recent sales in your area
-          </p>
-        </div>
 
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Number of Offers</p>
-              <h3 className="text-2xl font-bold text-gray-900">{mockStats.numberOfOffers}</h3>
+          <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Local Average</p>
+                <h3 className="text-2xl font-bold text-gray-900">{formatPrice(mockStats.averageLocalPrice)}</h3>
+              </div>
+              <div className="p-3 bg-purple-50 rounded-full">
+                <BarChart className="h-6 w-6 text-purple-600" />
+              </div>
             </div>
-            <div className="p-3 bg-orange-50 rounded-full">
-              <Clock className="h-6 w-6 text-orange-600" />
+            <p className="mt-2 text-sm text-gray-500">
+              Based on recent sales in your area
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Number of Offers</p>
+                <h3 className="text-2xl font-bold text-gray-900">{mockStats.numberOfOffers}</h3>
+              </div>
+              <div className="p-3 bg-orange-50 rounded-full">
+                <Clock className="h-6 w-6 text-orange-600" />
+              </div>
             </div>
           </div>
         </div>
@@ -264,8 +279,8 @@ const OffersSection = () => {
             <div>
               <h4 className="font-medium text-emerald-900">Market Position</h4>
               <p className="text-sm text-emerald-700">
-                Your asking price is positioned {mockStats.askingPrice > mockStats.averageLocalPrice ? 'above' : 'below'} 
-                the local market average, which could {mockStats.askingPrice > mockStats.averageLocalPrice ? 'extend' : 'reduce'} 
+                Your asking price is positioned {askingPrice > mockStats.averageLocalPrice ? 'above' : 'below'} 
+                the local market average, which could {askingPrice > mockStats.averageLocalPrice ? 'extend' : 'reduce'} 
                 the time to sell.
               </p>
             </div>

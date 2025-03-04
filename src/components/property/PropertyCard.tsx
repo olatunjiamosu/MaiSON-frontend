@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { formatPrice } from '../../lib/formatters';
 import { PropertySummary } from '../../types/property';
+import PropertyService from '../../services/PropertyService';
 
 // Only add UI-specific props to the API type
 export interface PropertyCardProps extends PropertySummary {
@@ -28,24 +29,81 @@ const PropertyCard = ({
 }: PropertyCardProps) => {
   const navigate = useNavigate();
   const formattedPrice = formatPrice(price);
+  const [saving, setSaving] = useState(false);
+  // Add local saved state to handle immediate UI updates
+  const [localSaved, setLocalSaved] = useState(isSaved);
+
+  // Update localSaved when isSaved prop changes
+  React.useEffect(() => {
+    setLocalSaved(isSaved);
+  }, [isSaved]);
 
   const handleViewProperty = () => {
     navigate(`/property/${id}`, {
-      state: { from: isSaved ? 'saved' : 'listings' },
+      state: { from: localSaved ? 'saved' : 'listings' },
     });
   };
 
-  const handleSaveClick = (e: React.MouseEvent) => {
+  const handleSaveClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Immediately update UI state for better UX
+    setLocalSaved(prev => !prev);
+    
+    // If a custom handler is provided, use that
     if (onToggleSave) {
-      onToggleSave(id);
-    } else {
-      console.log('Saving property:', id);
-      toast.success('Property saved successfully!', {
-        duration: 3000,
-        position: 'bottom-right',
-        icon: '❤️',
-      });
+      setSaving(true);
+      try {
+        await onToggleSave(id);
+        toast.success(localSaved 
+          ? 'Property removed from saved list' 
+          : 'Property saved successfully!', {
+          duration: 3000,
+          position: 'bottom-right',
+          icon: localSaved ? undefined : '❤️',
+        });
+      } catch (error) {
+        // Revert UI state on error
+        setLocalSaved(prev => !prev);
+        console.error('Error toggling property save status:', error);
+        toast.error(localSaved 
+          ? 'Failed to remove property from saved list' 
+          : 'Failed to save property. Please try again.');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+    
+    // Otherwise use the service to save/unsave
+    try {
+      setSaving(true);
+      
+      if (localSaved) {
+        // Unsave the property
+        await PropertyService.unsaveProperty(id);
+        toast.success('Property removed from saved list', {
+          duration: 3000,
+          position: 'bottom-right',
+        });
+      } else {
+        // Save the property
+        await PropertyService.saveProperty(id);
+        toast.success('Property saved successfully!', {
+          duration: 3000,
+          position: 'bottom-right',
+          icon: '❤️',
+        });
+      }
+    } catch (error) {
+      // Revert UI state on error
+      setLocalSaved(prev => !prev);
+      console.error('Error toggling property save status:', error);
+      toast.error(localSaved 
+        ? 'Failed to remove property from saved list' 
+        : 'Failed to save property. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -77,11 +135,15 @@ const PropertyCard = ({
         {showSaveButton && (
           <button
             onClick={handleSaveClick}
-            className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:bg-gray-50"
+            disabled={saving}
+            className={`absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 ${
+              saving ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            aria-label={localSaved ? "Unsave property" : "Save property"}
           >
             <Heart
               className={`h-5 w-5 ${
-                isSaved ? 'fill-emerald-600 text-emerald-600' : 'text-gray-400'
+                localSaved ? 'fill-emerald-600 text-emerald-600' : 'text-gray-400'
               }`}
             />
           </button>

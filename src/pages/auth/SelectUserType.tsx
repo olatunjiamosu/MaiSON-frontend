@@ -1,19 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Home, Image, Users } from 'lucide-react';
-import { doc, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-toastify';
+import UserService from '../../services/UserService';
 
 const SelectUserType = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Check if user already has a role
+    const checkUserRole = async () => {
+      if (user?.uid) {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists() && userDoc.data().role) {
+          // User already has a role, redirect to appropriate dashboard
+          const role = userDoc.data().role;
+          if (role === 'buyer') {
+            navigate('/buyer-dashboard');
+          } else if (role === 'seller') {
+            navigate('/seller-dashboard');
+          } else if (role === 'both') {
+            navigate('/seller-dashboard'); // Default to sellr dashboard for 'both'
+          }
+        }
+      }
+    };
+    
+    checkUserRole();
+  }, [user, navigate]);
 
   const handleUserTypeSelection = async (userType: 'buyer' | 'seller' | 'both') => {
+    if (!user) return;
+    
+    setLoading(true);
+    setError('');
+    
     try {
-      if (!user) return;
-      
       // Update user document in Firestore
       const userRef = doc(db, 'users', user.uid);
       await setDoc(userRef, {
@@ -22,18 +52,103 @@ const SelectUserType = () => {
         updatedAt: new Date().toISOString()
       }, { merge: true });
 
+      // Create user in listings API
+      await createUserInListingsAPI(userType);
+
       // Navigate based on role
       if (userType === 'buyer') {
         navigate('/buyer-dashboard');
       } else if (userType === 'seller') {
         navigate('/seller-dashboard');
       } else {
-        // For 'both' type users
-        navigate('/buyer-dashboard');
+        // For 'both' type users, default to buyer dashboard
+        // They can switch to seller dashboard from the navigation
+        navigate('/seller-dashboard');
       }
+
+      toast.success(`You are now registered as a ${userType}!`);
     } catch (error) {
       console.error('Error setting user role:', error);
       setError('Failed to set user role. Please try again.');
+      toast.error('Failed to set user role. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Create user in listings API database
+  const createUserInListingsAPI = async (userType: 'buyer' | 'seller' | 'both') => {
+    if (!user?.uid || !user.email) {
+      console.error('User information missing');
+      toast.error('User information is incomplete. Please try again.');
+      return;
+    }
+    
+    try {
+      // Determine the roles based on user type
+      const roles = [];
+      
+      if (userType === 'buyer' || userType === 'both') {
+        roles.push({ role_type: 'buyer' });
+      }
+      
+      if (userType === 'seller' || userType === 'both') {
+        roles.push({ role_type: 'seller' });
+      }
+      
+      // Get user data from Firestore
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      // Get user's first and last name from Firestore if available
+      let firstName = 'User';
+      let lastName = 'User';
+      let phoneNumber = undefined;
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        // Use Firestore data if available
+        firstName = userData.firstName || firstName;
+        lastName = userData.lastName || lastName;
+        phoneNumber = userData.phone || phoneNumber;
+        
+        console.log('Firestore user data:', userData);
+      } else {
+        console.log('No user document found in Firestore');
+        // Fall back to Auth user data if Firestore data not available
+        if (user.displayName) {
+          const nameParts = user.displayName.split(' ');
+          firstName = nameParts[0] || 'User';
+          lastName = nameParts.slice(1).join(' ') || 'User';
+        } else if (user.email) {
+          firstName = user.email.split('@')[0] || 'User';
+        }
+      }
+      
+      // Create the user data object matching API expectations
+      const userData = {
+        user_id: user.uid,
+        first_name: firstName,
+        last_name: lastName,
+        email: user.email,
+        phone_number: phoneNumber || user.phoneNumber || undefined,
+        roles: roles
+      };
+      
+      console.log('Sending user data to API:', userData);
+      
+      // Create the user in the listings API
+      await UserService.createUser(userData);
+      console.log('User successfully created in listings API');
+      
+    } catch (error: any) {
+      console.error('Error creating user in listings API:', error);
+      // Show more detailed error message if available
+      const errorMessage = error.message || 'We had trouble setting up your account fully. Some features may be limited.';
+      toast.warning(errorMessage);
+      
+      // Don't block the user from continuing if this fails
+      // We'll show a warning but let them proceed
     }
   };
 
@@ -73,7 +188,8 @@ const SelectUserType = () => {
           {/* Buyer Option */}
           <button 
             onClick={() => handleUserTypeSelection('buyer')}
-            className="flex flex-col items-center p-10 border-2 border-emerald-600 rounded-xl hover:bg-emerald-50 hover:-translate-y-1 transition-all duration-300"
+            disabled={loading}
+            className="flex flex-col items-center p-10 border-2 border-emerald-600 rounded-xl hover:bg-emerald-50 hover:-translate-y-1 transition-all duration-300 disabled:opacity-50"
           >
             <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center mb-6">
               <Home className="h-10 w-10 text-emerald-600" />
@@ -87,7 +203,8 @@ const SelectUserType = () => {
           {/* Seller Option */}
           <button 
             onClick={() => handleUserTypeSelection('seller')}
-            className="flex flex-col items-center p-10 border-2 border-blue-600 rounded-xl hover:bg-blue-50 hover:-translate-y-1 transition-all duration-300"
+            disabled={loading}
+            className="flex flex-col items-center p-10 border-2 border-blue-600 rounded-xl hover:bg-blue-50 hover:-translate-y-1 transition-all duration-300 disabled:opacity-50"
           >
             <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-6">
               <Image className="h-10 w-10 text-blue-600" />
@@ -101,7 +218,8 @@ const SelectUserType = () => {
           {/* Both Option */}
           <button 
             onClick={() => handleUserTypeSelection('both')}
-            className="flex flex-col items-center p-10 border-2 border-purple-600 rounded-xl hover:bg-purple-50 hover:-translate-y-1 transition-all duration-300"
+            disabled={loading}
+            className="flex flex-col items-center p-10 border-2 border-purple-600 rounded-xl hover:bg-purple-50 hover:-translate-y-1 transition-all duration-300 disabled:opacity-50"
           >
             <div className="w-20 h-20 rounded-full bg-purple-50 flex items-center justify-center mb-6">
               <Users className="h-10 w-10 text-purple-600" />

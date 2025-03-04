@@ -4,7 +4,9 @@ import {
   CreatePropertyRequest, 
   PropertyResponse, 
   PropertyFilters, 
-  ErrorResponse 
+  ErrorResponse,
+  DashboardResponse,
+  SavedProperty
 } from '../types/property';
 import { getAuth } from 'firebase/auth';
 
@@ -73,7 +75,15 @@ class PropertyService {
         throw new Error('Failed to fetch properties');
       }
       
-      return await response.json();
+      const properties = await response.json();
+      
+      // Ensure each property has an id field regardless of whether API returns id or property_id
+      return properties.map((property: any) => {
+        if (!property.id && property.property_id) {
+          property.id = property.property_id;
+        }
+        return property;
+      });
     } catch (error) {
       console.error('Error fetching properties:', error);
       throw error;
@@ -88,10 +98,17 @@ class PropertyService {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch property details');
+        throw new Error(`Failed to fetch property details: ${response.status} ${response.statusText}`);
       }
       
-      return await response.json();
+      const property = await response.json();
+      
+      // Ensure we have a consistent id field regardless of whether API returns id or property_id
+      if (!property.id && property.property_id) {
+        property.id = property.property_id;
+      }
+      
+      return property;
     } catch (error) {
       console.error('Error fetching property details:', error);
       throw error;
@@ -110,30 +127,161 @@ class PropertyService {
         throw new Error('Failed to fetch user properties');
       }
       
-      return await response.json();
+      const properties = await response.json();
+      
+      // Ensure each property has an id field regardless of whether API returns id or property_id
+      return properties.map((property: any) => {
+        if (!property.id && property.property_id) {
+          property.id = property.property_id;
+        }
+        return property;
+      });
     } catch (error) {
       console.error('Error fetching user properties:', error);
       throw error;
     }
   }
 
-  async createProperty(property: CreatePropertyRequest): Promise<PropertyResponse> {
+  /**
+   * Get the complete dashboard data for the current user
+   * This includes saved properties, listed properties, and negotiations
+   */
+  async getUserDashboard(): Promise<DashboardResponse> {
     try {
-      const url = this.buildUrl();
+      // Get the current user's ID from Firebase
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      const userId = user.uid;
+      const url = `${PROPERTY_API_URL}/api/users/${userId}/dashboard`;
+      
       const response = await fetch(url, {
-        method: 'POST',
-        headers: await this.getHeaders(true),
-        body: JSON.stringify(property)
+        headers: await this.getHeaders(true)
       });
       
       if (!response.ok) {
-        const errorData: ErrorResponse = await response.json();
-        throw new Error(errorData.message || 'Failed to create property');
+        throw new Error(`Failed to fetch user dashboard: ${response.status} ${response.statusText}`);
+      }
+      
+      const dashboardData = await response.json();
+      
+      // Process the data to ensure consistency with our frontend models
+      if (dashboardData.listed_properties) {
+        dashboardData.listed_properties = dashboardData.listed_properties.map((property: any) => {
+          if (!property.id && property.property_id) {
+            property.id = property.property_id;
+          }
+          return property;
+        });
+      }
+      
+      return dashboardData;
+    } catch (error) {
+      console.error('Error fetching user dashboard:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a property without images
+   * Uses direct JSON submission with Content-Type: application/json
+   */
+  async createProperty(property: CreatePropertyRequest): Promise<PropertyDetail> {
+    try {
+      const url = this.buildUrl('');
+      
+      // Ensure we're using the correct seller_id property name
+      const formattedProperty: any = { ...property };
+      if ('user_id' in formattedProperty && !formattedProperty.seller_id) {
+        formattedProperty.seller_id = formattedProperty.user_id;
+        delete formattedProperty.user_id;
+      }
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(await this.getHeaders(true, false)) // Add auth headers
+        },
+        body: JSON.stringify(formattedProperty)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          `Failed to create property: ${response.status} ${response.statusText}${
+            errorData ? ` - ${JSON.stringify(errorData)}` : ''
+          }`
+        );
       }
       
       return await response.json();
     } catch (error) {
       console.error('Error creating property:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a property with images
+   * Uses multipart/form-data submission with separate fields for data and images
+   */
+  async createPropertyWithImages(
+    propertyData: CreatePropertyRequest, 
+    mainImage: File, 
+    additionalImages?: File[]
+  ): Promise<PropertyDetail> {
+    try {
+      // Create a FormData object to submit multipart form data
+      const formData = new FormData();
+      
+      // Ensure we're using the correct seller_id property name
+      const formattedProperty: any = { ...propertyData };
+      if ('user_id' in formattedProperty && !formattedProperty.seller_id) {
+        formattedProperty.seller_id = formattedProperty.user_id;
+        delete formattedProperty.user_id;
+      }
+      
+      // Convert property data to a JSON string and add as 'data' field
+      formData.append('data', JSON.stringify(formattedProperty));
+      
+      // Add main image as 'main_image' field
+      formData.append('main_image', mainImage);
+      
+      // Add any additional images as 'additional_image' fields (singular name as required by API)
+      if (additionalImages && additionalImages.length > 0) {
+        additionalImages.forEach(image => {
+          formData.append('additional_image', image);
+        });
+      }
+      
+      const url = this.buildUrl('');
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          // Don't set Content-Type header - browser will set it with boundary for multipart/form-data
+          ...(await this.getHeaders(true, false)) // Add auth headers but skip content-type
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          `Failed to create property: ${response.status} ${response.statusText}${
+            errorData ? ` - ${JSON.stringify(errorData)}` : ''
+          }`
+        );
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating property with images:', error);
       throw error;
     }
   }
@@ -176,73 +324,149 @@ class PropertyService {
     }
   }
 
-  async createPropertyWithImages(
-    property: CreatePropertyRequest,
-    mainImage: File, 
-    additionalImages?: File[]
-  ): Promise<PropertyResponse> {
+  /**
+   * Save a property for the current user
+   * @param propertyId - The ID of the property to save
+   * @param notes - Optional notes about the property
+   */
+  async saveProperty(propertyId: string, notes?: string): Promise<any> {
     try {
-      const url = this.buildUrl();
-      const formData = new FormData();
+      // Get the current user's ID from Firebase
+      const auth = getAuth();
+      const user = auth.currentUser;
       
-      // Create a modified version as a plain object
-      const propertyClone = { ...JSON.parse(JSON.stringify(property)) };
-      
-      // Convert square_footage to a float without forcing decimal places
-      propertyClone.specs.square_footage = parseFloat(propertyClone.specs.square_footage.toString());
-      
-      // Also convert garden_size to a float if it exists
-      if (propertyClone.features && propertyClone.features.garden_size !== undefined) {
-        propertyClone.features.garden_size = parseFloat(propertyClone.features.garden_size.toString());
+      if (!user) {
+        throw new Error('User not authenticated');
       }
       
-      // Log what we're sending
-      console.log('Modified property data (raw):', propertyClone);
-      console.log('Modified property JSON:', JSON.stringify(propertyClone));
+      const userId = user.uid;
+      // Fix potential double slash by ensuring proper URL construction
+      const baseUrl = PROPERTY_API_URL.endsWith('/') ? PROPERTY_API_URL.slice(0, -1) : PROPERTY_API_URL;
+      const url = `${baseUrl}/api/users/${userId}/saved-properties`;
       
-      // Add the property data as a JSON string under the 'data' key
-      formData.append('data', JSON.stringify(propertyClone));
-      
-      // Add the main image
-      formData.append('main_image', mainImage);
-      
-      // Add any additional images
-      if (additionalImages && additionalImages.length > 0) {
-        additionalImages.forEach(image => {
-          formData.append('additional_images', image);
-        });
-      }
+      console.log('POST URL:', url); // For debugging
       
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          // Don't set Content-Type, let the browser set it with the boundary
-          ...(await this.getHeaders(true, false)) // Add auth headers but skip content-type
-        },
-        body: formData
+        headers: await this.getHeaders(true),
+        body: JSON.stringify({
+          property_id: propertyId,
+          notes: notes || null
+        })
       });
       
-      // Log the raw response for debugging
-      console.log('Response status:', response.status);
-      
       if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = 'Failed to create property with images';
-        
-        try {
-          const errorData = JSON.parse(errorText) as ErrorResponse;
-          errorMessage = errorData.message || errorData.error || (errorData.errors?.join(', ')) || errorMessage;
-        } catch (e) {
-          console.error('Could not parse error response:', errorText);
-        }
-        
-        console.error('API Error Response:', errorText);
-        throw new Error(errorMessage);
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          `Failed to save property: ${response.status} ${response.statusText}${
+            errorData ? ` - ${JSON.stringify(errorData)}` : ''
+          }`
+        );
       }
       
       return await response.json();
     } catch (error) {
-      console.error('Error creating property with images:', error);
+      console.error('Error saving property:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Unsave (remove) a property from the current user's saved properties
+   * @param propertyId - The ID of the property to unsave
+   */
+  async unsaveProperty(propertyId: string): Promise<any> {
+    try {
+      // Get the current user's ID from Firebase
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      const userId = user.uid;
+      // Fix potential double slash by ensuring proper URL construction
+      const baseUrl = PROPERTY_API_URL.endsWith('/') ? PROPERTY_API_URL.slice(0, -1) : PROPERTY_API_URL;
+      const url = `${baseUrl}/api/users/${userId}/saved-properties/${propertyId}`;
+      
+      console.log('DELETE URL:', url); // For debugging
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: await this.getHeaders(true)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          `Failed to unsave property: ${response.status} ${response.statusText}${
+            errorData ? ` - ${JSON.stringify(errorData)}` : ''
+          }`
+        );
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error unsaving property:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update notes for a saved property
+   * @param propertyId - The ID of the saved property
+   * @param notes - The updated notes
+   */
+  async updateSavedPropertyNotes(propertyId: string, notes: string): Promise<any> {
+    try {
+      // Get the current user's ID from Firebase
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      const userId = user.uid;
+      // Fix potential double slash by ensuring proper URL construction
+      const baseUrl = PROPERTY_API_URL.endsWith('/') ? PROPERTY_API_URL.slice(0, -1) : PROPERTY_API_URL;
+      const url = `${baseUrl}/api/users/${userId}/saved-properties/${propertyId}/notes`;
+      
+      console.log('PATCH URL:', url); // For debugging
+      
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: await this.getHeaders(true),
+        body: JSON.stringify({ notes })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          `Failed to update saved property notes: ${response.status} ${response.statusText}${
+            errorData ? ` - ${JSON.stringify(errorData)}` : ''
+          }`
+        );
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating saved property notes:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the user's saved properties
+   */
+  async getSavedProperties(): Promise<SavedProperty[]> {
+    try {
+      // This is a convenience method that extracts saved properties from the dashboard
+      const dashboardData = await this.getUserDashboard();
+      return dashboardData.saved_properties || [];
+    } catch (error) {
+      console.error('Error fetching saved properties:', error);
       throw error;
     }
   }

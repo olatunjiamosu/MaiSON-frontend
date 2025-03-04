@@ -8,12 +8,15 @@ import SelectUserType from './pages/auth/SelectUserType';
 import AppRoutes from './routes/Routes';
 import Home from './pages/LandingPage';
 import { ChatProvider } from './context/ChatContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const App = () => {
   return (
     <Router>
       <ChatProvider>
         <div>
+          <ToastContainer position="top-right" autoClose={5000} />
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Home />} />
@@ -30,7 +33,7 @@ const App = () => {
               } 
             />
             
-            {/* Add other protected routes here */}
+            {/* App routes */}
             <Route path="/*" element={<AppRoutes />} />
           </Routes>
         </div>

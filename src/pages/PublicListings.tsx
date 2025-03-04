@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Home, Bed, Bath, Square, SlidersHorizontal, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Search, Home, Bed, Bath, Square, SlidersHorizontal, RefreshCw, ArrowLeft } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navigation from '../components/layout/Navigation';
 import FilterModal from '../components/search/FilterModal';
 import PersistentChat from '../components/chat/PersistentChat';
@@ -23,20 +23,17 @@ interface PropertyDisplay {
   propertyType: string;
 }
 
-// Pagination settings
-const PAGE_SIZES = [12, 24, 48];
-
 // Local storage keys
 const STORAGE_KEYS = {
   FILTERS: 'property_filters',
   UI_FILTERS: 'property_ui_filters',
-  SEARCH_TERM: 'property_search_term',
-  PAGE_SIZE: 'property_page_size',
-  CURRENT_PAGE: 'property_current_page'
+  SEARCH_TERM: 'property_search_term'
 };
 
 const PublicListings = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromSellerDashboard = location.search?.includes('from=seller-dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -44,12 +41,6 @@ const PublicListings = () => {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
-  const [totalProperties, setTotalProperties] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
   
   // API filters
   const [filters, setFilters] = useState<PropertyFilters>({
@@ -108,23 +99,6 @@ const PublicListings = () => {
         console.error('Error parsing saved UI filters:', err);
       }
     }
-    
-    // Load pagination settings
-    const savedPageSize = localStorage.getItem(STORAGE_KEYS.PAGE_SIZE);
-    if (savedPageSize) {
-      const parsedPageSize = parseInt(savedPageSize, 10);
-      if (!isNaN(parsedPageSize) && PAGE_SIZES.includes(parsedPageSize)) {
-        setPageSize(parsedPageSize);
-      }
-    }
-    
-    const savedCurrentPage = localStorage.getItem(STORAGE_KEYS.CURRENT_PAGE);
-    if (savedCurrentPage) {
-      const parsedCurrentPage = parseInt(savedCurrentPage, 10);
-      if (!isNaN(parsedCurrentPage) && parsedCurrentPage > 0) {
-        setCurrentPage(parsedCurrentPage);
-      }
-    }
   }, []);
 
   // Save search term to localStorage when it changes
@@ -141,15 +115,6 @@ const PublicListings = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.UI_FILTERS, JSON.stringify(uiFilters));
   }, [uiFilters]);
-  
-  // Save pagination settings to localStorage when they change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PAGE_SIZE, pageSize.toString());
-  }, [pageSize]);
-  
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CURRENT_PAGE, currentPage.toString());
-  }, [currentPage]);
 
   // Set up debounced search term
   useEffect(() => {
@@ -174,16 +139,13 @@ const PublicListings = () => {
         // Otherwise, assume it's a city search
         setFilters(prev => ({ ...prev, city: debouncedSearchTerm }));
       }
-      
-      // Reset to first page when search changes
-      setCurrentPage(1);
     } else {
       // Clear city and property_type filters when search is empty
       setFilters(prev => ({ ...prev, city: undefined, property_type: undefined }));
     }
   }, [debouncedSearchTerm]);
 
-  // Fetch properties with current filters and pagination
+  // Fetch properties with current filters
   const fetchProperties = useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -193,21 +155,7 @@ const PublicListings = () => {
       }
       setError(null);
       
-      // Add pagination parameters to the API call
-      const paginatedFilters = {
-        ...filters,
-        page: currentPage,
-        limit: pageSize
-      };
-      
-      const apiResponse = await PropertyService.getProperties(paginatedFilters);
-      
-      // In a real implementation, the API would return pagination metadata
-      // For now, we'll simulate it based on the returned data
-      // This should be updated once the API supports pagination
-      const totalCount = apiResponse.length * 3; // Simulate more data
-      setTotalProperties(totalCount);
-      setTotalPages(Math.ceil(totalCount / pageSize));
+      const apiResponse = await PropertyService.getProperties(filters);
       
       // Transform API properties to the display format
       const transformedProperties = apiResponse.map(property => {
@@ -240,12 +188,12 @@ const PublicListings = () => {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [filters, currentPage, pageSize]);
+  }, [filters]);
 
-  // Fetch properties when filters or pagination changes
+  // Fetch properties when filters change
   useEffect(() => {
     fetchProperties();
-  }, [fetchProperties, currentPage, pageSize]);
+  }, [fetchProperties]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -275,23 +223,7 @@ const PublicListings = () => {
       parking_spaces: newFilters.parkingSpaces !== 'Any' ? Number(newFilters.parkingSpaces) : undefined
     };
     
-    // Reset to first page when filters change
-    setCurrentPage(1);
     setFilters(apiFilters);
-  };
-
-  // Handle pagination
-  const goToPage = (page: number) => {
-    if (page < 1 || page > totalPages) return;
-    setCurrentPage(page);
-    // Scroll to top when changing pages
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newSize = Number(e.target.value);
-    setPageSize(newSize);
-    setCurrentPage(1); // Reset to first page when changing page size
   };
 
   // Clear all filters and reset localStorage
@@ -313,14 +245,11 @@ const PublicListings = () => {
       receptionRooms: 'Any'
     });
     setSearchTerm('');
-    setCurrentPage(1);
     
     // Clear localStorage
     localStorage.removeItem(STORAGE_KEYS.FILTERS);
     localStorage.removeItem(STORAGE_KEYS.UI_FILTERS);
     localStorage.removeItem(STORAGE_KEYS.SEARCH_TERM);
-    localStorage.removeItem(STORAGE_KEYS.CURRENT_PAGE);
-    // Keep page size as user preference
   };
 
   return (
@@ -328,6 +257,19 @@ const PublicListings = () => {
       <Navigation />
       
       <div className="container mx-auto px-4 py-8 max-w-7xl flex-grow">
+        {/* Back to Dashboard link when coming from seller dashboard */}
+        {fromSellerDashboard && (
+          <div className="mb-4">
+            <button 
+              onClick={() => navigate('/seller-dashboard')}
+              className="flex items-center text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Back to Dashboard
+            </button>
+          </div>
+        )}
+        
         {/* Search and filter bar */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 mb-8 max-w-4xl mx-auto">
           <form onSubmit={handleSearch} className="flex items-center gap-2">
@@ -461,25 +403,12 @@ const PublicListings = () => {
           </div>
         )}
         
-        {/* Results count and page size selector */}
+        {/* Results count */}
         {!loading && !error && properties.length > 0 && (
-          <div className="mb-4 max-w-4xl mx-auto flex justify-between items-center">
+          <div className="mb-4 max-w-4xl mx-auto">
             <p className="text-gray-600">
-              Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, totalProperties)} of {totalProperties} properties
+              Showing {properties.length} properties
             </p>
-            <div className="flex items-center gap-2">
-              <label htmlFor="pageSize" className="text-sm text-gray-600">Show:</label>
-              <select
-                id="pageSize"
-                value={pageSize}
-                onChange={handlePageSizeChange}
-                className="border rounded p-1 text-sm"
-              >
-                {PAGE_SIZES.map(size => (
-                  <option key={size} value={size}>{size}</option>
-                ))}
-              </select>
-            </div>
           </div>
         )}
         
@@ -542,75 +471,6 @@ const PublicListings = () => {
             </div>
           ))}
         </div>
-        
-        {/* Pagination controls */}
-        {!loading && !error && properties.length > 0 && totalPages > 1 && (
-          <div className="flex justify-center mt-8">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="p-2 rounded-md border disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              
-              {/* Page numbers */}
-              <div className="flex items-center">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  // Show pages around current page
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => goToPage(pageNum)}
-                      className={`w-10 h-10 flex items-center justify-center rounded-md ${
-                        currentPage === pageNum
-                          ? 'bg-emerald-600 text-white'
-                          : 'border hover:bg-gray-50'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-                
-                {/* Show ellipsis if there are more pages */}
-                {totalPages > 5 && currentPage < totalPages - 2 && (
-                  <span className="px-2">...</span>
-                )}
-                
-                {/* Always show last page if not visible in the range */}
-                {totalPages > 5 && currentPage < totalPages - 2 && (
-                  <button
-                    onClick={() => goToPage(totalPages)}
-                    className="w-10 h-10 flex items-center justify-center rounded-md border hover:bg-gray-50"
-                  >
-                    {totalPages}
-                  </button>
-                )}
-              </div>
-              
-              <button
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-md border disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
       
       {/* Filter modal */}

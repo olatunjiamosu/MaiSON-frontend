@@ -15,6 +15,7 @@ import SinglePropertyMap from '../../components/map/SinglePropertyMap';
 import PropertyService from '../../services/PropertyService';
 import { PropertyDetail } from '../../types/property';
 import { formatPrice, formatDate } from '../../lib/formatters';
+import { toast } from 'react-hot-toast';
 
 interface PropertyDetailsProps {
   property?: {
@@ -47,6 +48,9 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [property, setProperty] = useState<any>(propProperty);
+  const [isSaved, setIsSaved] = useState(false);
+  const [savingProperty, setSavingProperty] = useState(false);
+  const [userDashboard, setUserDashboard] = useState<any>(null);
 
   useEffect(() => {
     // If property is provided via props, use that
@@ -70,7 +74,7 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
         
         // Transform API data to component format
         const transformedProperty = {
-          id: propertyData.id,
+          id: propertyData.id || propertyData.property_id,
           images: propertyData.image_urls || 
                  (propertyData.main_image_url ? [propertyData.main_image_url] : 
                  ['https://images.unsplash.com/photo-1568605114967-8130f3a36994']),
@@ -104,12 +108,76 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
     fetchPropertyDetails();
   }, [id, propProperty]);
 
+  // Check if property is saved
+  useEffect(() => {
+    const checkIfPropertyIsSaved = async () => {
+      if (!id) return;
+
+      try {
+        // Get user dashboard to check saved properties
+        const dashboardData = await PropertyService.getUserDashboard();
+        setUserDashboard(dashboardData);
+
+        // Check if this property is in saved properties
+        const isSavedProperty = dashboardData.saved_properties?.some(
+          (savedProp: any) => savedProp.property_id === id
+        );
+        
+        setIsSaved(isSavedProperty || false);
+      } catch (err) {
+        console.error('Error checking if property is saved:', err);
+        // Don't show an error to the user, just assume it's not saved
+        setIsSaved(false);
+      }
+    };
+
+    checkIfPropertyIsSaved();
+  }, [id]);
+
   const handleBack = () => {
     // Check if we came from saved properties
     if (location.state?.from === 'saved') {
       navigate('/buyer-dashboard/saved');
+    } else if (location.search?.includes('from=seller-dashboard')) {
+      // If viewing from seller dashboard, navigate back to that specific property's dashboard
+      navigate(`/seller-dashboard/property/${id}`);
     } else {
       navigate(-1);
+    }
+  };
+
+  const handleSaveProperty = async () => {
+    if (!id) return;
+    
+    try {
+      setSavingProperty(true);
+      
+      if (isSaved) {
+        // Unsave property - update UI first for responsiveness
+        setIsSaved(false);
+        await PropertyService.unsaveProperty(id);
+        toast.success('Property removed from saved list', {
+          duration: 3000,
+          position: 'bottom-right',
+          icon: '✓',
+        });
+      } else {
+        // Save property - update UI first for responsiveness
+        setIsSaved(true);
+        await PropertyService.saveProperty(id);
+        toast.success('Property saved successfully!', {
+          duration: 3000,
+          position: 'bottom-right',
+          icon: '❤️',
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling property save status:', error);
+      // Revert UI state on error
+      setIsSaved(!isSaved);
+      toast.error('Failed to update saved property status. Please try again.');
+    } finally {
+      setSavingProperty(false);
     }
   };
 
@@ -158,12 +226,33 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
           >
             <ArrowLeft className="h-5 w-5 mr-2" />
             Back to{' '}
-            {location.state?.from === 'saved' ? 'Saved Properties' : 'Listings'}
+            {location.state?.from === 'saved' 
+              ? 'Saved Properties' 
+              : location.search?.includes('from=seller-dashboard') 
+                ? 'Dashboard' 
+                : 'Listings'}
           </button>
           <div className="flex gap-4">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-gray-50">
-              <Heart className="h-5 w-5" />
-              Save
+            <button 
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${
+                isSaved 
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-700' 
+                  : 'hover:bg-gray-50'
+              } ${savingProperty ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={handleSaveProperty}
+              disabled={savingProperty}
+            >
+              {savingProperty ? (
+                <>
+                  <div className="h-5 w-5 border-t-2 border-emerald-500 border-solid rounded-full animate-spin"></div>
+                  {isSaved ? 'Saving...' : 'Saving...'}
+                </>
+              ) : (
+                <>
+                  <Heart className={`h-5 w-5 ${isSaved ? 'fill-emerald-500 text-emerald-500' : ''}`} />
+                  {isSaved ? 'Saved' : 'Save'}
+                </>
+              )}
             </button>
             <button className="flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-gray-50">
               <Share2 className="h-5 w-5" />

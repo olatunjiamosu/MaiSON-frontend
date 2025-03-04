@@ -18,6 +18,7 @@ import FeaturesPage from '../pages/FeaturesPage';
 import AboutPage from '../pages/AboutPage';
 import ContactPage from '../pages/ContactPage';
 import SellerDashboard from '../pages/dashboard/SellerDashboard';
+import SellerPropertyGrid from '../pages/dashboard/SellerPropertyGrid';
 import RoleRoute from './RoleRoute';
 
 // Remove mock property data as we're now using the API
@@ -48,8 +49,53 @@ const AppRoutes = () => (
       }
     />
 
+    {/* Seller Dashboard Routes */}
     <Route 
-      path="/seller-dashboard/*" 
+      path="/seller-dashboard" 
+      element={
+        <PrivateRoute>
+          <RoleRoute allowedRoles={['seller', 'both']}>
+            <SellerPropertyGrid />
+          </RoleRoute>
+        </PrivateRoute>
+      }
+    />
+    
+    <Route 
+      path="/seller-dashboard/properties" 
+      element={
+        <PrivateRoute>
+          <RoleRoute allowedRoles={['seller', 'both']}>
+            <SellerPropertyGrid />
+          </RoleRoute>
+        </PrivateRoute>
+      }
+    />
+    
+    <Route 
+      path="/seller-dashboard/property/:propertyId/*" 
+      element={
+        <PrivateRoute>
+          <RoleRoute allowedRoles={['seller', 'both']}>
+            <SellerDashboard />
+          </RoleRoute>
+        </PrivateRoute>
+      }
+    />
+    
+    <Route 
+      path="/seller-dashboard/add-property" 
+      element={
+        <PrivateRoute>
+          <RoleRoute allowedRoles={['seller', 'both']}>
+            <SellerDashboard />
+          </RoleRoute>
+        </PrivateRoute>
+      }
+    />
+    
+    <Route 
+      path="/seller-dashboard/edit-property/:propertyId" 
       element={
         <PrivateRoute>
           <RoleRoute allowedRoles={['seller', 'both']}>

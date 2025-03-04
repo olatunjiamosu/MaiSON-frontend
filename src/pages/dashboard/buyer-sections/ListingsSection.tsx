@@ -104,6 +104,8 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeFilterCount, setActiveFilterCount] = useState(0);
+  const [savedPropertyIds, setSavedPropertyIds] = useState<Set<string>>(new Set());
+  const [savedPropertiesLoading, setSavedPropertiesLoading] = useState(true);
 
   // Load filters from localStorage on component mount
   useEffect(() => {
@@ -274,6 +276,50 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
       propertyType: p.specs.property_type
     }));
   };
+
+  // Function to handle toggling save status
+  const handleToggleSave = async (propertyId: string) => {
+    try {
+      // If already saved, unsave it
+      if (savedPropertyIds.has(propertyId)) {
+        await PropertyService.unsaveProperty(propertyId);
+        setSavedPropertyIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(propertyId);
+          return newSet;
+        });
+      } else {
+        // Otherwise save it
+        await PropertyService.saveProperty(propertyId);
+        setSavedPropertyIds(prev => {
+          const newSet = new Set(prev);
+          newSet.add(propertyId);
+          return newSet;
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling save status:', error);
+      // Could add toast notification here for error
+    }
+  };
+
+  // Fetch saved properties when component mounts
+  useEffect(() => {
+    const fetchSavedProperties = async () => {
+      try {
+        setSavedPropertiesLoading(true);
+        const savedProperties = await PropertyService.getSavedProperties();
+        const savedIds = new Set(savedProperties.map(prop => prop.property_id));
+        setSavedPropertyIds(savedIds);
+      } catch (err) {
+        console.error('Error fetching saved properties:', err);
+      } finally {
+        setSavedPropertiesLoading(false);
+      }
+    };
+
+    fetchSavedProperties();
+  }, []);
 
   return (
     <div className="pb-24">
@@ -745,6 +791,8 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
                     {...property}
                     className="grid"
                     showSaveButton={true}
+                    isSaved={savedPropertyIds.has(property.id)}
+                    onToggleSave={handleToggleSave}
                   />
                 ))}
               </div>
@@ -759,6 +807,8 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
                     {...property}
                     className="flex"
                     showSaveButton={true}
+                    isSaved={savedPropertyIds.has(property.id)}
+                    onToggleSave={handleToggleSave}
                   />
                 ))}
               </div>
