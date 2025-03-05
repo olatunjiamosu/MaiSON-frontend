@@ -34,7 +34,7 @@ const ValuationForm: React.FC<ValuationFormProps> = ({ isOpen, onClose }) => {
       // Validate postcode (basic UK postcode format)
       const postcodeRegex = /^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$/i;
       if (!postcodeRegex.test(formData.postcode)) {
-        throw new Error('Please enter a valid UK postcode (e.g., SW4 0ES)');
+        throw new Error('Please enter a valid UK postcode (e.g., SW1W 0NY)');
       }
 
       // Fetch pricing data
@@ -91,7 +91,7 @@ const ValuationForm: React.FC<ValuationFormProps> = ({ isOpen, onClose }) => {
                   name="postcode"
                   value={formData.postcode}
                   onChange={handleInputChange}
-                  placeholder="e.g., SW4 0ES"
+                  placeholder="e.g., SW1W 0NY"
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                   required
                 />

@@ -39,7 +39,7 @@ class PricingService {
 
   // Generate mock data based on postcode (first part)
   private generateMockDataForPostcode(postcode: string): PricingApiResponse {
-    // Extract the first part of the postcode (e.g., "SW4" from "SW4 0ES")
+    // Extract the first part of the postcode (e.g., "SW1w" from "SW1W 0NY")
     const postcodePrefix = postcode.trim().split(' ')[0].toUpperCase();
     
     // Use the length and characters of the postcode prefix to create variation
@@ -73,7 +73,7 @@ class PricingService {
 
   /**
    * Fetches property price per floor area data for a given postcode
-   * @param postcode - UK postcode (e.g., SW4 0ES)
+   * @param postcode - UK postcode (e.g., SW1W 0NY)
    * @returns Promise with pricing data response
    */
   async getPricingData(postcode: string): Promise<PricingApiResponse> {
