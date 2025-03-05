@@ -181,6 +181,38 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
     }
   };
 
+  /**
+   * Opens the user's default email client with a pre-populated email
+   * containing details about the property and a link to view it.
+   * Uses the mailto: protocol which is supported by all major browsers
+   * and will open the user's configured email client.
+   */
+  const handleShareViaEmail = () => {
+    // Get the current URL
+    const propertyUrl = window.location.href;
+    
+    // Create property details for the email
+    const propertyTitle = property?.address?.street ? 
+      `${property.address.street}, ${property.address.city}` : 
+      'this property';
+    
+    // Create email subject and body (without price information)
+    const subject = `Check out ${propertyTitle} on MaiSON`;
+    const bodyText = `Hi,\n\nI thought you might be interested in ${propertyTitle} on MaiSON.\n\nYou can view it here: ${propertyUrl}\n\nRegards`;
+    
+    // Create the mailto URL with encoded subject and body
+    const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+    
+    // Open the email client
+    window.location.href = mailtoUrl;
+    
+    // Show success toast
+    toast.success('Opening email client...', {
+      duration: 3000,
+      position: 'bottom-right',
+    });
+  };
+
   const nextImage = () => {
     setSelectedImage((prev) => (prev + 1) % property.images.length);
   };
@@ -254,7 +286,11 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
                 </>
               )}
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-gray-50">
+            <button 
+              onClick={handleShareViaEmail}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-gray-50 hover:border-emerald-300"
+              title="Share via email"
+            >
               <Share2 className="h-5 w-5" />
               Share
             </button>
