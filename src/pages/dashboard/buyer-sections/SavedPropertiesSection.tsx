@@ -3,10 +3,11 @@ import { Search, Grid, List, X } from 'lucide-react';
 import PropertyCard from '../../../components/property/PropertyCard';
 import { toast } from 'react-hot-toast';
 import PropertyService from '../../../services/PropertyService';
-import { SavedProperty } from '../../../types/property';
+import { SavedProperty, DashboardResponse, Negotiation } from '../../../types/property';
 
 export default function SavedPropertiesSection() {
   const [savedProperties, setSavedProperties] = useState<SavedProperty[]>([]);
+  const [negotiations, setNegotiations] = useState<Negotiation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -14,16 +15,17 @@ export default function SavedPropertiesSection() {
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
 
-  // Get saved properties from API
+  // Get dashboard data from API
   useEffect(() => {
-    const fetchSavedProperties = async () => {
+    const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const properties = await PropertyService.getSavedProperties();
-        setSavedProperties(properties);
+        const dashboardData = await PropertyService.getUserDashboard();
+        setSavedProperties(dashboardData.saved_properties);
+        setNegotiations(dashboardData.negotiations_as_buyer);
         setError(null);
       } catch (err) {
-        console.error('Error fetching saved properties:', err);
+        console.error('Error fetching dashboard data:', err);
         setError('Unable to load saved properties. Please try again later.');
         toast.error('Error loading saved properties');
       } finally {
@@ -31,7 +33,7 @@ export default function SavedPropertiesSection() {
       }
     };
 
-    fetchSavedProperties();
+    fetchDashboardData();
   }, []);
 
   const filteredProperties = savedProperties.filter(
@@ -177,6 +179,7 @@ export default function SavedPropertiesSection() {
                   onToggleSave={() => handleUnsaveProperty(property.property_id)}
                   className={viewMode === 'list' ? 'flex' : ''}
                   showSaveButton
+                  negotiations={negotiations}
                 />
                 
                 <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">

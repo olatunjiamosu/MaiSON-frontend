@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, CheckCircle2, AlertCircle, Star, FileText } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, AlertCircle, Star, FileText, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 
 type ViewingStatus = 'upcoming' | 'completed';
 
@@ -53,6 +54,9 @@ const ViewingsSection = () => {
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
   const [ratings, setRatings] = useState<{ [key: string]: number }>({});
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+  const [offerAmount, setOfferAmount] = useState('');
+  const [selectedProperty, setSelectedProperty] = useState<{ id: string; address: string } | null>(null);
 
   const filteredViewings = mockViewings.filter(
     viewing => viewing.status === activeTab
@@ -85,10 +89,29 @@ const ViewingsSection = () => {
     navigate(`/property/${propertyId}`);
   };
 
-  const handleMakeOffer = (propertyId: string) => {
-    navigate('/buyer-dashboard/applications', {
-      state: { propertyId, fromViewing: true }
+  const handleMakeOffer = (propertyId: string, propertyAddress: string) => {
+    setSelectedProperty({ id: propertyId, address: propertyAddress });
+    setIsOfferModalOpen(true);
+  };
+
+  const handleSubmitOffer = () => {
+    if (!selectedProperty) return;
+    
+    // TODO: Implement API call to submit offer
+    console.log('Submitting offer:', {
+      propertyId: selectedProperty.id,
+      amount: parseFloat(offerAmount),
     });
+
+    // Navigate to applications page after submission
+    navigate('/buyer-dashboard/applications', {
+      state: { propertyId: selectedProperty.id, fromViewing: true }
+    });
+
+    // Reset and close modal
+    setOfferAmount('');
+    setIsOfferModalOpen(false);
+    setSelectedProperty(null);
   };
 
   return (
@@ -119,6 +142,50 @@ const ViewingsSection = () => {
           ))}
         </nav>
       </div>
+
+      {/* Offer Modal */}
+      {isOfferModalOpen && selectedProperty && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md relative mx-4">
+            {/* Close button */}
+            <button
+              onClick={() => setIsOfferModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Modal content */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold text-gray-900">Make an Offer</h3>
+              <p className="text-gray-600">{selectedProperty.address}</p>
+              
+              <div className="space-y-2">
+                <label htmlFor="offerAmount" className="block text-sm font-medium text-gray-700">
+                  Offer Amount (£)
+                </label>
+                <input
+                  type="number"
+                  id="offerAmount"
+                  value={offerAmount}
+                  onChange={(e) => setOfferAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="Enter your offer amount"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleSubmitOffer}
+                  className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+                >
+                  Submit Offer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Viewings List */}
       <div className="space-y-4">
@@ -289,7 +356,7 @@ const ViewingsSection = () => {
 
               <div className="mt-4 flex justify-end items-center">
                 <button
-                  onClick={() => handleMakeOffer(viewing.propertyId)}
+                  onClick={() => handleMakeOffer(viewing.propertyId, viewing.propertyAddress)}
                   className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors flex items-center space-x-2"
                 >
                   <FileText className="h-4 w-4" />

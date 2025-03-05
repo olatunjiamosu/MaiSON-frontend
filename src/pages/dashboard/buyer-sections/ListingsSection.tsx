@@ -15,7 +15,7 @@ import SaveSearchModal from '../../../components/search/SaveSearchModal';
 import PropertyMap from '../../../components/map/PropertyMap';
 import PersistentChat from '../../../components/chat/PersistentChat';
 import PropertyService from '../../../services/PropertyService';
-import { PropertySummary, PropertyFilters } from '../../../types/property';
+import { PropertySummary, PropertyFilters, Negotiation } from '../../../types/property';
 import { formatPrice } from '../../../lib/formatters';
 
 // Define the Property interface for display
@@ -92,6 +92,7 @@ interface MapProperty {
 
 const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) => {
   const [properties, setProperties] = useState<PropertySummary[]>(initialProperties || []);
+  const [negotiations, setNegotiations] = useState<Negotiation[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -106,6 +107,24 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
   const [activeFilterCount, setActiveFilterCount] = useState(0);
   const [savedPropertyIds, setSavedPropertyIds] = useState<Set<string>>(new Set());
   const [savedPropertiesLoading, setSavedPropertiesLoading] = useState(true);
+
+  // Fetch dashboard data when component mounts
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const dashboardData = await PropertyService.getUserDashboard();
+        setNegotiations(dashboardData.negotiations_as_buyer);
+        const savedIds = new Set(dashboardData.saved_properties.map(prop => prop.property_id));
+        setSavedPropertyIds(savedIds);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+      } finally {
+        setSavedPropertiesLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   // Load filters from localStorage on component mount
   useEffect(() => {
@@ -302,24 +321,6 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
       // Could add toast notification here for error
     }
   };
-
-  // Fetch saved properties when component mounts
-  useEffect(() => {
-    const fetchSavedProperties = async () => {
-      try {
-        setSavedPropertiesLoading(true);
-        const savedProperties = await PropertyService.getSavedProperties();
-        const savedIds = new Set(savedProperties.map(prop => prop.property_id));
-        setSavedPropertyIds(savedIds);
-      } catch (err) {
-        console.error('Error fetching saved properties:', err);
-      } finally {
-        setSavedPropertiesLoading(false);
-      }
-    };
-
-    fetchSavedProperties();
-  }, []);
 
   return (
     <div className="pb-24">
@@ -793,6 +794,7 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
                     showSaveButton={true}
                     isSaved={savedPropertyIds.has(property.id)}
                     onToggleSave={handleToggleSave}
+                    negotiations={negotiations}
                   />
                 ))}
               </div>
@@ -809,6 +811,7 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
                     showSaveButton={true}
                     isSaved={savedPropertyIds.has(property.id)}
                     onToggleSave={handleToggleSave}
+                    negotiations={negotiations}
                   />
                 ))}
               </div>

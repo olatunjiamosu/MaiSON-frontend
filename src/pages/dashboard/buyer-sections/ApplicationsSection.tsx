@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Clock, CheckCircle, XCircle, FileText, ArrowRight, 
   AlertCircle, Home, Scale, UserCheck, Key, Check 
 } from 'lucide-react';
+import PropertyService from '../../../services/PropertyService';
+import { Negotiation } from '../../../types/property';
 
-type ApplicationStatus = 'pending' | 'accepted' | 'rejected';
+type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
 type ViewMode = 'list' | 'detail';
 
 interface TimelineEvent {
@@ -20,6 +22,7 @@ interface Application {
   id: string;
   propertyId: string;
   propertyAddress: string;
+  propertyPrice: number;
   offerAmount: number;
   status: ApplicationStatus;
   submittedDate: string;
@@ -68,7 +71,7 @@ const Timeline = ({ events }: { events: TimelineEvent[] }) => (
               <div className="flex items-center mt-1">
                 <span className="text-xs text-gray-500">{event.date}</span>
                 {event.info && (
-                  <span className="text-xs text-gray-500 ml-2">• {event.info}</span>
+                  <span className={`text-xs ml-2 ${event.completed ? 'text-emerald-600' : 'text-gray-500'}`}>• {event.info}</span>
                 )}
               </div>
             </div>
@@ -79,171 +82,122 @@ const Timeline = ({ events }: { events: TimelineEvent[] }) => (
   </div>
 );
 
-// Update the mock data with complete timeline events
-const mockApplications: Application[] = [
-  {
-    id: '1',
-    propertyId: '456',
-    propertyAddress: '456 Oak Street, London SE15 3AB',
-    offerAmount: 450000,
-    status: 'pending',
-    submittedDate: '2024-03-15',
+const ApplicationsSection = () => {
+  const [filter, setFilter] = useState<ApplicationStatus | 'all'>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [applications, setApplications] = useState<Application[]>([]);
+
+  // Fetch negotiations from dashboard
+  useEffect(() => {
+    const fetchNegotiations = async () => {
+      try {
+        setLoading(true);
+        const dashboardData = await PropertyService.getUserDashboard();
+        
+        // Create a map of property details from offered properties
+        const propertyDetailsMap = new Map(
+          dashboardData.offered_properties.map(property => [
+            property.property_id,
+            {
+              address: `${property.address.house_number} ${property.address.street}, ${property.address.city} ${property.address.postcode}`,
+              price: property.price,
+              latest_offer: property.latest_offer
+            }
+          ])
+        );
+
+        // Convert negotiations to applications format
+        const newApplications: Application[] = dashboardData.negotiations_as_buyer.map(negotiation => {
+          const propertyDetails = propertyDetailsMap.get(negotiation.property_id);
+          
+          // Get the matching offered property
+          const offeredProperty = dashboardData.offered_properties.find(
+            prop => prop.property_id === negotiation.property_id
+          );
+          
+          // Map 'active' status to 'pending'
+          const mappedStatus = negotiation.status === 'active' ? 'pending' : negotiation.status as ApplicationStatus;
+          
+          return {
+            id: negotiation.negotiation_id,
+            propertyId: negotiation.property_id,
+            propertyAddress: propertyDetails?.address || 'Address not available',
+            propertyPrice: propertyDetails?.price || 0,
+            offerAmount: negotiation.current_offer,
+            status: mappedStatus,
+            submittedDate: negotiation.created_at,
     documents: [
-      { name: 'Proof of Funds', status: 'completed' },
+              { name: 'Proof of Funds', status: 'pending' },
       { name: 'Mortgage in Principle', status: 'pending' }
     ],
     milestones: {
       viewingComplete: true,
       offerSubmitted: true,
       documentsVerified: false,
-      solicitorAssigned: false
+              solicitorAssigned: mappedStatus === 'accepted'
     },
     timeline: [
       {
-        title: 'Viewing Completed',
-        date: 'March 10, 2024',
-        completed: true,
-        icon: <Home className="h-3 w-3" />,
-        info: 'In-person viewing'
-      },
-      {
         title: 'Offer Submitted',
-        date: 'March 12, 2024',
+                date: new Date(negotiation.created_at).toLocaleDateString('en-GB', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                }),
         completed: true,
         icon: <FileText className="h-3 w-3" />,
-        info: '£450,000'
-      },
-      {
-        title: 'Documents Uploaded',
-        date: 'March 13, 2024',
-        current: true,
-        icon: <FileText className="h-3 w-3" />,
-        info: 'Pending: Mortgage in Principle'
-      },
-      {
-        title: 'Offer Accepted',
-        date: 'Pending',
-        completed: false,
-        icon: <Check className="h-3 w-3" />
-      },
-      {
-        title: 'Solicitor Assigned',
-        date: 'Pending',
-        completed: false,
-        icon: <Scale className="h-3 w-3" />
-      },
-      {
-        title: 'Surveys Completed',
-        date: 'Pending',
-        completed: false,
-        icon: <UserCheck className="h-3 w-3" />
-      },
-      {
-        title: 'Exchange Contracts',
-        date: 'Pending',
-        completed: false,
-        icon: <FileText className="h-3 w-3" />
-      },
-      {
-        title: 'Completion',
-        date: 'Pending',
-        completed: false,
-        icon: <Key className="h-3 w-3" />
-      }
-    ]
-  },
-  {
-    id: '2',
-    propertyId: '123',
-    propertyAddress: '123 Maple Road, London N1 5AB',
-    offerAmount: 425000,
-    status: 'accepted',
-    submittedDate: '2024-03-10',
-    documents: [
-      { name: 'Proof of Funds', status: 'completed' },
-      { name: 'Mortgage in Principle', status: 'completed' }
-    ],
-    milestones: {
-      viewingComplete: true,
-      offerSubmitted: true,
-      documentsVerified: true,
-      solicitorAssigned: true
-    },
-    timeline: [
-      {
-        title: 'Viewing Completed',
-        date: 'March 5, 2024',
-        completed: true,
-        icon: <Home className="h-3 w-3" />,
-        info: 'In-person viewing'
-      },
-      {
-        title: 'Offer Submitted',
-        date: 'March 7, 2024',
-        completed: true,
-        icon: <FileText className="h-3 w-3" />,
-        info: '£425,000'
-      },
-      {
-        title: 'Documents Uploaded',
-        date: 'March 8, 2024',
-        completed: true,
-        icon: <FileText className="h-3 w-3" />,
-        info: 'All documents verified'
-      },
-      {
-        title: 'Offer Accepted',
-        date: 'March 10, 2024',
-        completed: true,
-        icon: <Check className="h-3 w-3" />
-      },
-      {
-        title: 'Solicitor Assigned',
-        date: 'March 12, 2024',
-        completed: true,
-        icon: <Scale className="h-3 w-3" />,
-        info: 'Smith & Partners LLP'
-      },
-      {
-        title: 'Surveys Completed',
-        date: 'In Progress',
-        current: true,
-        icon: <UserCheck className="h-3 w-3" />,
-        info: 'Scheduled for March 20'
-      },
-      {
-        title: 'Exchange Contracts',
-        date: 'Pending',
-        completed: false,
-        icon: <FileText className="h-3 w-3" />
-      },
-      {
-        title: 'Completion',
-        date: 'Pending',
-        completed: false,
-        icon: <Key className="h-3 w-3" />
-      }
-    ]
-  }
-];
+                info: `£${negotiation.current_offer.toLocaleString()}`
+              },
+              // Add status update if the offer status has changed
+              ...(offeredProperty && offeredProperty.latest_offer.status !== 'active' ? [
+                {
+                  title: `Offer ${offeredProperty.latest_offer.status.charAt(0).toUpperCase() + offeredProperty.latest_offer.status.slice(1)}`,
+                  date: new Date(offeredProperty.latest_offer.last_updated).toLocaleDateString('en-GB', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  }),
+                  completed: true,
+                  icon: offeredProperty.latest_offer.status === 'cancelled' ? <XCircle className="h-3 w-3" /> : <CheckCircle className="h-3 w-3" />,
+                  info: offeredProperty.latest_offer.status === 'cancelled' ? 'Offer cancelled' : `£${offeredProperty.latest_offer.amount.toLocaleString()}`
+                }
+              ] : [])
+            ]
+          };
+        });
 
-const ApplicationsSection = () => {
-  const [filter, setFilter] = useState<ApplicationStatus | 'all'>('all');
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+        setApplications(newApplications);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching negotiations:', err);
+        setError('Failed to load applications. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNegotiations();
+  }, []);
 
   const filteredApplications = filter === 'all' 
-    ? mockApplications 
-    : mockApplications.filter(app => app.status === filter);
+    ? applications 
+    : applications.filter(app => app.status === filter);
 
   const getStatusStyles = (status: ApplicationStatus) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
       case 'accepted':
         return 'bg-green-100 text-green-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
       case 'rejected':
         return 'bg-red-100 text-red-800';
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-600';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -251,6 +205,34 @@ const ApplicationsSection = () => {
     setSelectedApplication(application);
     setViewMode('detail');
   };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="border rounded-lg p-4">
+                <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="text-red-600 bg-red-50 p-4 rounded-lg">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   if (viewMode === 'detail' && selectedApplication) {
     return (
@@ -266,6 +248,7 @@ const ApplicationsSection = () => {
             <div>
               <h2 className="text-xl font-semibold">{selectedApplication.propertyAddress}</h2>
               <div className="flex items-center gap-4 mt-2">
+                <span className="text-gray-600">Listed for: £{selectedApplication.propertyPrice.toLocaleString()}</span>
                 <span className="text-emerald-600 font-medium">
                   £{selectedApplication.offerAmount.toLocaleString()}
                 </span>
@@ -302,6 +285,7 @@ const ApplicationsSection = () => {
             <option value="pending">Pending</option>
             <option value="accepted">Accepted</option>
             <option value="rejected">Rejected</option>
+            <option value="cancelled">Cancelled</option>
           </select>
         </div>
       </div>
@@ -315,8 +299,9 @@ const ApplicationsSection = () => {
                 <div>
                   <h2 className="text-lg font-semibold">{application.propertyAddress}</h2>
                   <div className="flex items-center gap-4 mt-1">
+                    <span className="text-gray-600">Listed for: £{application.propertyPrice.toLocaleString()}</span>
                     <span className="text-emerald-600 font-medium">
-                      £{application.offerAmount.toLocaleString()}
+                      Your offer: £{application.offerAmount.toLocaleString()}
                     </span>
                     <span className="text-gray-500">
                       Offer made: {new Date(application.submittedDate).toLocaleDateString('en-GB', {
@@ -331,6 +316,7 @@ const ApplicationsSection = () => {
                   {application.status === 'pending' && <Clock className="h-4 w-4" />}
                   {application.status === 'accepted' && <CheckCircle className="h-4 w-4" />}
                   {application.status === 'rejected' && <XCircle className="h-4 w-4" />}
+                  {application.status === 'cancelled' && <XCircle className="h-4 w-4" />}
                   {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                 </span>
               </div>
@@ -349,7 +335,6 @@ const ApplicationsSection = () => {
                     Offer Submitted
                   </div>
                 )}
-                {/* Add more milestones */}
               </div>
 
               {/* Required Actions or Next Steps */}
