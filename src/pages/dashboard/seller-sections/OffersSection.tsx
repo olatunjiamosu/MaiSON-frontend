@@ -322,242 +322,281 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Offers Portal</h2>
-        <p className="text-gray-500">Manage and analyze offers for your properties</p>
-      </div>
-
-      {/* Market Overview Cards */}
-      <div className="bg-white p-6 rounded-lg border shadow-sm">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Market Position</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-white p-6 rounded-lg border shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Asking Price</p>
-                <h3 className="text-2xl font-bold text-gray-900">
-                  {marketStats.askingPrice ? formatPrice(marketStats.askingPrice) : '-'}
-                </h3>
+      {loading ? (
+        <div className="p-6 text-center text-gray-500">Loading offers...</div>
+      ) : error ? (
+        <div className="p-6 text-center text-red-600">{error}</div>
+      ) : negotiations.some(n => n.status === 'accepted') ? (
+        <div className="bg-white rounded-lg border shadow-sm">
+          <div className="p-12 text-center space-y-8">
+            <div className="flex justify-center">
+              <div className="p-4 bg-emerald-100 rounded-full">
+                <CheckCircle2 className="h-16 w-16 text-emerald-600" />
               </div>
-              <div className="p-3 bg-emerald-50 rounded-full">
-                <DollarSign className="h-6 w-6 text-emerald-600" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-4xl font-bold text-gray-900">Congratulations!</h2>
+              <p className="text-xl text-gray-600">You have accepted an offer on your property</p>
+            </div>
+            {negotiations.filter(n => n.status === 'accepted').map(acceptedOffer => (
+              <div key={acceptedOffer.negotiation_id} className="max-w-2xl mx-auto bg-white rounded-lg border-2 border-emerald-500 p-8 space-y-6">
+                <div className="space-y-2">
+                  <p className="text-xl text-gray-600">Offer accepted from:</p>
+                  <p className="text-3xl font-semibold text-gray-900">{acceptedOffer.buyer_name}</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xl text-gray-600">Final agreed price:</p>
+                  <p className="text-4xl font-bold text-emerald-600">{formatPrice(acceptedOffer.current_offer)}</p>
+                </div>
+                <div className="pt-4">
+                  <p className="text-base text-gray-500">
+                    Accepted on {new Date(acceptedOffer.last_updated).toLocaleDateString('en-GB', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Offers Portal</h2>
+            <p className="text-gray-500">Manage and analyze offers for your properties</p>
+          </div>
+
+          {/* Market Overview Cards */}
+          <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Market Position</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="bg-white p-6 rounded-lg border shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Asking Price</p>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {marketStats.askingPrice ? formatPrice(marketStats.askingPrice) : '-'}
+                    </h3>
+                  </div>
+                  <div className="p-3 bg-emerald-50 rounded-full">
+                    <DollarSign className="h-6 w-6 text-emerald-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg border shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Highest Offer</p>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {marketStats.highestOffer ? formatPrice(marketStats.highestOffer) : '-'}
+                    </h3>
+                  </div>
+                  <div className="p-3 bg-blue-50 rounded-full">
+                    <TrendingUp className="h-6 w-6 text-blue-600" />
+                  </div>
+                </div>
+                {marketStats.highestOffer > 0 && (
+                  <p className="mt-2 text-sm text-gray-500">
+                    {((marketStats.highestOffer / marketStats.askingPrice) * 100).toFixed(1)}% of asking price
+                  </p>
+                )}
+              </div>
+
+              <div className="bg-white p-6 rounded-lg border shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Local Average</p>
+                    <h3 className="text-2xl font-bold text-gray-900">-</h3>
+                  </div>
+                  <div className="p-3 bg-purple-50 rounded-full">
+                    <BarChart className="h-6 w-6 text-purple-600" />
+                  </div>
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Based on recent sales in your area
+                </p>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg border shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Number of Offers</p>
+                    <h3 className="text-2xl font-bold text-gray-900">{marketStats.numberOfOffers || '-'}</h3>
+                  </div>
+                  <div className="p-3 bg-orange-50 rounded-full">
+                    <Clock className="h-6 w-6 text-orange-600" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg border shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Highest Offer</p>
-                <h3 className="text-2xl font-bold text-gray-900">
-                  {marketStats.highestOffer ? formatPrice(marketStats.highestOffer) : '-'}
-                </h3>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-full">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
+          {/* Offers List */}
+          <div className="bg-white rounded-lg border shadow-sm">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-bold">Current Offers</h3>
+                <select
+                  value={selectedFilter}
+                  onChange={(e) => setSelectedFilter(e.target.value as any)}
+                  className="px-4 py-2 border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="all">All Offers</option>
+                  <option value="action_required">Action Required</option>
+                  <option value="pending">Pending</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="rejected">Rejected</option>
+                </select>
               </div>
             </div>
-            {marketStats.highestOffer > 0 && (
-              <p className="mt-2 text-sm text-gray-500">
-                {((marketStats.highestOffer / marketStats.askingPrice) * 100).toFixed(1)}% of asking price
-              </p>
+
+            {filteredNegotiations.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                No {selectedFilter === 'all' ? '' : selectedFilter} offers found
+              </div>
+            ) : (
+              <div className="p-6 space-y-4">
+                {filteredNegotiations.map((negotiation) => {
+                  const offerStrength = getOfferStrength(negotiation.current_offer);
+                  
+                  return (
+                    <div key={negotiation.negotiation_id} className="bg-white rounded-lg border shadow-sm">
+                      <div className="p-6">
+                        <div className="space-y-4">
+                          {/* Header with Buyer Name and Status */}
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="text-xl font-semibold text-gray-900">
+                                Offer from: {negotiation.buyer_name}
+                              </h3>
+                            </div>
+                            <div>
+                              {negotiation.status === 'accepted' && (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700">
+                                  <CheckCircle2 className="w-4 h-4 mr-1" />
+                                  Accepted
+                                </span>
+                              )}
+                              {negotiation.status === 'active' && (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-50 text-yellow-700">
+                                  {negotiation.last_offer_by === user?.uid ? (
+                                    <Clock className="w-4 h-4 mr-1" />
+                                  ) : (
+                                    <AlertCircle className="w-4 h-4 mr-1" />
+                                  )}
+                                  {negotiation.last_offer_by === user?.uid ? 'Pending' : 'Action Required'}
+                                </span>
+                              )}
+                              {negotiation.status === 'rejected' && (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-50 text-red-700">
+                                  <XCircle className="w-4 h-4 mr-1" />
+                                  Rejected
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Price Information and Action Buttons */}
+                          <div className="flex items-baseline justify-between">
+                            <div className="flex items-baseline gap-6">
+                              <div>
+                                <span className={`text-sm ${
+                                  negotiation.status === 'active' && negotiation.last_offer_by === user?.uid ? 'text-blue-600' :
+                                  negotiation.status === 'active' ? 'text-emerald-600' : 
+                                  negotiation.status === 'rejected' ? 'text-red-600' :
+                                  negotiation.status === 'accepted' ? 'text-emerald-600' :
+                                  'text-gray-500'
+                                }`}>
+                                  {negotiation.status === 'active' && negotiation.last_offer_by !== user?.uid ? 'Current Offer From Buyer: ' :
+                                   negotiation.status === 'active' ? 'Counter Offer To Buyer: ' :
+                                   negotiation.status === 'accepted' ? 'Accepted offer: ' :
+                                   negotiation.status === 'rejected' ? 'Rejected offer: ' : 'Offer: '}
+                                </span>
+                                <span className={`text-lg font-medium ${
+                                  negotiation.status === 'active' && negotiation.last_offer_by === user?.uid ? 'text-blue-600' :
+                                  negotiation.status === 'active' ? 'text-emerald-600' :
+                                  negotiation.status === 'accepted' ? 'text-emerald-600' :
+                                  negotiation.status === 'rejected' ? 'text-red-600' :
+                                  'text-gray-900'
+                                }`}>
+                                  {formatPrice(negotiation.current_offer)}
+                                </span>
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {new Date(negotiation.last_updated).toLocaleDateString('en-GB', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </div>
+                            </div>
+                            {negotiation.status === 'active' && getDisplayStatus(negotiation) === 'action_required' && (
+                              <div className="flex items-center gap-2">
+                                <button className="px-4 py-1.5 bg-emerald-50 text-emerald-700 rounded-md hover:bg-emerald-100 transition-colors text-sm font-medium" onClick={() => handleAcceptOffer(negotiation)}>
+                                  Accept
+                                </button>
+                                <button className="px-4 py-1.5 bg-red-50 text-red-700 rounded-md hover:bg-red-100 transition-colors text-sm font-medium" onClick={() => handleRejectOffer(negotiation)}>
+                                  Reject
+                                </button>
+                                <button className="px-4 py-1.5 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors text-sm font-medium" onClick={() => handleCounterOffer(negotiation)}>
+                                  Counter
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {/* View Details Link */}
+                      <div className="flex justify-end border-t border-gray-200">
+                        <button className="text-gray-600 hover:text-gray-900 inline-flex items-center gap-1 text-sm font-medium py-3 px-6">
+                          View Details
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
 
-          <div className="bg-white p-6 rounded-lg border shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Local Average</p>
-                <h3 className="text-2xl font-bold text-gray-900">-</h3>
-              </div>
-              <div className="p-3 bg-purple-50 rounded-full">
-                <BarChart className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-            <p className="mt-2 text-sm text-gray-500">
-              Based on recent sales in your area
-            </p>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg border shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Number of Offers</p>
-                <h3 className="text-2xl font-bold text-gray-900">{marketStats.numberOfOffers || '-'}</h3>
-              </div>
-              <div className="p-3 bg-orange-50 rounded-full">
-                <Clock className="h-6 w-6 text-orange-600" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Offers List */}
-      <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-6 border-b">
-          <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-bold">Current Offers</h3>
-            <select
-              value={selectedFilter}
-              onChange={(e) => setSelectedFilter(e.target.value as any)}
-              className="px-4 py-2 border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="all">All Offers</option>
-              <option value="action_required">Action Required</option>
-              <option value="pending">Pending</option>
-              <option value="accepted">Accepted</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="p-6 text-center text-gray-500">Loading offers...</div>
-        ) : error ? (
-          <div className="p-6 text-center text-red-600">{error}</div>
-        ) : filteredNegotiations.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">
-            No {selectedFilter === 'all' ? '' : selectedFilter} offers found
-          </div>
-        ) : (
-          <div className="p-6 space-y-4">
-            {filteredNegotiations.map((negotiation) => {
-              const offerStrength = getOfferStrength(negotiation.current_offer);
-              
-              return (
-                <div key={negotiation.negotiation_id} className="bg-white rounded-lg border shadow-sm">
-                  <div className="p-6">
-                    <div className="space-y-4">
-                      {/* Header with Buyer Name and Status */}
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="text-xl font-semibold text-gray-900">
-                            Offer from: {negotiation.buyer_name}
-                          </h3>
-                        </div>
-                        <div>
-                          {negotiation.status === 'accepted' && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700">
-                              <CheckCircle2 className="w-4 h-4 mr-1" />
-                              Accepted
-                            </span>
-                          )}
-                          {negotiation.status === 'active' && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-50 text-yellow-700">
-                              {negotiation.last_offer_by === user?.uid ? (
-                                <Clock className="w-4 h-4 mr-1" />
-                              ) : (
-                                <AlertCircle className="w-4 h-4 mr-1" />
-                              )}
-                              {negotiation.last_offer_by === user?.uid ? 'Pending' : 'Action Required'}
-                            </span>
-                          )}
-                          {negotiation.status === 'rejected' && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-50 text-red-700">
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Rejected
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Price Information and Action Buttons */}
-                      <div className="flex items-baseline justify-between">
-                        <div className="flex items-baseline gap-6">
-                          <div>
-                            <span className={`text-sm ${
-                              negotiation.status === 'active' && negotiation.last_offer_by === user?.uid ? 'text-blue-600' :
-                              negotiation.status === 'active' ? 'text-emerald-600' : 
-                              negotiation.status === 'rejected' ? 'text-red-600' :
-                              negotiation.status === 'accepted' ? 'text-emerald-600' :
-                              'text-gray-500'
-                            }`}>
-                              {negotiation.status === 'active' && negotiation.last_offer_by !== user?.uid ? 'Current Offer From Buyer: ' :
-                               negotiation.status === 'active' ? 'Counter Offer To Buyer: ' :
-                               negotiation.status === 'accepted' ? 'Accepted offer: ' :
-                               negotiation.status === 'rejected' ? 'Rejected offer: ' : 'Offer: '}
-                            </span>
-                            <span className={`text-lg font-medium ${
-                              negotiation.status === 'active' && negotiation.last_offer_by === user?.uid ? 'text-blue-600' :
-                              negotiation.status === 'active' ? 'text-emerald-600' :
-                              negotiation.status === 'accepted' ? 'text-emerald-600' :
-                              negotiation.status === 'rejected' ? 'text-red-600' :
-                              'text-gray-900'
-                            }`}>
-                              {formatPrice(negotiation.current_offer)}
-                            </span>
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {new Date(negotiation.last_updated).toLocaleDateString('en-GB', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </div>
-                        </div>
-                        {negotiation.status === 'active' && getDisplayStatus(negotiation) === 'action_required' && (
-                          <div className="flex items-center gap-2">
-                            <button className="px-4 py-1.5 bg-emerald-50 text-emerald-700 rounded-md hover:bg-emerald-100 transition-colors text-sm font-medium" onClick={() => handleAcceptOffer(negotiation)}>
-                              Accept
-                            </button>
-                            <button className="px-4 py-1.5 bg-red-50 text-red-700 rounded-md hover:bg-red-100 transition-colors text-sm font-medium" onClick={() => handleRejectOffer(negotiation)}>
-                              Reject
-                            </button>
-                            <button className="px-4 py-1.5 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors text-sm font-medium" onClick={() => handleCounterOffer(negotiation)}>
-                              Counter
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  {/* View Details Link */}
-                  <div className="flex justify-end border-t border-gray-200">
-                    <button className="text-gray-600 hover:text-gray-900 inline-flex items-center gap-1 text-sm font-medium py-3 px-6">
-                      View Details
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
+          {/* Market Analysis */}
+          <div className="bg-white rounded-lg border shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Offer Analysis</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4 p-4 bg-blue-50 rounded-lg">
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Market Analysis */}
-      <div className="bg-white rounded-lg border shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Offer Analysis</h3>
-        <div className="space-y-4">
-          <div className="flex items-start gap-4 p-4 bg-blue-50 rounded-lg">
-            <div className="p-2 bg-blue-100 rounded-full">
-              <TrendingUp className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <h4 className="font-medium text-blue-900">Offer Analysis</h4>
-              <p className="text-sm text-blue-700">
-                Your highest offer is {((marketStats.highestOffer / mockStats.averageLocalPrice) * 100).toFixed(1)}% 
-                of the local average price. Recent properties in your area have sold for {formatPrice(mockStats.recentSoldPrice)}.
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-start gap-4 p-4 bg-emerald-50 rounded-lg">
-            <div className="p-2 bg-emerald-100 rounded-full">
-              <BarChart className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <h4 className="font-medium text-emerald-900">Market Position</h4>
-              <p className="text-sm text-emerald-700">
-                Your asking price is positioned {marketStats.askingPrice > mockStats.averageLocalPrice ? 'above' : 'below'} 
-                the local market average, which could {marketStats.askingPrice > mockStats.averageLocalPrice ? 'extend' : 'reduce'} 
-                the time to sell.
-              </p>
+                <div>
+                  <h4 className="font-medium text-blue-900">Offer Analysis</h4>
+                  <p className="text-sm text-blue-700">
+                    Your highest offer is {((marketStats.highestOffer / mockStats.averageLocalPrice) * 100).toFixed(1)}% 
+                    of the local average price. Recent properties in your area have sold for {formatPrice(mockStats.recentSoldPrice)}.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4 p-4 bg-emerald-50 rounded-lg">
+                <div className="p-2 bg-emerald-100 rounded-full">
+                  <BarChart className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-emerald-900">Market Position</h4>
+                  <p className="text-sm text-emerald-700">
+                    Your asking price is positioned {marketStats.askingPrice > mockStats.averageLocalPrice ? 'above' : 'below'} 
+                    the local market average, which could {marketStats.askingPrice > mockStats.averageLocalPrice ? 'extend' : 'reduce'} 
+                    the time to sell.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Reject Confirmation Modal */}
       {isRejectModalOpen && createPortal(
