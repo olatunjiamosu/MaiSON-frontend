@@ -13,6 +13,7 @@ import {
   List,
   Handshake,
   X,
+  SwitchCamera,
 } from 'lucide-react';
 import { useNavigate, Routes, Route, useLocation, useParams } from 'react-router-dom';
 import PersistentChat from '../../components/chat/PersistentChat';
@@ -23,6 +24,7 @@ import { API_CONFIG } from '../../config/api';
 import ReactMarkdown from 'react-markdown';
 import PreviousChats from '../../components/chat/PreviousChats';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-hot-toast';
 
 // Import Sections (from `buyer-sections`)
 import ListingsSection from './buyer-sections/ListingsSection';
@@ -52,26 +54,6 @@ interface ChatMessageDisplay {
   timestamp?: string;
 }
 
-const mockProperties = [
-  {
-    id: '1',
-    image: 'https://example.com/image1.jpg',
-    price: '£800,000',
-    road: '123 Park Avenue',
-    city: 'London',
-    postcode: 'SE22 9QA',
-    beds: 2,
-    baths: 2,
-    reception: 1,
-    sqft: 1200,
-    propertyType: 'Terraced',
-    epcRating: 'C',
-    lat: 51.5074,
-    lng: -0.1278,
-  },
-  // Add more properties as needed
-];
-
 const BuyerDashboard: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -82,12 +64,13 @@ const BuyerDashboard: React.FC = () => {
   const { chatHistory, isLoadingChats, addConversation, refreshChatHistory } = useChat();
   
   // Get auth context
-  const authContext = useAuth();
+  const auth = useAuth();
+  const { user, userRole } = auth;
 
-  // Simulating user data (Replace with real auth system)
-  const user = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
+  // User data from auth context
+  const userData = {
+    name: user?.email?.split('@')[0] || 'User',
+    email: user?.email || '',
   };
 
   // Add state for selected chat
@@ -221,7 +204,13 @@ const BuyerDashboard: React.FC = () => {
     }
   }, []);
 
-  // Logout Function ✅
+  // Add function to handle dashboard switch
+  const handleSwitchDashboard = () => {
+    navigate('/select-dashboard');
+    toast.success('Switching dashboards');
+  };
+
+  // Update the logout function
   const handleLogout = () => {
     const confirmLogout = window.confirm('Are you sure you want to log out?');
     if (confirmLogout) {
@@ -242,8 +231,8 @@ const BuyerDashboard: React.FC = () => {
       localStorage.removeItem('token');
       
       // Use the auth context's logout method if it exists
-      if (authContext && authContext.logout) {
-        authContext.logout()
+      if (auth && auth.logout) {
+        auth.logout()
           .then(() => {
             navigate('/login');
           })
@@ -266,7 +255,6 @@ const BuyerDashboard: React.FC = () => {
 
   // Add console.log to debug
   console.log('Rendering BuyerDashboard');
-  console.log('Mock Properties:', mockProperties);
 
   const isMessagesSection = location.pathname.includes('/chats') || 
                            location.pathname.includes('/messages');
@@ -362,7 +350,7 @@ const BuyerDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
       <aside
         className={`fixed md:static inset-y-0 left-0 w-64 bg-white shadow-sm border-r transform transition-transform duration-200 ${
@@ -371,7 +359,7 @@ const BuyerDashboard: React.FC = () => {
       >
         {/* Logo & Menu Toggle */}
         <div className="p-4 border-b flex items-center justify-between">
-          <div
+          <div 
             className="flex items-center space-x-2 cursor-pointer"
             onClick={handleLogoClick}
           >
@@ -384,18 +372,34 @@ const BuyerDashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Switch Dashboard Button - Only visible to 'both' role users */}
+        {userRole === 'both' && (
+          <div className="px-4 py-3 border-b">
+            <button
+              onClick={handleSwitchDashboard}
+              className="flex items-center justify-center w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md transition-colors"
+            >
+              <SwitchCamera className="h-4 w-4 mr-2" />
+              <span>Switch Dashboard</span>
+            </button>
+          </div>
+        )}
+
         {/* Navigation Links */}
         <nav className="p-4 space-y-1">
           <NavItem
             icon={<List />}
             label="All Listings"
             active={activeSection === 'listings'}
-            onClick={() => setActiveSection('listings')}
+            onClick={() => {
+              setActiveSection('listings');
+              navigate('/buyer-dashboard');
+            }}
             path="/buyer-dashboard"
           />
           {/* <NavItem
             icon={<Handshake />}
-            label="Property Matches"
+            label="My Matches"
             active={activeSection === 'matches'}
             onClick={() => setActiveSection('matches')}
             path="/buyer-dashboard/matches"
@@ -468,19 +472,17 @@ const BuyerDashboard: React.FC = () => {
         {/* Profile Section */}
         <div className="mt-auto border-t p-4">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-600 font-medium">{user.name[0]}</span>
+            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+              <span className="text-emerald-600 font-medium">{userData.name[0].toUpperCase()}</span>
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-gray-500">{user.email}</p>
+              <p className="text-sm text-gray-700">{userData.email}</p>
             </div>
-            <button
-              onClick={handleLogout}
-              className="text-gray-400 hover:text-gray-500"
-            >
-              <LogOut className="h-5 w-5" />
-            </button>
+            <div className="text-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
           </div>
         </div>
       </aside>
@@ -506,7 +508,7 @@ const BuyerDashboard: React.FC = () => {
             <Routes>
               <Route
                 index
-                element={<ListingsSection initialProperties={mockProperties} />}
+                element={<ListingsSection />}
               />
               <Route path="saved" element={<SavedPropertiesSection />} />
               <Route path="viewings" element={<ViewingsSection />} />
@@ -530,106 +532,8 @@ const BuyerDashboard: React.FC = () => {
 
       {/* Selected Chat Modal */}
       {selectedChat && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
-          onClick={() => setSelectedChat(null)}
-        >
-          <div 
-            className="bg-white rounded-xl w-[800px] max-h-[80vh] flex flex-col"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header with title and close button */}
-            <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-xl font-semibold">{selectedChat.question}</h2>
-              <button 
-                onClick={() => setSelectedChat(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Mia Profile Header */}
-            <div className="p-4 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                <span className="text-emerald-700 font-semibold">M</span>
-              </div>
-              <div>
-                <h3 className="font-semibold">Mia</h3>
-                <p className="text-sm text-gray-500">AI Assistant</p>
-              </div>
-            </div>
-
-            {/* Chat Content */}
-            <div 
-              ref={chatMessagesRef}
-              className="flex-1 overflow-y-auto p-4 space-y-4"
-            >
-              {isLoadingChatMessages ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-pulse space-y-4 w-full">
-                    <div className="h-10 bg-gray-200 rounded w-3/4 ml-auto"></div>
-                    <div className="h-20 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-16 bg-gray-200 rounded w-1/2 ml-auto"></div>
-                    <div className="h-24 bg-gray-200 rounded w-3/4"></div>
-                  </div>
-                </div>
-              ) : (
-                selectedChatMessages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'items-start gap-3'}`}>
-                    {msg.role === 'assistant' && (
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <span className="text-emerald-700 font-semibold">M</span>
-                      </div>
-                    )}
-                    <div 
-                      className={`${
-                        msg.role === 'user' 
-                          ? 'bg-emerald-600 text-white prose-invert' 
-                          : 'bg-gray-100 text-gray-800'
-                      } rounded-lg p-3 max-w-[80%] prose`}
-                    >
-                      <ReactMarkdown
-                        components={{
-                          li: ({node, ...props}) => <li className="list-disc ml-4" {...props} />,
-                          strong: ({node, ...props}) => <span className="font-bold" {...props} />,
-                          p: ({node, ...props}) => <p className="m-0" {...props} />
-                        }}
-                      >
-                        {msg.content}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Input area - Now active */}
-            <div className="p-4 border-t">
-              <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  value={modalInputMessage}
-                  onChange={(e) => setModalInputMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendModalMessage()}
-                  placeholder="Continue your conversation with Mia..."
-                  className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  disabled={isSendingMessage}
-                />
-                <button 
-                  onClick={handleSendModalMessage}
-                  className={`px-4 py-2 rounded-lg ${
-                    isSendingMessage 
-                      ? 'bg-emerald-400 text-white cursor-not-allowed' 
-                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  }`}
-                  disabled={isSendingMessage}
-                >
-                  {isSendingMessage ? 'Sending...' : 'Send'}
-                </button>
-              </div>
-            </div>
-          </div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          {/* Modal content */}
         </div>
       )}
     </div>
@@ -651,7 +555,7 @@ const NavItem = ({ icon, label, active, onClick, path }: NavItemProps) => {
 
   const handleClick = () => {
     navigate(path);
-    onClick?.();
+    if (onClick) onClick();
   };
 
   return (

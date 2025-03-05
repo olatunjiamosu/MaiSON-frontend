@@ -8,6 +8,7 @@ import PrivateRoute from './PrivateRoute';
 import PublicRoute from './PublicRoute';
 import BuyerDashboard from '../pages/dashboard/BuyerDashboard';
 import SelectUserType from '../pages/auth/SelectUserType';
+import SelectDashboard from '../pages/dashboard/SelectDashboard';
 import PropertyChats from '../pages/dashboard/buyer-sections/PropertyChats';
 import SignUp from '../pages/auth/SignUp';
 import PropertyDetails from '../pages/property/PropertyDetails';
@@ -36,6 +37,18 @@ const AppRoutes = () => (
     <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
     <Route path="/contact" element={<PublicRoute><ContactPage /></PublicRoute>} />
     <Route path="/select-user-type" element={<PrivateRoute><SelectUserType /></PrivateRoute>} />
+    
+    {/* Dashboard Selection for Both-Role Users */}
+    <Route 
+      path="/select-dashboard" 
+      element={
+        <PrivateRoute>
+          <RoleRoute allowedRoles={['both']}>
+            <SelectDashboard />
+          </RoleRoute>
+        </PrivateRoute>
+      }
+    />
 
     {/* Protected Routes */}
     <Route 

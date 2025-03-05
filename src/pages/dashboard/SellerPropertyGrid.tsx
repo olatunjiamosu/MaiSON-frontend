@@ -10,7 +10,9 @@ import {
   ArrowUpRight,
   Loader,
   RefreshCw,
-  Home
+  Home,
+  SwitchCamera,
+  LogOut
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
@@ -47,7 +49,8 @@ const SellerPropertyGrid = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [showAddPropertyForm, setShowAddPropertyForm] = useState(false);
 
-  const { user } = useAuth();
+  const auth = useAuth();
+  const { userRole } = auth;
 
   // Set up debounced search term
   useEffect(() => {
@@ -228,31 +231,94 @@ const SellerPropertyGrid = () => {
     }
   };
 
+  // Add function to handle dashboard switch
+  const handleSwitchDashboard = () => {
+    navigate('/select-dashboard');
+    toast.success('Switching dashboards');
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    const confirmLogout = window.confirm('Are you sure you want to log out?');
+    if (confirmLogout) {
+      // Clear all chat-related data from localStorage
+      localStorage.removeItem('chat_session_id');
+      localStorage.removeItem('chat_history');
+      localStorage.removeItem('selected_chat');
+      
+      // Clear all conversation messages
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('chat_messages_')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Clear auth token and redirect
+      localStorage.removeItem('token');
+      
+      // Use the auth context's logout method if it exists
+      if (auth && auth.logout) {
+        auth.logout()
+          .then(() => {
+            navigate('/login');
+          })
+          .catch((error: Error) => {
+            console.error("Logout error:", error);
+            navigate('/login'); // Navigate anyway
+          });
+      } else {
+        navigate('/login');
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex flex-col h-screen">
+      {/* Header with Dashboard Title */}
+      <header className="bg-white border-b border-gray-200 p-4 md:p-6 flex justify-between items-center">
+        <div></div>
+
+        <div className="flex items-center space-x-3">
+          {userRole === 'both' && (
+            <button
+              onClick={handleSwitchDashboard}
+              className="flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md transition-colors"
+            >
+              <SwitchCamera className="h-4 w-4 mr-2" />
+              <span className="text-sm font-medium">Switch Dashboard</span>
+            </button>
+          )}
+          <button
+            onClick={handleLogout}
+            className="flex items-center text-red-600 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-md"
+          >
+            <LogOut className="h-4 w-4 mr-1" />
+            <span className="text-sm font-medium">Logout</span>
+          </button>
+        </div>
+      </header>
+
       {showAddPropertyForm ? (
         <div className="p-6 pb-24">
-          <button 
-            onClick={toggleAddPropertyForm}
-            className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900"
-          >
-            <span>← Back to My Properties</span>
-          </button>
+          <h2 className="text-2xl font-semibold mb-6">Add New Property</h2>
           <AddPropertySection />
         </div>
       ) : (
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-[95%] mx-auto px-4 py-8">
           <div className="space-y-6">
             <div className="mb-6 flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-900">My Properties</h1>
-              <button
-                onClick={handleRefresh}
-                className="p-2 text-emerald-600 hover:text-emerald-800 rounded-full"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-                </svg>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handleRefresh}
+                  className="p-2 text-emerald-600 hover:text-emerald-800 rounded-full"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <div className="mb-6 flex flex-col sm:flex-row gap-4">
@@ -289,7 +355,7 @@ const SellerPropertyGrid = () => {
 
             {/* Property Cards Grid - ALWAYS shown */}
             {!isLoading && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
                 {/* Add Property Card - Always shown */}
                 <div 
                   onClick={toggleAddPropertyForm}

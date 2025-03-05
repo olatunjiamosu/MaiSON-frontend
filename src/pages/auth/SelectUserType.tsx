@@ -28,7 +28,7 @@ const SelectUserType = () => {
           } else if (role === 'seller') {
             navigate('/seller-dashboard');
           } else if (role === 'both') {
-            navigate('/seller-dashboard'); // Default to sellr dashboard for 'both'
+            navigate('/select-dashboard'); // Redirect to dashboard selection for 'both' role
           }
         }
       }
@@ -61,9 +61,8 @@ const SelectUserType = () => {
       } else if (userType === 'seller') {
         navigate('/seller-dashboard');
       } else {
-        // For 'both' type users, default to buyer dashboard
-        // They can switch to seller dashboard from the navigation
-        navigate('/seller-dashboard');
+        // For 'both' type users, redirect to dashboard selection page
+        navigate('/select-dashboard');
       }
 
       toast.success(`You are now registered as a ${userType}!`);

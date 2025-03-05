@@ -19,7 +19,8 @@ import {
   X,
   TrendingUp,
   Clock,
-  ChevronLeft
+  ChevronLeft,
+  SwitchCamera
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Routes, Route, useLocation, useParams, Link } from 'react-router-dom';
@@ -42,6 +43,7 @@ import ViewingsSection from './seller-sections/ViewingRequestsSection';
 import DocumentsSection from './seller-sections/DocumentsSection';
 import AvailabilitySection from './seller-sections/AvailabilitySection';
 import { PropertyDetail } from '../../types/property';
+import { toast } from 'react-hot-toast';
 
 // Add interfaces for the components
 interface NavItemProps {
@@ -95,7 +97,8 @@ interface PropertyDetailWithStatus extends PropertyDetail {
 const SellerDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('properties');
-  const { user } = useAuth();
+  const auth = useAuth();
+  const { user, userRole } = auth;
   const navigate = useNavigate();
   const location = useLocation();
   const { propertyId } = useParams<{ propertyId: string }>();
@@ -308,6 +311,45 @@ const SellerDashboard = () => {
     }).format(price);
   };
 
+  // Add function to handle dashboard switch
+  const handleSwitchDashboard = () => {
+    navigate('/select-dashboard');
+    toast.success('Switching dashboards');
+  };
+
+  // Add logout function
+  const handleLogout = () => {
+    const confirmLogout = window.confirm('Are you sure you want to log out?');
+    if (confirmLogout) {
+      // Clear all chat-related data from localStorage
+      localStorage.removeItem('chat_session_id');
+      localStorage.removeItem('chat_history');
+      localStorage.removeItem('selected_chat');
+      
+      // Clear all conversation messages
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('chat_messages_')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Use the auth context's logout method if it exists
+      if (auth && auth.logout) {
+        auth.logout()
+          .then(() => {
+            navigate('/login');
+          })
+          .catch((error: Error) => {
+            console.error("Logout error:", error);
+            navigate('/login'); // Navigate anyway
+          });
+      } else {
+        navigate('/login');
+      }
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
@@ -336,6 +378,19 @@ const SellerDashboard = () => {
             <X className="h-6 w-6" />
           </button>
         </div>
+
+        {/* Switch Dashboard Button - Only visible to 'both' role users */}
+        {userRole === 'both' && (
+          <div className="px-4 py-3 border-b">
+            <button
+              onClick={handleSwitchDashboard}
+              className="flex items-center justify-center w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md transition-colors"
+            >
+              <SwitchCamera className="h-4 w-4 mr-2" />
+              <span>Switch Dashboard</span>
+            </button>
+          </div>
+        )}
 
         {/* Property Info (if property is loaded) */}
         {propertyId && property && (
@@ -501,17 +556,24 @@ const SellerDashboard = () => {
         </div>
 
         {/* Profile Section */}
-        <div className="mt-auto border-t p-4">
+        <div className="mt-auto border-t border-gray-200 p-4">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-600 font-medium">{userData.name[0]}</span>
+            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+              <span className="text-emerald-600 font-medium">
+                {user?.email ? user.email[0].toUpperCase() : 'U'}
+              </span>
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium">{userData.name}</p>
-              <p className="text-xs text-gray-500">{userData.email}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {user?.displayName || user?.email || 'User'}
+              </p>
             </div>
-            <button className="text-gray-400 hover:text-gray-500">
-              <LogOut className="h-5 w-5" />
+            <button
+              onClick={handleLogout}
+              className="text-gray-400 hover:text-gray-500"
+              aria-label="Log out"
+            >
+              <LogOut className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -573,7 +635,7 @@ const SellerDashboard = () => {
           activeSection === 'messages' ? 'p-0' : 'p-4 sm:p-8'
         }`}>
           <div className={`${
-            activeSection === 'messages' ? 'w-full h-full' : 'max-w-7xl mx-auto'
+            activeSection === 'messages' ? 'w-full h-full' : 'max-w-[95%] mx-auto'
           }`}>
             {propertyId ? (
               // Property-specific routes
