@@ -11,9 +11,22 @@ import {
   Info,
   ArrowRight,
   AlertCircle,
-  X
+  X,
+  FileText,
+  Check
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+
+type ViewMode = 'list' | 'detail';
+
+interface TimelineEvent {
+  title: string;
+  date: string;
+  completed: boolean;
+  current?: boolean;
+  icon: React.ReactNode;
+  info?: string;
+}
 
 interface SellerNegotiation {
   buyer_id: string;
@@ -25,6 +38,11 @@ interface SellerNegotiation {
   negotiation_id: string;
   property_id: string;
   status: 'active' | 'cancelled' | 'accepted' | 'rejected';
+  transaction_history: {
+    made_by: string;
+    offer_amount: number;
+    created_at: string;
+  }[];
 }
 
 interface PropertyStats {
@@ -57,9 +75,52 @@ const mockStats: PropertyStats = {
   recentSoldPrice: 488000
 };
 
+const Timeline = ({ events }: { events: TimelineEvent[] }) => (
+  <div className="mt-4 border-t pt-4">
+    <h3 className="text-sm font-medium mb-4">Property Journey</h3>
+    <div className="relative">
+      <div className="absolute left-7 top-0 h-full w-px bg-gray-200" />
+      <div className="space-y-6">
+        {events.map((event, index) => (
+          <div key={index} className="flex items-start relative">
+            <div className={`flex items-center justify-center w-6 h-6 rounded-full ${
+              event.completed 
+                ? 'bg-emerald-100 text-emerald-600' 
+                : event.current 
+                  ? 'bg-blue-100 text-blue-600'
+                  : 'bg-gray-100 text-gray-400'
+            } z-10`}>
+              {event.completed ? <Check className="h-4 w-4" /> : event.icon}
+            </div>
+            <div className="ml-4">
+              <p className={`text-sm font-medium ${
+                event.completed 
+                  ? 'text-emerald-600' 
+                  : event.current 
+                    ? 'text-blue-600'
+                    : 'text-gray-500'
+              }`}>
+                {event.title}
+              </p>
+              <div className="flex items-center mt-1">
+                <span className="text-xs text-gray-500">{event.date}</span>
+                {event.info && (
+                  <span className={`text-xs ml-2 ${event.completed ? 'text-emerald-600' : 'text-gray-500'}`}>• {event.info}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
 const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ property }) => {
   const { user } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'accepted' | 'rejected' | 'pending' | 'action_required'>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [selectedNegotiation, setSelectedNegotiation] = useState<SellerNegotiation | null>(null);
   const [negotiations, setNegotiations] = useState<SellerNegotiation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -320,6 +381,99 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
     }
   };
 
+  const handleViewDetails = (negotiation: SellerNegotiation) => {
+    setSelectedNegotiation(negotiation);
+    setViewMode('detail');
+  };
+
+  if (viewMode === 'detail' && selectedNegotiation) {
+    // Map transaction history to timeline events
+    const timelineEvents = selectedNegotiation.transaction_history.map(transaction => ({
+      title: transaction.made_by === user?.uid ? 'Your Counter Offer' : 'Buyer Offer',
+      date: new Date(transaction.created_at).toLocaleDateString('en-GB', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      completed: true,
+      icon: <FileText className="h-3 w-3" />,
+      info: `£${transaction.offer_amount.toLocaleString()}`
+    }));
+
+    // Add status update if the offer status has changed from active
+    if (selectedNegotiation.status !== 'active') {
+      timelineEvents.push({
+        title: `Offer ${selectedNegotiation.status.charAt(0).toUpperCase() + selectedNegotiation.status.slice(1)}`,
+        date: new Date(selectedNegotiation.last_updated).toLocaleDateString('en-GB', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }),
+        completed: true,
+        icon: selectedNegotiation.status === 'rejected' ? <XCircle className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />,
+        info: selectedNegotiation.status === 'rejected' ? 'Offer rejected' : `£${selectedNegotiation.current_offer.toLocaleString()}`
+      });
+    }
+
+    return (
+      <div className="p-6">
+        <button 
+          onClick={() => setViewMode('list')}
+          className="mb-4 text-gray-600 hover:text-gray-900 flex items-center"
+        >
+          ← Back to Offers
+        </button>
+        <div className="border rounded-lg p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-xl font-semibold">Offer from: {selectedNegotiation.buyer_name}</h2>
+              <div className="flex items-center gap-4 mt-2">
+                <span className="text-gray-600">Listed for: £{property?.price.toLocaleString()}</span>
+                <span className={`${
+                  selectedNegotiation.status === 'accepted' 
+                    ? 'text-emerald-600' 
+                    : selectedNegotiation.status === 'rejected'
+                      ? 'text-red-600'
+                      : selectedNegotiation.last_offer_by === user?.uid 
+                        ? 'text-emerald-600' 
+                        : 'text-blue-600'
+                } font-medium`}>
+                  {selectedNegotiation.status === 'accepted' ? (
+                    <>Accepted offer: £{selectedNegotiation.current_offer.toLocaleString()}</>
+                  ) : selectedNegotiation.status === 'rejected' ? (
+                    <>Rejected offer: £{selectedNegotiation.current_offer.toLocaleString()}</>
+                  ) : selectedNegotiation.last_offer_by === user?.uid ? (
+                    <>Your counter offer: £{selectedNegotiation.current_offer.toLocaleString()}</>
+                  ) : (
+                    <>Buyer offer: £{selectedNegotiation.current_offer.toLocaleString()}</>
+                  )}
+                </span>
+              </div>
+            </div>
+            <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 ${
+              selectedNegotiation.status === 'accepted' 
+                ? 'bg-emerald-50 text-emerald-700'
+                : selectedNegotiation.status === 'rejected'
+                  ? 'bg-red-50 text-red-700'
+                  : 'bg-yellow-50 text-yellow-700'
+            }`}>
+              {selectedNegotiation.status === 'accepted' && <CheckCircle2 className="h-4 w-4" />}
+              {selectedNegotiation.status === 'rejected' && <XCircle className="h-4 w-4" />}
+              {selectedNegotiation.status === 'active' && (
+                selectedNegotiation.last_offer_by === user?.uid ? <Clock className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />
+              )}
+              {selectedNegotiation.status === 'active'
+                ? (selectedNegotiation.last_offer_by === user?.uid ? 'Pending' : 'Action Required')
+                : selectedNegotiation.status.charAt(0).toUpperCase() + selectedNegotiation.status.slice(1)
+              }
+            </span>
+          </div>
+          <Timeline events={timelineEvents} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {loading ? (
@@ -551,7 +705,10 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
                       </div>
                       {/* View Details Link */}
                       <div className="flex justify-end border-t border-gray-200">
-                        <button className="text-gray-600 hover:text-gray-900 inline-flex items-center gap-1 text-sm font-medium py-3 px-6">
+                        <button 
+                          onClick={() => handleViewDetails(negotiation)}
+                          className="text-gray-600 hover:text-gray-900 inline-flex items-center gap-1 text-sm font-medium py-3 px-6"
+                        >
                           View Details
                           <ArrowRight className="w-4 h-4" />
                         </button>

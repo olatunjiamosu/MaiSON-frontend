@@ -4,7 +4,7 @@ import {
   AlertCircle, Home, Scale, UserCheck, Key, Check, X 
 } from 'lucide-react';
 import PropertyService from '../../../services/PropertyService';
-import { Negotiation } from '../../../types/property';
+import { Negotiation, OfferedProperty } from '../../../types/property';
 import { useAuth } from '../../../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
@@ -372,76 +372,84 @@ const ApplicationsSection = () => {
         
         // Create a map of property details from offered properties
         const propertyDetailsMap = new Map(
-          dashboardData.offered_properties.map(property => [
+          (dashboardData.offered_properties || []).map((property: OfferedProperty) => [
             property.property_id,
             {
               address: `${property.address.house_number} ${property.address.street}, ${property.address.city} ${property.address.postcode}`,
               price: property.price,
               latest_offer: property.latest_offer
-            }
+            } as const
           ])
         );
 
         // Convert negotiations to applications format
         const newApplications: Application[] = dashboardData.negotiations_as_buyer.map(negotiation => {
-          const propertyDetails = propertyDetailsMap.get(negotiation.property_id);
+          const defaultPropertyDetails = {
+            address: 'Address not available',
+            price: 0,
+            latest_offer: { amount: 0, status: 'active', last_updated: new Date().toISOString() }
+          } as const;
+          
+          const propertyDetails = propertyDetailsMap.get(negotiation.property_id) || defaultPropertyDetails;
           
           // Get the matching offered property
-          const offeredProperty = dashboardData.offered_properties.find(
-            prop => prop.property_id === negotiation.property_id
+          const offeredProperty = (dashboardData.offered_properties || []).find(
+            (prop: OfferedProperty) => prop.property_id === negotiation.property_id
           );
           
           // Map 'active' status to 'pending' or 'action_required'
           const mappedStatus = negotiation.status === 'active' 
             ? (negotiation.last_offer_by !== user?.uid ? 'action_required' : 'pending')
             : negotiation.status as ApplicationStatus;
+
+          // Map transaction history to timeline events
+          const timelineEvents = negotiation.transaction_history.map(transaction => ({
+            title: transaction.made_by === user?.uid ? 'Your Offer' : 'Counter Offer',
+            date: new Date(transaction.created_at).toLocaleDateString('en-GB', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            completed: true,
+            icon: <FileText className="h-3 w-3" />,
+            info: `£${transaction.offer_amount.toLocaleString()}`
+          }));
+
+          // Add status update if the offer status has changed from active
+          if (negotiation.status !== 'active') {
+            timelineEvents.push({
+              title: `Offer ${negotiation.status.charAt(0).toUpperCase() + negotiation.status.slice(1)}`,
+              date: new Date(negotiation.last_updated).toLocaleDateString('en-GB', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              }),
+              completed: true,
+              icon: negotiation.status === 'cancelled' ? <XCircle className="h-3 w-3" /> : <CheckCircle className="h-3 w-3" />,
+              info: negotiation.status === 'cancelled' ? 'Offer cancelled' : `£${negotiation.current_offer.toLocaleString()}`
+            });
+          }
           
           return {
             id: negotiation.negotiation_id,
             propertyId: negotiation.property_id,
-            propertyAddress: propertyDetails?.address || 'Address not available',
-            propertyPrice: propertyDetails?.price || 0,
+            propertyAddress: propertyDetails.address,
+            propertyPrice: propertyDetails.price,
             offerAmount: negotiation.current_offer,
             status: mappedStatus,
             submittedDate: negotiation.created_at,
             lastOfferBy: negotiation.last_offer_by,
-    documents: [
-              { name: 'Proof of Funds', status: 'pending' },
-      { name: 'Mortgage in Principle', status: 'pending' }
-    ],
-    milestones: {
-      viewingComplete: true,
-      offerSubmitted: true,
-      documentsVerified: false,
+            documents: [
+              { name: 'Proof of Funds', status: 'pending' as const },
+              { name: 'Mortgage in Principle', status: 'pending' as const }
+            ],
+            milestones: {
+              viewingComplete: true,
+              offerSubmitted: true,
+              documentsVerified: false,
               solicitorAssigned: mappedStatus === 'accepted'
-    },
-    timeline: [
-      {
-        title: 'Offer Submitted',
-                date: new Date(negotiation.created_at).toLocaleDateString('en-GB', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                }),
-        completed: true,
-        icon: <FileText className="h-3 w-3" />,
-                info: `£${negotiation.current_offer.toLocaleString()}`
-              },
-              // Add status update if the offer status has changed
-              ...(offeredProperty && offeredProperty.latest_offer.status !== 'active' ? [
-                {
-                  title: `Offer ${offeredProperty.latest_offer.status.charAt(0).toUpperCase() + offeredProperty.latest_offer.status.slice(1)}`,
-                  date: new Date(offeredProperty.latest_offer.last_updated).toLocaleDateString('en-GB', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  }),
-                  completed: true,
-                  icon: offeredProperty.latest_offer.status === 'cancelled' ? <XCircle className="h-3 w-3" /> : <CheckCircle className="h-3 w-3" />,
-                  info: offeredProperty.latest_offer.status === 'cancelled' ? 'Offer cancelled' : `£${offeredProperty.latest_offer.amount.toLocaleString()}`
-                }
-              ] : [])
-            ]
+            },
+            timeline: timelineEvents
           };
         }).sort((a, b) => new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime());
 

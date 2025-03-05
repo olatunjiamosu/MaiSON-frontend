@@ -147,6 +147,12 @@ export interface Transaction {
   created_at: string;
 }
 
+export interface TransactionHistory {
+  created_at: string;
+  made_by: string;
+  offer_amount: number;
+}
+
 export interface Negotiation {
   negotiation_id: string;
   property_id: string;
@@ -157,7 +163,9 @@ export interface Negotiation {
   awaiting_response_from: string;
   created_at: string;
   updated_at: string;
+  last_updated: string;
   transactions: Transaction[];
+  transaction_history: TransactionHistory[];
 }
 
 export interface UserRole {
@@ -172,6 +180,22 @@ export interface UserInfo {
   phone_number: string;
 }
 
+export interface OfferedProperty {
+  property_id: string;
+  address: {
+    house_number: string;
+    street: string;
+    city: string;
+    postcode: string;
+  };
+  price: number;
+  latest_offer: {
+    amount: number;
+    status: string;
+    last_updated: string;
+  };
+}
+
 export interface DashboardResponse {
   user: UserInfo;
   roles: UserRole[];
@@ -179,6 +203,7 @@ export interface DashboardResponse {
   listed_properties: PropertySummary[];
   negotiations_as_buyer: Negotiation[];
   negotiations_as_seller: Negotiation[];
+  offered_properties: OfferedProperty[];
   total_saved_properties: number;
   total_properties_listed: number;
 } 
