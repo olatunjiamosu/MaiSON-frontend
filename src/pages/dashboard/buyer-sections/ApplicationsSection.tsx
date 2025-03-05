@@ -5,8 +5,9 @@ import {
 } from 'lucide-react';
 import PropertyService from '../../../services/PropertyService';
 import { Negotiation } from '../../../types/property';
+import { useAuth } from '../../../context/AuthContext';
 
-type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
+type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'action_required';
 type ViewMode = 'list' | 'detail';
 
 interface TimelineEvent {
@@ -26,6 +27,7 @@ interface Application {
   offerAmount: number;
   status: ApplicationStatus;
   submittedDate: string;
+  lastOfferBy: string;
   documents: {
     name: string;
     status: 'completed' | 'pending';
@@ -83,6 +85,7 @@ const Timeline = ({ events }: { events: TimelineEvent[] }) => (
 );
 
 const ApplicationsSection = () => {
+  const { user } = useAuth();
   const [filter, setFilter] = useState<ApplicationStatus | 'all'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
@@ -118,8 +121,10 @@ const ApplicationsSection = () => {
             prop => prop.property_id === negotiation.property_id
           );
           
-          // Map 'active' status to 'pending'
-          const mappedStatus = negotiation.status === 'active' ? 'pending' : negotiation.status as ApplicationStatus;
+          // Map 'active' status to 'pending' or 'action_required'
+          const mappedStatus = negotiation.status === 'active' 
+            ? (negotiation.last_offer_by !== user?.uid ? 'action_required' : 'pending')
+            : negotiation.status as ApplicationStatus;
           
           return {
             id: negotiation.negotiation_id,
@@ -129,26 +134,27 @@ const ApplicationsSection = () => {
             offerAmount: negotiation.current_offer,
             status: mappedStatus,
             submittedDate: negotiation.created_at,
-    documents: [
+            lastOfferBy: negotiation.last_offer_by,
+            documents: [
               { name: 'Proof of Funds', status: 'pending' },
-      { name: 'Mortgage in Principle', status: 'pending' }
-    ],
-    milestones: {
-      viewingComplete: true,
-      offerSubmitted: true,
-      documentsVerified: false,
+              { name: 'Mortgage in Principle', status: 'pending' }
+            ],
+            milestones: {
+              viewingComplete: true,
+              offerSubmitted: true,
+              documentsVerified: false,
               solicitorAssigned: mappedStatus === 'accepted'
-    },
-    timeline: [
-      {
-        title: 'Offer Submitted',
+            },
+            timeline: [
+              {
+                title: 'Offer Submitted',
                 date: new Date(negotiation.created_at).toLocaleDateString('en-GB', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'
                 }),
-        completed: true,
-        icon: <FileText className="h-3 w-3" />,
+                completed: true,
+                icon: <FileText className="h-3 w-3" />,
                 info: `£${negotiation.current_offer.toLocaleString()}`
               },
               // Add status update if the offer status has changed
@@ -167,7 +173,7 @@ const ApplicationsSection = () => {
               ] : [])
             ]
           };
-        });
+        }).sort((a, b) => new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime());
 
         setApplications(newApplications);
         setError(null);
@@ -191,6 +197,8 @@ const ApplicationsSection = () => {
       case 'accepted':
         return 'bg-green-100 text-green-800';
       case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'action_required':
         return 'bg-yellow-100 text-yellow-800';
       case 'rejected':
         return 'bg-red-100 text-red-800';
@@ -249,11 +257,19 @@ const ApplicationsSection = () => {
               <h2 className="text-xl font-semibold">{selectedApplication.propertyAddress}</h2>
               <div className="flex items-center gap-4 mt-2">
                 <span className="text-gray-600">Listed for: £{selectedApplication.propertyPrice.toLocaleString()}</span>
-                <span className="text-emerald-600 font-medium">
-                  £{selectedApplication.offerAmount.toLocaleString()}
+                <span className={`${selectedApplication.lastOfferBy === user?.uid ? 'text-emerald-600' : 'text-blue-600'} font-medium`}>
+                  {selectedApplication.lastOfferBy === user?.uid ? (
+                    <>Your offer: £{selectedApplication.offerAmount.toLocaleString()}</>
+                  ) : (
+                    <>Counter offer: £{selectedApplication.offerAmount.toLocaleString()}</>
+                  )}
                 </span>
                 <span className="text-gray-500">
-                  Submitted: {new Date(selectedApplication.submittedDate).toLocaleDateString('en-GB', {
+                  {selectedApplication.lastOfferBy === user?.uid ? (
+                    <>You made an offer</>
+                  ) : (
+                    <>Seller made a counter offer</>
+                  )} on {new Date(selectedApplication.submittedDate).toLocaleDateString('en-GB', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric'
@@ -262,7 +278,14 @@ const ApplicationsSection = () => {
               </div>
             </div>
             <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 ${getStatusStyles(selectedApplication.status)}`}>
-              {selectedApplication.status.charAt(0).toUpperCase() + selectedApplication.status.slice(1)}
+              {selectedApplication.status === 'pending' && <Clock className="h-4 w-4" />}
+              {selectedApplication.status === 'action_required' && <AlertCircle className="h-4 w-4" />}
+              {selectedApplication.status === 'accepted' && <CheckCircle className="h-4 w-4" />}
+              {selectedApplication.status === 'rejected' && <XCircle className="h-4 w-4" />}
+              {selectedApplication.status === 'cancelled' && <XCircle className="h-4 w-4" />}
+              {selectedApplication.status === 'action_required' ? 'Action Required' : (
+                selectedApplication.status.charAt(0).toUpperCase() + selectedApplication.status.slice(1)
+              )}
             </span>
           </div>
           <Timeline events={selectedApplication.timeline} />
@@ -282,6 +305,7 @@ const ApplicationsSection = () => {
             onChange={(e) => setFilter(e.target.value as ApplicationStatus | 'all')}
           >
             <option value="all">All Applications</option>
+            <option value="action_required">Action Required</option>
             <option value="pending">Pending</option>
             <option value="accepted">Accepted</option>
             <option value="rejected">Rejected</option>
@@ -300,11 +324,19 @@ const ApplicationsSection = () => {
                   <h2 className="text-lg font-semibold">{application.propertyAddress}</h2>
                   <div className="flex items-center gap-4 mt-1">
                     <span className="text-gray-600">Listed for: £{application.propertyPrice.toLocaleString()}</span>
-                    <span className="text-emerald-600 font-medium">
-                      Your offer: £{application.offerAmount.toLocaleString()}
+                    <span className={`${application.lastOfferBy === user?.uid ? 'text-emerald-600' : 'text-blue-600'} font-medium`}>
+                      {application.lastOfferBy === user?.uid ? (
+                        <>Your offer: £{application.offerAmount.toLocaleString()}</>
+                      ) : (
+                        <>Counter offer: £{application.offerAmount.toLocaleString()}</>
+                      )}
                     </span>
                     <span className="text-gray-500">
-                      Offer made: {new Date(application.submittedDate).toLocaleDateString('en-GB', {
+                      {application.lastOfferBy === user?.uid ? (
+                        <>You made an offer</>
+                      ) : (
+                        <>Seller made a counter offer</>
+                      )} on {new Date(application.submittedDate).toLocaleDateString('en-GB', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric'
@@ -314,10 +346,13 @@ const ApplicationsSection = () => {
                 </div>
                 <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 ${getStatusStyles(application.status)}`}>
                   {application.status === 'pending' && <Clock className="h-4 w-4" />}
+                  {application.status === 'action_required' && <AlertCircle className="h-4 w-4" />}
                   {application.status === 'accepted' && <CheckCircle className="h-4 w-4" />}
                   {application.status === 'rejected' && <XCircle className="h-4 w-4" />}
                   {application.status === 'cancelled' && <XCircle className="h-4 w-4" />}
-                  {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                  {application.status === 'action_required' ? 'Action Required' : (
+                    application.status.charAt(0).toUpperCase() + application.status.slice(1)
+                  )}
                 </span>
               </div>
 
@@ -337,23 +372,38 @@ const ApplicationsSection = () => {
                 )}
               </div>
 
-              {/* Required Actions or Next Steps */}
-              {application.status === 'pending' && (
+              {/* Required Actions and Counter Offer Actions */}
+              {(application.status === 'pending' || application.status === 'action_required') && (
                 <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                   <h3 className="text-sm font-medium mb-2">Required Actions</h3>
-                  <div className="flex gap-4">
-                    {application.documents.map((doc) => (
-                      <span key={doc.name} className={`text-sm flex items-center gap-1 ${
-                        doc.status === 'completed' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {doc.status === 'completed' ? (
-                          <CheckCircle className="h-4 w-4" />
-                        ) : (
-                          <AlertCircle className="h-4 w-4" />
-                        )}
-                        {doc.name}
-                      </span>
-                    ))}
+                  <div className="flex justify-between items-center">
+                    <div className="flex gap-4">
+                      {application.documents.map((doc) => (
+                        <span key={doc.name} className={`text-sm flex items-center gap-1 ${
+                          doc.status === 'completed' ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {doc.status === 'completed' ? (
+                            <CheckCircle className="h-4 w-4" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4" />
+                          )}
+                          {doc.name}
+                        </span>
+                      ))}
+                    </div>
+                    {application.lastOfferBy !== user?.uid && (
+                      <div className="flex gap-3">
+                        <button className="px-3 py-1 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded text-sm font-medium">
+                          Accept
+                        </button>
+                        <button className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-sm font-medium">
+                          Reject
+                        </button>
+                        <button className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-sm font-medium">
+                          Counter
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -362,7 +412,7 @@ const ApplicationsSection = () => {
             {/* Card Footer */}
             <div className="border-t px-4 py-3 bg-gray-50 flex justify-between items-center">
               <div className="flex gap-4">
-                {application.status === 'pending' && (
+                {application.status === 'pending' && application.lastOfferBy === user?.uid && (
                   <>
                     <button className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">
                       Upload Documents
