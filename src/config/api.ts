@@ -4,6 +4,10 @@ export const API_CONFIG = {
   CHAT: {
     GENERAL: '/chat/general',
     PROPERTY: '/chat/property',
-    HISTORY: '/conversations'
+    HISTORY: '/conversations',
+    GENERAL_HISTORY: '/conversations/general/{conversation_id}/history',
+    PROPERTY_HISTORY: '/conversations/property/{conversation_id}/history',
+    UPDATE_STATUS: '/conversations/property/{conversation_id}/status',
+    USER_CONVERSATIONS: '/conversations/user/{user_id}'
   }
 }; 

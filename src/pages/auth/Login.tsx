@@ -5,9 +5,11 @@ import { getDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../../config/firebase';
 import { Mail, Lock, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useChat } from '../../context/ChatContext';
 
 const Login = () => {
   const { login, resetPassword } = useAuth();
+  const { refreshChatHistory } = useChat();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -34,6 +36,13 @@ const Login = () => {
       const userDoc = await getDoc(doc(db, 'users', auth.currentUser?.uid || ''));
       const userData = userDoc.data();
       console.log('User data:', userData);
+      
+      // Refresh chat history after login
+      try {
+        await refreshChatHistory();
+      } catch (chatError) {
+        console.error('Failed to refresh chat history:', chatError);
+      }
       
       // Navigate based on user role
       if (userData?.role === 'buyer') {

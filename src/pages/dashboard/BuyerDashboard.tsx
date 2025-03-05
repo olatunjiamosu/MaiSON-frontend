@@ -14,13 +14,15 @@ import {
   Handshake,
   X,
 } from 'lucide-react';
-import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
+import { useNavigate, Routes, Route, useLocation, useParams } from 'react-router-dom';
 import PersistentChat from '../../components/chat/PersistentChat';
 import ChatService from '../../services/ChatService';
 import { formatDistanceToNow } from 'date-fns';
 import { useChat } from '../../context/ChatContext';
 import { API_CONFIG } from '../../config/api';
 import ReactMarkdown from 'react-markdown';
+import PreviousChats from '../../components/chat/PreviousChats';
+import { useAuth } from '../../context/AuthContext';
 
 // Import Sections (from `buyer-sections`)
 import ListingsSection from './buyer-sections/ListingsSection';
@@ -70,14 +72,17 @@ const mockProperties = [
   // Add more properties as needed
 ];
 
-const BuyerDashboard = () => {
-  const [activeSection, setActiveSection] = useState('listings');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const navigate = useNavigate();
+const BuyerDashboard: React.FC = () => {
   const location = useLocation();
-
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState<string>('listings');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
   // Get chat history from context
-  const { chatHistory, isLoadingChats, addConversation } = useChat();
+  const { chatHistory, isLoadingChats, addConversation, refreshChatHistory } = useChat();
+  
+  // Get auth context
+  const authContext = useAuth();
 
   // Simulating user data (Replace with real auth system)
   const user = {
@@ -113,14 +118,41 @@ const BuyerDashboard = () => {
   // Fetch chat messages when a chat is selected
   useEffect(() => {
     if (selectedChat && selectedChat.conversation_id) {
+      // Store the selected chat in localStorage
+      localStorage.setItem('selected_chat', JSON.stringify(selectedChat));
+      
       const fetchChatMessages = async () => {
         setIsLoadingChatMessages(true);
         try {
-          // Using non-null assertion since we've already checked that conversation_id exists
-          const messages = await ChatService.getChatHistory(selectedChat.conversation_id!, false);
-          setSelectedChatMessages(messages);
+          // First check if we have messages in localStorage
+          const storedMessages = localStorage.getItem(`chat_messages_${selectedChat.conversation_id}`);
+          
+          if (storedMessages) {
+            try {
+              const parsedMessages = JSON.parse(storedMessages);
+              setSelectedChatMessages(parsedMessages);
+              setIsLoadingChatMessages(false);
+              
+              // Scroll to the bottom when messages are loaded
+              if (chatMessagesRef.current) {
+                chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+              }
+              
+              // Optionally, still fetch from API in the background to ensure we have the latest
+              fetchFromApi();
+              return;
+            } catch (e) {
+              console.error('Failed to parse stored chat messages:', e);
+              // Continue to API fetch if parsing fails
+            }
+          }
+          
+          // If no stored messages or parsing failed, fetch from API
+          fetchFromApi();
+          
         } catch (error) {
           console.error('Failed to fetch chat messages:', error);
+          // Fallback display logic remains the same
           setSelectedChatMessages([
             {
               id: '1',
@@ -131,32 +163,40 @@ const BuyerDashboard = () => {
             {
               id: '2',
               role: 'assistant',
-              content: 'I apologise, but I could not retrieve the full conversation history. How can I help you today?',
-              timestamp: 'now'
+              content: 'Sorry, I couldn\'t retrieve the full conversation history. Please try again later.',
+              timestamp: 'Just now'
             }
           ]);
-        } finally {
           setIsLoadingChatMessages(false);
         }
       };
       
+      // Helper function to fetch from API
+      const fetchFromApi = async () => {
+        try {
+          // Using non-null assertion since we've already checked that conversation_id exists
+          const messages = await ChatService.getChatHistory(selectedChat.conversation_id!, false);
+          setSelectedChatMessages(messages);
+          
+          // Store the fetched messages in localStorage
+          localStorage.setItem(`chat_messages_${selectedChat.conversation_id}`, JSON.stringify(messages));
+        } catch (error) {
+          console.error('API fetch failed:', error);
+          // If API fetch fails but we already have messages from localStorage, keep those
+          // If not, the fallback in the outer catch will apply
+        } finally {
+          setIsLoadingChatMessages(false);
+          // Scroll to the bottom when messages are loaded
+          if (chatMessagesRef.current) {
+            chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+          }
+        }
+      };
+
       fetchChatMessages();
     } else if (selectedChat) {
-      // For mock data without conversation_id
-      setSelectedChatMessages([
-        {
-          id: '1',
-          role: 'user',
-          content: selectedChat.question,
-          timestamp: selectedChat.timestamp
-        },
-        {
-          id: '2',
-          role: 'assistant',
-          content: 'This is a mock conversation. In the real app, you would see the full conversation history here.',
-          timestamp: 'now'
-        }
-      ]);
+      // Clear stored selected chat if it doesn't have a conversation_id
+      localStorage.removeItem('selected_chat');
     }
   }, [selectedChat]);
 
@@ -167,12 +207,53 @@ const BuyerDashboard = () => {
     }
   }, [selectedChatMessages]);
 
+  // Load selected chat from localStorage on mount
+  useEffect(() => {
+    // Try to load the selected chat
+    const storedSelectedChat = localStorage.getItem('selected_chat');
+    if (storedSelectedChat && !selectedChat) {
+      try {
+        const parsedChat = JSON.parse(storedSelectedChat);
+        setSelectedChat(parsedChat);
+      } catch (e) {
+        console.error('Failed to parse stored selected chat:', e);
+      }
+    }
+  }, []);
+
   // Logout Function ✅
   const handleLogout = () => {
     const confirmLogout = window.confirm('Are you sure you want to log out?');
     if (confirmLogout) {
+      // Clear all chat-related data from localStorage
+      localStorage.removeItem('chat_session_id');
+      localStorage.removeItem('chat_history');
+      localStorage.removeItem('selected_chat');
+      
+      // Clear all conversation messages
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('chat_messages_')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Clear auth token and redirect
       localStorage.removeItem('token');
-      navigate('/login');
+      
+      // Use the auth context's logout method if it exists
+      if (authContext && authContext.logout) {
+        authContext.logout()
+          .then(() => {
+            navigate('/login');
+          })
+          .catch((error: Error) => {
+            console.error("Logout error:", error);
+            navigate('/login'); // Navigate anyway
+          });
+      } else {
+        navigate('/login');
+      }
     }
   };
 
@@ -192,57 +273,73 @@ const BuyerDashboard = () => {
 
   // Add a function to handle sending a message in the modal
   const handleSendModalMessage = async () => {
-    if (!modalInputMessage.trim() || !selectedChat?.conversation_id || isSendingMessage) return;
+    if (!modalInputMessage.trim()) return;
+
+    setIsSendingMessage(true);
+    
+    // Create a temporary message to display immediately
+    const tempMessage: ChatMessageDisplay = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: modalInputMessage,
+      timestamp: new Date().toISOString()
+    };
+
+    setSelectedChatMessages(prev => [...prev, tempMessage]);
+    setModalInputMessage('');
 
     try {
-      setIsSendingMessage(true);
+      let response;
       
-      // Add the user message to the UI immediately for better UX
-      const userMessage: ChatMessageDisplay = {
-        id: Date.now().toString(),
-        role: 'user',
-        content: modalInputMessage,
-        timestamp: new Date().toISOString()
-      };
-      
-      setSelectedChatMessages(prev => [...prev, userMessage]);
-      
-      // Clear the input right away for better UX
-      const messageToSend = modalInputMessage;
-      setModalInputMessage('');
-      
-      // Call the API to send the message
-      const endpoint = `${API_CONFIG.BASE_URL}${API_CONFIG.API_VERSION}${API_CONFIG.CHAT.GENERAL}`;
-      
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: messageToSend,
-          conversation_id: selectedChat.conversation_id,
-          user_id: "guest" // Use a default guest ID since we're not using Firebase auth here
-        }),
-      });
+      if (selectedChat && selectedChat.conversation_id) {
+        // If continuing an existing conversation, use the conversation ID
+        response = await ChatService.sendMessage(
+          tempMessage.content, 
+          false, 
+          selectedChat.conversation_id
+        );
+      } else {
+        // If starting a new conversation
+        response = await ChatService.sendMessage(tempMessage.content, false);
+        
+        // Create a new selected chat if one doesn't exist
+        if (!selectedChat) {
+          const newChat: ChatHistory = {
+            id: response.conversation_id.toString(),
+            conversation_id: response.conversation_id,
+            question: tempMessage.content,
+            timestamp: 'Just now'
+          };
+          setSelectedChat(newChat);
+          
+          // Store the selected chat in localStorage for persistence
+          localStorage.setItem('selected_chat', JSON.stringify(newChat));
+        }
+      }
 
-      const data = await response.json();
-      
-      // Add the assistant's response to the UI
+      // Add the assistant's response
       const assistantMessage: ChatMessageDisplay = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.message,
+        content: response.message,
         timestamp: new Date().toISOString()
       };
+
+      const updatedMessages = [...selectedChatMessages, assistantMessage];
+      setSelectedChatMessages(updatedMessages);
       
-      setSelectedChatMessages(prev => [...prev, assistantMessage]);
+      // Store messages in localStorage for the current conversation
+      if (selectedChat?.conversation_id || response.conversation_id) {
+        const conversationId = selectedChat?.conversation_id || response.conversation_id;
+        localStorage.setItem(`chat_messages_${conversationId}`, JSON.stringify(updatedMessages));
+      }
       
-      // Update the conversation in the sidebar with the latest message
-      addConversation(messageToSend, selectedChat.conversation_id);
+      // Update the chat history in context
+      addConversation(tempMessage.content, response.conversation_id);
       
     } catch (error) {
-      console.error('Failed to send message:', error);
+      console.error('Error sending message:', error);
+      
       // Add an error message
       const errorMessage: ChatMessageDisplay = {
         id: (Date.now() + 1).toString(),
@@ -254,6 +351,13 @@ const BuyerDashboard = () => {
       setSelectedChatMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsSendingMessage(false);
+      
+      // Scroll to the bottom after sending
+      setTimeout(() => {
+        if (chatMessagesRef.current) {
+          chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+        }
+      }, 100);
     }
   };
 
@@ -353,39 +457,12 @@ const BuyerDashboard = () => {
           />
         </nav>
 
-        {/* Mia Chat History */}
-        <div className="px-4 py-3 border-t flex-grow flex flex-col overflow-hidden">
-          <h3 className="text-sm font-medium text-gray-600 mb-2">Previous Chats</h3>
-          {isLoadingChats ? (
-            <div className="flex justify-center py-4">
-              <div className="animate-pulse h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="animate-pulse h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
-            </div>
-          ) : chatHistory.length > 0 ? (
-            <div className="space-y-2 overflow-y-auto flex-grow pr-1">
-              {chatHistory.map((chat: ChatHistory) => (
-                <button
-                  key={chat.id}
-                  onClick={() => setSelectedChat(chat)}
-                  className="w-full text-left p-2 rounded-lg hover:bg-gray-50 group"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-5 h-5 mt-1 rounded-full bg-emerald-100 flex items-center justify-center">
-                      <span className="text-xs font-medium text-emerald-700">M</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900 truncate">{chat.question}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{chat.timestamp}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="text-sm text-gray-500 py-2">
-              No previous chats found. Start a conversation with Mia!
-            </div>
-          )}
+        {/* Mia Chat History - Previous Chats section with enhanced UI */}
+        <div className="px-4 py-3 border-t">
+          <PreviousChats 
+            onSelectChat={setSelectedChat} 
+            selectedChatId={selectedChat?.id} 
+          />
         </div>
 
         {/* Profile Section */}

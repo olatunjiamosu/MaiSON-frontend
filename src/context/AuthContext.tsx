@@ -106,7 +106,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Clear chat-related data from localStorage
+    localStorage.removeItem('chat_session_id');
+    localStorage.removeItem('chat_history');
+    localStorage.removeItem('selected_chat');
+    
+    // Clear all conversation messages
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('chat_messages_')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
     return signOut(auth);
   };
 
