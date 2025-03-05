@@ -77,7 +77,7 @@ const mockStats: PropertyStats = {
 
 const Timeline = ({ events }: { events: TimelineEvent[] }) => (
   <div className="mt-4 border-t pt-4">
-    <h3 className="text-sm font-medium mb-4">Property Journey</h3>
+    <h3 className="text-sm font-medium mb-4">Offer History</h3>
     <div className="relative">
       <div className="absolute left-7 top-0 h-full w-px bg-gray-200" />
       <div className="space-y-6">
