@@ -55,19 +55,28 @@ interface ChatMessageDisplay {
 const mockProperties = [
   {
     id: '1',
-    image: 'https://example.com/image1.jpg',
-    price: '£800,000',
-    road: '123 Park Avenue',
-    city: 'London',
-    postcode: 'SE22 9QA',
-    beds: 2,
-    baths: 2,
-    reception: 1,
-    sqft: 1200,
-    propertyType: 'Terraced',
-    epcRating: 'C',
-    lat: 51.5074,
-    lng: -0.1278,
+    property_id: '1',
+    price: 800000,
+    bedrooms: 2,
+    bathrooms: 2,
+    main_image_url: 'https://example.com/image1.jpg',
+    created_at: '2023-01-01T12:00:00Z',
+    owner_id: 123,
+    status: 'active',
+    viewings: 5,
+    inquiries: 3,
+    favorites: 10,
+    address: {
+      street: '123 Park Avenue',
+      city: 'London',
+      postcode: 'SE22 9QA',
+      latitude: 51.5074,
+      longitude: -0.1278,
+    },
+    specs: {
+      property_type: 'Terraced',
+      square_footage: 1200,
+    }
   },
   // Add more properties as needed
 ];
@@ -110,6 +119,10 @@ const BuyerDashboard: React.FC = () => {
       setActiveSection('saved');
     } else if (location.pathname.includes('/viewings')) {
       setActiveSection('viewings');
+    } else if (location.pathname.includes('/property-chats') || location.pathname.includes('/messages')) {
+      setActiveSection('messages');
+      // Clear selected chat when navigating to property chats
+      setSelectedChat(null);
     } else if (location.pathname === '/buyer-dashboard') {
       setActiveSection('listings');
     }
@@ -268,7 +281,9 @@ const BuyerDashboard: React.FC = () => {
   console.log('Rendering BuyerDashboard');
   console.log('Mock Properties:', mockProperties);
 
-  const isMessagesSection = location.pathname.includes('/chats') || 
+  // Compute if we're in the messages section to hide the persistent chat
+  const isMessagesSection = activeSection === 'messages' || 
+                           location.pathname.includes('/property-chats') || 
                            location.pathname.includes('/messages');
 
   // Add a function to handle sending a message in the modal
@@ -414,8 +429,11 @@ const BuyerDashboard: React.FC = () => {
             icon={<MessageCircle />}
             label="Property Chats"
             active={activeSection === 'messages'}
-            onClick={() => setActiveSection('messages')}
-            path="/buyer-dashboard/messages"
+            onClick={() => {
+              setActiveSection('messages');
+              navigate('/buyer-dashboard/property-chats');
+            }}
+            path="/buyer-dashboard/property-chats"
           />
           <NavItem
             icon={<Calendar />}
@@ -511,6 +529,7 @@ const BuyerDashboard: React.FC = () => {
               <Route path="saved" element={<SavedPropertiesSection />} />
               <Route path="viewings" element={<ViewingsSection />} />
               <Route path="messages" element={<PropertyChats />} />
+              <Route path="property-chats" element={<PropertyChats />} />
               <Route path="applications" element={<ApplicationsSection />} />
               {/* <Route path="notifications" element={<NotificationsSection />} /> */}
               <Route path="documents" element={<DocumentsSection />} />

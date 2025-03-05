@@ -3,6 +3,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp?: string;
+  property_id?: string;
 }
 
 export interface ChatResponse {

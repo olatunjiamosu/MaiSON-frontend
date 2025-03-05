@@ -9,6 +9,7 @@ import {
   X,
   Maximize2,
   Minimize2,
+  MessageCircle,
 } from 'lucide-react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import SinglePropertyMap from '../../components/map/SinglePropertyMap';
@@ -16,6 +17,7 @@ import PropertyService from '../../services/PropertyService';
 import { PropertyDetail } from '../../types/property';
 import { formatPrice, formatDate } from '../../lib/formatters';
 import { toast } from 'react-hot-toast';
+import ChatService from '../../services/ChatService';
 
 interface PropertyDetailsProps {
   property?: {
@@ -35,6 +37,7 @@ interface PropertyDetailsProps {
     floorPlan: string;
     lat: number;
     lng: number;
+    seller_id: string;
   };
 }
 
@@ -51,6 +54,7 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [savingProperty, setSavingProperty] = useState(false);
   const [userDashboard, setUserDashboard] = useState<any>(null);
+  const [initiatingChat, setInitiatingChat] = useState(false);
 
   useEffect(() => {
     // If property is provided via props, use that
@@ -93,6 +97,7 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
           lat: propertyData.address.latitude || 51.5074,
           lng: propertyData.address.longitude || -0.1278,
           createdAt: propertyData.created_at ? formatDate(propertyData.created_at) : 'N/A',
+          seller_id: propertyData.seller_id,
         };
         
         setProperty(transformedProperty);
@@ -178,6 +183,90 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
       toast.error('Failed to update saved property status. Please try again.');
     } finally {
       setSavingProperty(false);
+    }
+  };
+
+  const handleChatAboutProperty = async () => {
+    if (!id) return;
+    
+    try {
+      setInitiatingChat(true);
+      
+      // Check if we already have a conversation for this property
+      const existingConversationId = localStorage.getItem(`property_chat_conversation_${id}`);
+      
+      if (existingConversationId) {
+        console.log(`Found existing conversation (${existingConversationId}) for property ${id}, redirecting to it`);
+        
+        // Store the conversation ID to select it on the property chats page
+        localStorage.setItem('last_property_chat_id', existingConversationId);
+        
+        // Show success message
+        toast.success('Redirecting to existing chat...', {
+          duration: 3000,
+          position: 'bottom-right',
+        });
+        
+        // Navigate to property chats page
+        navigate('/buyer-dashboard/property-chats');
+        return;
+      }
+      
+      // Get property details if not already loaded
+      let propertyData = property;
+      if (!propertyData) {
+        propertyData = await PropertyService.getPropertyById(id);
+      }
+      
+      // Get seller ID from property data
+      if (!propertyData.seller_id) {
+        throw new Error('Seller information not available for this property');
+      }
+      
+      // Initial message to send
+      const initialMessage = `I'm interested in this property at ${property.road}, ${property.city}. Can you tell me more about it?`;
+      
+      try {
+        // Clear any existing selected chat to prevent general chats from being shown
+        localStorage.removeItem('selected_chat');
+        
+        // Initiate the property chat
+        const response = await ChatService.initiatePropertyChat(id, propertyData.seller_id, initialMessage);
+        
+        // Show success message
+        toast.success('Chat started! Redirecting to chat window...', {
+          duration: 3000,
+          position: 'bottom-right',
+        });
+        
+        // Store the conversation ID in localStorage to select it on the property chats page
+        if (response.conversation_id) {
+          localStorage.setItem('last_property_chat_id', response.conversation_id.toString());
+          
+          // Also store it as the conversation for this specific property
+          localStorage.setItem(`property_chat_conversation_${id}`, response.conversation_id.toString());
+        }
+        
+        // Navigate to property chats page
+        navigate('/buyer-dashboard/property-chats');
+      } catch (chatError: any) {
+        console.error('Error initiating chat:', chatError);
+        
+        // Check if it's an authentication error
+        if (chatError.message && chatError.message.includes('authentication required')) {
+          toast.error('Please log in to chat about this property');
+          // Redirect to login page with a return URL
+          navigate(`/login?returnUrl=${encodeURIComponent(`/property/${id}`)}`);
+        } else {
+          // For other errors, show a generic message
+          toast.error(`Failed to start chat: ${chatError.message}`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error starting property chat:', error);
+      toast.error(`Error: ${error.message || 'Failed to start chat'}`);
+    } finally {
+      setInitiatingChat(false);
     }
   };
 
@@ -428,9 +517,27 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
           {/* Right Column - Actions */}
           <div className="space-y-4">
             <div className="bg-white p-6 rounded-lg border sticky top-24">
-              <button className="w-full bg-emerald-600 text-white px-4 py-3 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
+              <button className="w-full bg-emerald-600 text-white px-4 py-3 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 mb-3">
                 <Calendar className="h-5 w-5" />
                 Request Viewing
+              </button>
+              
+              <button 
+                onClick={handleChatAboutProperty}
+                disabled={initiatingChat}
+                className={`w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 ${initiatingChat ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                {initiatingChat ? (
+                  <>
+                    <div className="h-5 w-5 border-t-2 border-white border-solid rounded-full animate-spin"></div>
+                    Starting chat...
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="h-5 w-5" />
+                    Chat with Mia about this property
+                  </>
+                )}
               </button>
 
               {/* Additional Property Info */}

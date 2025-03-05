@@ -49,51 +49,27 @@ const PropertyCard = ({
     
     // Immediately update UI state for better UX
     setLocalSaved(prev => !prev);
+    setSaving(true);
     
-    // If a custom handler is provided, use that
-    if (onToggleSave) {
-      setSaving(true);
-      try {
-        await onToggleSave(id);
-        toast.success(localSaved 
-          ? 'Property removed from saved list' 
-          : 'Property saved successfully!', {
-          duration: 3000,
-          position: 'bottom-right',
-          icon: localSaved ? undefined : '❤️',
-        });
-      } catch (error) {
-        // Revert UI state on error
-        setLocalSaved(prev => !prev);
-        console.error('Error toggling property save status:', error);
-        toast.error(localSaved 
-          ? 'Failed to remove property from saved list' 
-          : 'Failed to save property. Please try again.');
-      } finally {
-        setSaving(false);
-      }
-      return;
-    }
-    
-    // Otherwise use the service to save/unsave
     try {
-      setSaving(true);
-      
       if (localSaved) {
-        // Unsave the property
-        await PropertyService.unsaveProperty(id);
-        toast.success('Property removed from saved list', {
-          duration: 3000,
-          position: 'bottom-right',
-        });
+        // If already saved, unsave it
+        if (onToggleSave) {
+          await onToggleSave(id);
+          toast.success('Property removed from saved list');
+        } else {
+          await PropertyService.unsaveProperty(id);
+          toast.success('Property removed from saved list');
+        }
       } else {
-        // Save the property
-        await PropertyService.saveProperty(id);
-        toast.success('Property saved successfully!', {
-          duration: 3000,
-          position: 'bottom-right',
-          icon: '❤️',
-        });
+        // If not saved, save it
+        if (onToggleSave) {
+          await onToggleSave(id);
+          toast.success('Property added to saved list');
+        } else {
+          await PropertyService.saveProperty(id);
+          toast.success('Property added to saved list');
+        }
       }
     } catch (error) {
       // Revert UI state on error
