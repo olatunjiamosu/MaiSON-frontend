@@ -173,10 +173,12 @@ export default function SavedPropertiesSection() {
                   }}
                   created_at={property.saved_at}
                   owner_id={0} // This field isn't used in this context
+                  seller_id={property.seller_id}
                   isSaved={true}
                   onToggleSave={() => handleUnsaveProperty(property.property_id)}
                   className={viewMode === 'list' ? 'flex' : ''}
                   showSaveButton
+                  showChatButton={!!property.seller_id}
                 />
                 
                 <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">

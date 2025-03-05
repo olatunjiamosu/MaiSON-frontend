@@ -12,6 +12,15 @@ jest.mock('../../services/PropertyService', () => ({
   }
 }));
 
+const mockInitiatePropertyChat = jest.fn().mockResolvedValue({ conversation_id: '123' });
+
+jest.mock('../../services/ChatService', () => ({
+  __esModule: true,
+  default: {
+    initiatePropertyChat: mockInitiatePropertyChat
+  }
+}));
+
 const mockToastSuccess = jest.fn();
 const mockToastError = jest.fn();
 
@@ -35,7 +44,8 @@ jest.mock('react-router-dom', () => ({
 
 // Mock Heart icon
 jest.mock('lucide-react', () => ({
-  Heart: () => <div data-testid="mock-heart-icon">Heart</div>
+  Heart: () => <div data-testid="mock-heart-icon">Heart</div>,
+  MessageCircle: () => <div data-testid="mock-message-icon">Message</div>
 }));
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -52,6 +62,7 @@ const mockProperty: PropertySummary = {
   main_image_url: 'test-image.jpg',
   created_at: '2024-03-20T12:00:00Z',
   owner_id: 1,
+  seller_id: 'seller123',
   address: {
     street: 'Test Road',
     city: 'Test City',
@@ -75,6 +86,7 @@ const renderWithRouter = (ui: React.ReactElement) => {
 describe('PropertyCard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
   });
 
   test('renders property details correctly', () => {
@@ -155,5 +167,54 @@ describe('PropertyCard', () => {
     fireEvent.click(viewPropertyButton);
     
     expect(mockNavigate).toHaveBeenCalledWith(`/property/${mockProperty.id}`, expect.anything());
+  });
+
+  test('displays chat button when seller_id is provided', () => {
+    renderWithRouter(<PropertyCard {...mockProperty} />);
+    
+    expect(screen.getByText('Chat with Mia about this property')).toBeInTheDocument();
+  });
+
+  test('does not display chat button when seller_id is not provided', () => {
+    const propertyWithoutSeller = { ...mockProperty, seller_id: undefined };
+    renderWithRouter(<PropertyCard {...propertyWithoutSeller} />);
+    
+    expect(screen.queryByText('Chat with Mia about this property')).not.toBeInTheDocument();
+  });
+
+  test('initiates property chat when chat button is clicked', async () => {
+    renderWithRouter(<PropertyCard {...mockProperty} />);
+    
+    const chatButton = screen.getByText('Chat with Mia about this property');
+    fireEvent.click(chatButton);
+    
+    await waitFor(() => {
+      expect(mockInitiatePropertyChat).toHaveBeenCalledWith(
+        mockProperty.id, 
+        mockProperty.seller_id, 
+        expect.stringContaining(`I'm interested in this property at ${mockProperty.address.street}`)
+      );
+      expect(mockToastSuccess).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith('/buyer-dashboard/property-chats');
+    });
+  });
+
+  test('redirects to existing chat if conversation ID exists', async () => {
+    localStorage.setItem(`property_chat_conversation_${mockProperty.id}`, '456');
+    
+    renderWithRouter(<PropertyCard {...mockProperty} />);
+    
+    const chatButton = screen.getByText('Chat with Mia about this property');
+    fireEvent.click(chatButton);
+    
+    await waitFor(() => {
+      expect(mockInitiatePropertyChat).not.toHaveBeenCalled();
+      expect(localStorage.getItem('last_property_chat_id')).toBe('456');
+      expect(mockToastSuccess).toHaveBeenCalledWith(
+        'Redirecting to existing chat...', 
+        expect.anything()
+      );
+      expect(mockNavigate).toHaveBeenCalledWith('/buyer-dashboard/property-chats');
+    });
   });
 }); 

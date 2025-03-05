@@ -57,7 +57,7 @@ const PropertyChats = () => {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Store chat messages for each property to prevent losing them when switching
   const [propertyMessagesMap, setPropertyMessagesMap] = useState<Record<string, ChatMessage[]>>({});
   
@@ -65,11 +65,11 @@ const PropertyChats = () => {
   const isRefreshSafe = useRef<boolean>(true);
 
   // Define fetchPropertyChats function so it can be called from handleSendMessage
-  const fetchPropertyChats = async () => {
-    if (!user?.uid) return;
-    
-    try {
-      setLoading(true);
+    const fetchPropertyChats = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        setLoading(true);
       console.log('Fetching user conversations for user ID:', user.uid);
       const response = await ChatService.getUserConversations(user.uid, 'buyer');
       console.log('Received user conversations response:', response);
@@ -178,13 +178,13 @@ const PropertyChats = () => {
         // If no chat is selected and we have chats, select the first one
         setSelectedChat(formattedChats[0]);
       }
-    } catch (error) {
-      console.error('Failed to fetch property chats:', error);
+      } catch (error) {
+        console.error('Failed to fetch property chats:', error);
       setPropertyChatsList([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+      } finally {
+        setLoading(false);
+      }
+    };
 
   // Fetch user's property conversations when component mounts
   useEffect(() => {
@@ -672,7 +672,7 @@ const PropertyChats = () => {
                         />
                       </div>
                     ) : (
-                      <Home className="h-5 w-5 text-emerald-600 mt-1" />
+                    <Home className="h-5 w-5 text-emerald-600 mt-1" />
                     )}
                     <div>
                       <h3 className="font-medium">{getPropertyDisplayName(chat)}</h3>
@@ -758,9 +758,9 @@ const PropertyChats = () => {
                         </div>
                       )}
                       <div className={msg.role === 'user' ? 'text-white' : 'text-gray-800'}>
-                        <ReactMarkdown>
-                          {msg.content}
-                        </ReactMarkdown>
+                      <ReactMarkdown>
+                        {msg.content}
+                      </ReactMarkdown>
                       </div>
                       <p className={`text-xs mt-1 ${msg.role === 'user' ? 'text-emerald-100' : 'text-gray-400'}`}>
                         {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
@@ -785,7 +785,7 @@ const PropertyChats = () => {
                   placeholder="Type your message..."
                   className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
-                <button
+                <button 
                   onClick={handleSendMessage}
                   className="bg-emerald-600 text-white p-2 rounded-lg hover:bg-emerald-700 transition-colors"
                 >

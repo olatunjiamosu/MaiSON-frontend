@@ -46,6 +46,7 @@ export interface PropertySummary {
   main_image_url?: string;
   created_at: string;
   owner_id: number;
+  seller_id?: string;
   status?: string;
   viewings?: number;
   inquiries?: number;
@@ -75,7 +76,6 @@ export interface PropertyDetail {
   created_at: string;
   last_updated?: string;
   owner_id: number;
-  seller_id: string;
   address: PropertyAddress;
   specs: PropertySpecs;
   details?: PropertyDetails;

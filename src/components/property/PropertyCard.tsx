@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { formatPrice } from '../../lib/formatters';
 import { PropertySummary } from '../../types/property';
 import PropertyService from '../../services/PropertyService';
+import ChatService from '../../services/ChatService';
 
 // Only add UI-specific props to the API type
 export interface PropertyCardProps extends PropertySummary {
@@ -12,6 +13,7 @@ export interface PropertyCardProps extends PropertySummary {
   isSaved?: boolean;
   onToggleSave?: (id: string) => void;
   showSaveButton?: boolean;
+  showChatButton?: boolean;
 }
 
 const PropertyCard = ({
@@ -22,14 +24,17 @@ const PropertyCard = ({
   bedrooms,
   bathrooms,
   specs,
+  seller_id,
   className = '',
   isSaved = false,
   onToggleSave,
   showSaveButton = true,
+  showChatButton = true,
 }: PropertyCardProps) => {
   const navigate = useNavigate();
   const formattedPrice = formatPrice(price);
   const [saving, setSaving] = useState(false);
+  const [initiatingChat, setInitiatingChat] = useState(false);
   // Add local saved state to handle immediate UI updates
   const [localSaved, setLocalSaved] = useState(isSaved);
 
@@ -90,6 +95,81 @@ const PropertyCard = ({
       duration: 3000,
       position: 'bottom-right',
     });
+  };
+
+  const handleChatWithMia = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!id) return;
+    
+    try {
+      setInitiatingChat(true);
+      
+      // Check if we already have a conversation for this property
+      const existingConversationId = localStorage.getItem(`property_chat_conversation_${id}`);
+      
+      if (existingConversationId) {
+        console.log(`Found existing conversation (${existingConversationId}) for property ${id}, redirecting to it`);
+        
+        // Store the conversation ID to select it on the property chats page
+        localStorage.setItem('last_property_chat_id', existingConversationId);
+        
+        // Show success message
+        toast.success('Redirecting to existing chat...', {
+          duration: 3000,
+          position: 'bottom-right',
+        });
+        
+        // Navigate to property chats page
+        navigate('/buyer-dashboard/property-chats');
+        return;
+      }
+      
+      // Ensure we have a seller_id
+      if (!seller_id) {
+        throw new Error('Seller information not available for this property');
+      }
+      
+      // Initial message to send
+      const initialMessage = `I'm interested in this property at ${address.street}, ${address.city}. Can you tell me more about it?`;
+      
+      // Clear any existing selected chat to prevent general chats from being shown
+      localStorage.removeItem('selected_chat');
+      
+      // Initiate the property chat
+      const response = await ChatService.initiatePropertyChat(id, seller_id, initialMessage);
+      
+      // Show success message
+      toast.success('Chat started! Redirecting to chat window...', {
+        duration: 3000,
+        position: 'bottom-right',
+      });
+      
+      // Store the conversation ID in localStorage to select it on the property chats page
+      if (response.conversation_id) {
+        localStorage.setItem('last_property_chat_id', response.conversation_id.toString());
+        
+        // Also store it as the conversation for this specific property
+        localStorage.setItem(`property_chat_conversation_${id}`, response.conversation_id.toString());
+      }
+      
+      // Navigate to property chats page
+      navigate('/buyer-dashboard/property-chats');
+    } catch (error: any) {
+      console.error('Error starting property chat:', error);
+      
+      // Check if it's an authentication error
+      if (error.message && error.message.includes('authentication required')) {
+        toast.error('Please log in to chat about this property');
+        // Redirect to login page with a return URL
+        navigate(`/login?returnUrl=${encodeURIComponent(`/property/${id}`)}`);
+      } else {
+        // For other errors, show a generic message
+        toast.error(`Failed to start chat: ${error.message || 'Unknown error'}`);
+      }
+    } finally {
+      setInitiatingChat(false);
+    }
   };
 
   return (
@@ -163,6 +243,27 @@ const PropertyCard = ({
           >
             Schedule Viewing
           </button>
+          {showChatButton && seller_id && (
+            <button
+              onClick={handleChatWithMia}
+              disabled={initiatingChat}
+              className={`w-full flex justify-center items-center gap-2 border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors ${
+                initiatingChat ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {initiatingChat ? (
+                <>
+                  <div className="h-4 w-4 border-t-2 border-emerald-500 border-solid rounded-full animate-spin"></div>
+                  Starting chat...
+                </>
+              ) : (
+                <>
+                  <MessageCircle className="h-4 w-4" />
+                  Chat with Mia about this property
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>
