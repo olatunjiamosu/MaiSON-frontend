@@ -56,6 +56,7 @@ const ViewingsSection = () => {
   const [ratings, setRatings] = useState<{ [key: string]: number }>({});
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [offerAmount, setOfferAmount] = useState('');
+  const [displayOfferAmount, setDisplayOfferAmount] = useState('');
   const [selectedProperty, setSelectedProperty] = useState<{ id: string; address: string } | null>(null);
 
   const filteredViewings = mockViewings.filter(
@@ -97,10 +98,16 @@ const ViewingsSection = () => {
   const handleSubmitOffer = () => {
     if (!selectedProperty) return;
     
+    const numericAmount = parseFloat(offerAmount.replace(/,/g, ''));
+    if (!offerAmount || isNaN(numericAmount)) {
+      // Handle error
+      return;
+    }
+
     // TODO: Implement API call to submit offer
     console.log('Submitting offer:', {
       propertyId: selectedProperty.id,
-      amount: parseFloat(offerAmount),
+      amount: numericAmount,
     });
 
     // Navigate to applications page after submission
@@ -110,6 +117,7 @@ const ViewingsSection = () => {
 
     // Reset and close modal
     setOfferAmount('');
+    setDisplayOfferAmount('');
     setIsOfferModalOpen(false);
     setSelectedProperty(null);
   };
@@ -165,10 +173,18 @@ const ViewingsSection = () => {
                   Offer Amount (£)
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   id="offerAmount"
-                  value={offerAmount}
-                  onChange={(e) => setOfferAmount(e.target.value)}
+                  value={displayOfferAmount}
+                  onChange={(e) => {
+                    // Remove any non-digit characters except commas
+                    const value = e.target.value.replace(/[^\d,]/g, '');
+                    // Remove all commas and store as raw number string
+                    const rawValue = value.replace(/,/g, '');
+                    setOfferAmount(rawValue);
+                    // Add commas for display
+                    setDisplayOfferAmount(rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="Enter your offer amount"
                 />

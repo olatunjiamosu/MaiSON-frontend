@@ -38,6 +38,7 @@ const PropertyCard = ({
   const [localSaved, setLocalSaved] = useState(isSaved);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [offerAmount, setOfferAmount] = useState('');
+  const [displayOfferAmount, setDisplayOfferAmount] = useState('');
   const [offerError, setOfferError] = useState<string | null>(null);
   const [localNegotiations, setLocalNegotiations] = useState<Negotiation[]>(negotiations);
   const hasActiveNegotiation = localNegotiations.some(
@@ -139,21 +140,22 @@ const PropertyCard = ({
 
   const handleSubmitOffer = async () => {
     try {
-      setOfferError(null); // Clear any previous errors
+      setOfferError(null);
 
       if (!user) {
         setOfferError('Please log in to submit an offer');
         return;
       }
 
-      if (!offerAmount || isNaN(parseFloat(offerAmount))) {
+      const numericAmount = parseFloat(offerAmount.replace(/,/g, ''));
+      if (!offerAmount || isNaN(numericAmount)) {
         setOfferError('Please enter a valid offer amount');
         return;
       }
 
       const requestBody = {
         property_id: id.toString(),
-        offer_amount: Math.round(parseFloat(offerAmount))
+        offer_amount: Math.round(numericAmount)
       };
       
       console.log('Submitting offer with data:', requestBody);
@@ -181,6 +183,7 @@ const PropertyCard = ({
 
       // Reset and close modal
       setOfferAmount('');
+      setDisplayOfferAmount('');
       setOfferError(null);
       setIsOfferModalOpen(false);
       
@@ -311,12 +314,18 @@ const PropertyCard = ({
                   Offer Amount (£)
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   id="offerAmount"
-                  value={offerAmount}
+                  value={displayOfferAmount}
                   onChange={(e) => {
-                    setOfferAmount(e.target.value);
-                    setOfferError(null); // Clear error when user types
+                    // Remove any non-digit characters except commas
+                    const value = e.target.value.replace(/[^\d,]/g, '');
+                    // Remove all commas and store as raw number string
+                    const rawValue = value.replace(/,/g, '');
+                    setOfferAmount(rawValue);
+                    // Add commas for display
+                    setDisplayOfferAmount(rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+                    setOfferError(null);
                   }}
                   className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                     offerError ? 'border-red-500' : 'border-gray-300'

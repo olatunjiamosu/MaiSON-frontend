@@ -98,6 +98,7 @@ const ApplicationsSection = () => {
   const [cancelLoading, setCancelLoading] = useState<string | null>(null);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [offerAmount, setOfferAmount] = useState('');
+  const [displayOfferAmount, setDisplayOfferAmount] = useState('');
   const [offerError, setOfferError] = useState<string | null>(null);
   const [counterOfferId, setCounterOfferId] = useState<string | null>(null);
 
@@ -277,7 +278,9 @@ const ApplicationsSection = () => {
 
   const handleCounterOffer = (application: Application) => {
     setCounterOfferId(application.id);
-    setOfferAmount(application.offerAmount.toString());
+    const amount = application.offerAmount.toString();
+    setOfferAmount(amount);
+    setDisplayOfferAmount(amount.replace(/\B(?=(\d{3})+(?!\d))/g, ','));
     setIsOfferModalOpen(true);
   };
 
@@ -287,7 +290,8 @@ const ApplicationsSection = () => {
     try {
       setOfferError(null);
 
-      if (!offerAmount || isNaN(parseFloat(offerAmount))) {
+      const numericAmount = parseFloat(offerAmount.replace(/,/g, ''));
+      if (!offerAmount || isNaN(numericAmount)) {
         setOfferError('Please enter a valid offer amount');
         return;
       }
@@ -307,7 +311,7 @@ const ApplicationsSection = () => {
           },
           body: JSON.stringify({
             property_id: application.propertyId,
-            offer_amount: Math.round(parseFloat(offerAmount)),
+            offer_amount: Math.round(numericAmount),
             negotiation_id: application.id
           })
         }
@@ -320,6 +324,7 @@ const ApplicationsSection = () => {
 
       // Reset and close modal
       setOfferAmount('');
+      setDisplayOfferAmount('');
       setOfferError(null);
       setIsOfferModalOpen(false);
       setCounterOfferId(null);
@@ -336,7 +341,7 @@ const ApplicationsSection = () => {
             ? {
                 ...app,
                 status: 'pending',
-                offerAmount: Math.round(parseFloat(offerAmount)),
+                offerAmount: Math.round(numericAmount),
                 lastOfferBy: user.uid
               }
             : app
@@ -348,7 +353,7 @@ const ApplicationsSection = () => {
         setSelectedApplication(prev => prev ? {
           ...prev,
     status: 'pending',
-          offerAmount: Math.round(parseFloat(offerAmount)),
+          offerAmount: Math.round(numericAmount),
           lastOfferBy: user.uid
         } : null);
       }
@@ -674,20 +679,20 @@ const ApplicationsSection = () => {
                 <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                   <h3 className="text-sm font-medium mb-2">Required Actions</h3>
                   <div className="flex justify-between items-center">
-                    <div className="flex gap-4">
-                      {application.documents.map((doc) => (
-                        <span key={doc.name} className={`text-sm flex items-center gap-1 ${
-                          doc.status === 'completed' ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {doc.status === 'completed' ? (
-                            <CheckCircle className="h-4 w-4" />
-                          ) : (
-                            <AlertCircle className="h-4 w-4" />
-                          )}
-                          {doc.name}
-                        </span>
-                      ))}
-                    </div>
+                  <div className="flex gap-4">
+                    {application.documents.map((doc) => (
+                      <span key={doc.name} className={`text-sm flex items-center gap-1 ${
+                        doc.status === 'completed' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {doc.status === 'completed' ? (
+                          <CheckCircle className="h-4 w-4" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4" />
+                        )}
+                        {doc.name}
+                      </span>
+                    ))}
+                  </div>
                     {application.lastOfferBy !== user?.uid && application.status === 'action_required' ? (
                       <div className="flex gap-3">
                         <button 
@@ -835,11 +840,17 @@ const ApplicationsSection = () => {
                   Counter Offer Amount (£)
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   id="offerAmount"
-                  value={offerAmount}
+                  value={displayOfferAmount}
                   onChange={(e) => {
-                    setOfferAmount(e.target.value);
+                    // Remove any non-digit characters except commas
+                    const value = e.target.value.replace(/[^\d,]/g, '');
+                    // Remove all commas and store as raw number string
+                    const rawValue = value.replace(/,/g, '');
+                    setOfferAmount(rawValue);
+                    // Add commas for display
+                    setDisplayOfferAmount(rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ','));
                     setOfferError(null);
                   }}
                   className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
