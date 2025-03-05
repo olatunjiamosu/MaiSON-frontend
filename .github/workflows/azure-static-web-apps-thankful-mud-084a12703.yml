@@ -41,6 +41,7 @@ jobs:
           VITE_PROPERTY_API_ENDPOINT: ${{ secrets.VITE_PROPERTY_API_ENDPOINT }}
           VITE_PRICING_API_URL: ${{ secrets.VITE_PRICING_API_URL }} 
           VITE_PRICING_API_ENDPOINT: ${{ secrets.VITE_PRICING_API_ENDPOINT }}
+          VITE_DOCUMENTATION_API_URL: ${{ secrets.VITE_DOCUMENTATION_API_URL }}
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_THANKFUL_MUD_084A12703 }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
