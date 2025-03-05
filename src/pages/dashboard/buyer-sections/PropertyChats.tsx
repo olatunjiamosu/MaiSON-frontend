@@ -209,6 +209,64 @@ const PropertyChats = () => {
           localStorage.removeItem('last_property_chat_id');
         } else {
           console.log('Could not find chat with conversation ID:', lastPropertyChatId);
+          
+          // If the backend doesn't have this conversation, remove it from localStorage
+          localStorage.removeItem('last_property_chat_id');
+          
+          // Also check if we need to clean up any stale localStorage entries
+          cleanupStalePropertyChats();
+        }
+      } else if (propertyChatsList.length === 0) {
+        // If the backend returned no property chats, check if we need to clean up localStorage
+        cleanupStalePropertyChats();
+      }
+    };
+    
+    // Function to clean up stale property chat entries in localStorage
+    const cleanupStalePropertyChats = () => {
+      // Get all localStorage keys
+      const keys = Object.keys(localStorage);
+      
+      // Find all property chat conversation IDs stored in localStorage
+      const propertyConversationKeys = keys.filter(key => 
+        key.startsWith('property_chat_conversation_')
+      );
+      
+      if (propertyConversationKeys.length > 0) {
+        console.log('Found potential stale property chat entries in localStorage:', propertyConversationKeys);
+        
+        // If the backend returned no conversations but we have localStorage entries,
+        // these entries are likely stale and should be removed
+        if (propertyChatsList.length === 0) {
+          console.log('Backend returned no conversations, cleaning up stale localStorage entries');
+          
+          propertyConversationKeys.forEach(key => {
+            const propertyId = key.replace('property_chat_conversation_', '');
+            
+            // Remove all related localStorage entries for this property
+            localStorage.removeItem(`property_chat_conversation_${propertyId}`);
+            localStorage.removeItem(`property_chat_session_${propertyId}`);
+            localStorage.removeItem(`property_chat_messages_${propertyId}`);
+            
+            console.log(`Removed stale localStorage entries for property ${propertyId}`);
+          });
+        } else {
+          // If the backend returned some conversations, only remove entries that don't match
+          const validConversationIds = propertyChatsList.map(chat => chat.conversation_id.toString());
+          
+          propertyConversationKeys.forEach(key => {
+            const propertyId = key.replace('property_chat_conversation_', '');
+            const conversationId = localStorage.getItem(key);
+            
+            if (conversationId && !validConversationIds.includes(conversationId)) {
+              console.log(`Conversation ID ${conversationId} for property ${propertyId} not found in backend response, removing`);
+              
+              // Remove all related localStorage entries for this property
+              localStorage.removeItem(`property_chat_conversation_${propertyId}`);
+              localStorage.removeItem(`property_chat_session_${propertyId}`);
+              localStorage.removeItem(`property_chat_messages_${propertyId}`);
+            }
+          });
         }
       }
     };

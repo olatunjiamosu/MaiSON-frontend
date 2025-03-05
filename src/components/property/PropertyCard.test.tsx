@@ -13,12 +13,32 @@ jest.mock('../../services/PropertyService', () => ({
 }));
 
 const mockInitiatePropertyChat = jest.fn().mockResolvedValue({ conversation_id: '123' });
+const mockVerifyConversationExists = jest.fn().mockResolvedValue(true);
+const mockGetChatHistory = jest.fn().mockResolvedValue([]);
 
 jest.mock('../../services/ChatService', () => ({
   __esModule: true,
   default: {
-    initiatePropertyChat: mockInitiatePropertyChat
+    initiatePropertyChat: mockInitiatePropertyChat,
+    verifyConversationExists: mockVerifyConversationExists,
+    getChatHistory: mockGetChatHistory,
+    getUserConversations: jest.fn().mockResolvedValue({
+      general_conversations: [],
+      property_conversations: []
+    })
   }
+}));
+
+// Mock Firebase Auth
+const mockCurrentUser = {
+  uid: 'test-user-id',
+  email: 'test@example.com'
+};
+
+jest.mock('firebase/auth', () => ({
+  getAuth: jest.fn(() => ({
+    currentUser: mockCurrentUser
+  }))
 }));
 
 const mockToastSuccess = jest.fn();
@@ -199,8 +219,9 @@ describe('PropertyCard', () => {
     });
   });
 
-  test('redirects to existing chat if conversation ID exists', async () => {
+  test('redirects to existing chat if conversation ID exists and is verified', async () => {
     localStorage.setItem(`property_chat_conversation_${mockProperty.id}`, '456');
+    mockVerifyConversationExists.mockResolvedValueOnce(true);
     
     renderWithRouter(<PropertyCard {...mockProperty} />);
     
@@ -208,10 +229,36 @@ describe('PropertyCard', () => {
     fireEvent.click(chatButton);
     
     await waitFor(() => {
+      expect(mockVerifyConversationExists).toHaveBeenCalledWith(456, true);
       expect(mockInitiatePropertyChat).not.toHaveBeenCalled();
       expect(localStorage.getItem('last_property_chat_id')).toBe('456');
       expect(mockToastSuccess).toHaveBeenCalledWith(
         'Redirecting to existing chat...', 
+        expect.anything()
+      );
+      expect(mockNavigate).toHaveBeenCalledWith('/buyer-dashboard/property-chats');
+    });
+  });
+  
+  test('creates new chat if conversation ID exists but is not verified', async () => {
+    localStorage.setItem(`property_chat_conversation_${mockProperty.id}`, '456');
+    mockVerifyConversationExists.mockResolvedValueOnce(false);
+    
+    renderWithRouter(<PropertyCard {...mockProperty} />);
+    
+    const chatButton = screen.getByText('Chat with Mia about this property');
+    fireEvent.click(chatButton);
+    
+    await waitFor(() => {
+      expect(mockVerifyConversationExists).toHaveBeenCalledWith(456, true);
+      expect(mockInitiatePropertyChat).toHaveBeenCalledWith(
+        mockProperty.id, 
+        mockProperty.seller_id, 
+        expect.stringContaining(`I'm interested in this property at ${mockProperty.address.street}`)
+      );
+      expect(localStorage.getItem(`property_chat_conversation_${mockProperty.id}`)).toBe('123');
+      expect(mockToastSuccess).toHaveBeenCalledWith(
+        'Chat started! Redirecting to chat window...', 
         expect.anything()
       );
       expect(mockNavigate).toHaveBeenCalledWith('/buyer-dashboard/property-chats');

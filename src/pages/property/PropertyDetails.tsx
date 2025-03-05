@@ -192,24 +192,46 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
     try {
       setInitiatingChat(true);
       
-      // Check if we already have a conversation for this property
+      // Check if we already have a conversation for this property in localStorage
       const existingConversationId = localStorage.getItem(`property_chat_conversation_${id}`);
       
       if (existingConversationId) {
-        console.log(`Found existing conversation (${existingConversationId}) for property ${id}, redirecting to it`);
+        console.log(`Found existing conversation (${existingConversationId}) for property ${id} in localStorage, verifying with backend`);
         
-        // Store the conversation ID to select it on the property chats page
-        localStorage.setItem('last_property_chat_id', existingConversationId);
-        
-        // Show success message
-        toast.success('Redirecting to existing chat...', {
-          duration: 3000,
-          position: 'bottom-right',
-        });
-        
-        // Navigate to property chats page
-        navigate('/buyer-dashboard/property-chats');
-        return;
+        try {
+          // Verify with backend that this conversation still exists
+          const conversationExists = await ChatService.verifyConversationExists(Number(existingConversationId), true);
+          
+          // If the conversation exists, redirect to it
+          if (conversationExists) {
+            console.log(`Verified conversation ${existingConversationId} exists on backend, redirecting to it`);
+            
+            // Store the conversation ID to select it on the property chats page
+            localStorage.setItem('last_property_chat_id', existingConversationId);
+            
+            // Show success message
+            toast.success('Redirecting to existing chat...', {
+              duration: 3000,
+              position: 'bottom-right',
+            });
+            
+            // Navigate to property chats page
+            navigate('/buyer-dashboard/property-chats');
+            return;
+          } else {
+            console.log(`Conversation ${existingConversationId} not found on backend, creating new one`);
+            // If verification fails, remove the stale conversation ID from localStorage
+            localStorage.removeItem(`property_chat_conversation_${id}`);
+            localStorage.removeItem(`property_chat_session_${id}`);
+            localStorage.removeItem(`property_chat_messages_${id}`);
+          }
+        } catch (verifyError) {
+          console.error('Error verifying conversation:', verifyError);
+          // If verification fails, remove the stale conversation ID from localStorage
+          localStorage.removeItem(`property_chat_conversation_${id}`);
+          localStorage.removeItem(`property_chat_session_${id}`);
+          localStorage.removeItem(`property_chat_messages_${id}`);
+        }
       }
       
       // Get property details if not already loaded

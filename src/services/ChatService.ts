@@ -491,6 +491,27 @@ class ChatService {
       throw error;
     }
   }
+
+  /**
+   * Verify if a conversation exists on the backend
+   * @param conversationId The conversation ID to verify
+   * @param isPropertyChat Whether this is a property chat
+   * @returns True if the conversation exists, false otherwise
+   */
+  async verifyConversationExists(conversationId: number | string, isPropertyChat: boolean = false): Promise<boolean> {
+    try {
+      console.log(`Verifying if conversation ${conversationId} exists on backend`);
+      
+      // Try to get the chat history for this conversation
+      const messages = await this.getChatHistory(conversationId, isPropertyChat);
+      
+      // If we get a response (even an empty array), the conversation exists
+      return Array.isArray(messages);
+    } catch (error) {
+      console.error(`Failed to verify conversation ${conversationId}:`, error);
+      return false;
+    }
+  }
 }
 
 export default new ChatService(); 
