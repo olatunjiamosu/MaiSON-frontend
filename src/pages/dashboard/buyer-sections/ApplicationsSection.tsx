@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Clock, CheckCircle, XCircle, FileText, ArrowRight, 
-  AlertCircle, Home, Scale, UserCheck, Key, Check 
+  AlertCircle, Home, Scale, UserCheck, Key, Check, X 
 } from 'lucide-react';
 import PropertyService from '../../../services/PropertyService';
 import { Negotiation } from '../../../types/property';
 import { useAuth } from '../../../context/AuthContext';
+import { toast } from 'react-hot-toast';
 
 type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'action_required';
 type ViewMode = 'list' | 'detail';
@@ -92,6 +93,270 @@ const ApplicationsSection = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [acceptLoading, setAcceptLoading] = useState<string | null>(null);
+  const [rejectLoading, setRejectLoading] = useState<string | null>(null);
+  const [cancelLoading, setCancelLoading] = useState<string | null>(null);
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+  const [offerAmount, setOfferAmount] = useState('');
+  const [offerError, setOfferError] = useState<string | null>(null);
+  const [counterOfferId, setCounterOfferId] = useState<string | null>(null);
+
+  const handleAcceptOffer = async (negotiationId: string) => {
+    if (!user?.uid) return;
+    
+    setAcceptLoading(negotiationId);
+    setError(null);
+    
+    try {
+      const response = await fetch(
+        `https://maison-api.jollybush-a62cec71.uksouth.azurecontainerapps.io/api/users/${user.uid}/offers/${negotiationId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'accept'
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to accept offer');
+      }
+
+      // Update the application status in the UI
+      setApplications(prevApplications => 
+        prevApplications.map(app => 
+          app.id === negotiationId
+            ? {
+                ...app,
+                status: 'accepted',
+                milestones: {
+                  ...app.milestones,
+                  solicitorAssigned: true
+                }
+              }
+            : app
+        )
+      );
+
+      // Update selected application if in detail view
+      if (selectedApplication?.id === negotiationId) {
+        setSelectedApplication(prev => prev ? {
+          ...prev,
+          status: 'accepted',
+          milestones: {
+            ...prev.milestones,
+            solicitorAssigned: true
+          }
+        } : null);
+      }
+    } catch (err) {
+      console.error('Error accepting offer:', err);
+      setError(err instanceof Error ? err.message : 'Failed to accept offer');
+    } finally {
+      setAcceptLoading(null);
+    }
+  };
+
+  const handleRejectOffer = async (negotiationId: string) => {
+    if (!user?.uid) return;
+    
+    setRejectLoading(negotiationId);
+    setError(null);
+    
+    try {
+      const response = await fetch(
+        `https://maison-api.jollybush-a62cec71.uksouth.azurecontainerapps.io/api/users/${user.uid}/offers/${negotiationId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'reject'
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to reject offer');
+      }
+
+      // Update the application status in the UI
+      setApplications(prevApplications => 
+        prevApplications.map(app => 
+          app.id === negotiationId
+            ? {
+                ...app,
+                status: 'rejected'
+              }
+            : app
+        )
+      );
+
+      // Update selected application if in detail view
+      if (selectedApplication?.id === negotiationId) {
+        setSelectedApplication(prev => prev ? {
+          ...prev,
+          status: 'rejected'
+        } : null);
+      }
+
+      toast.success('Offer rejected successfully!', {
+        duration: 3000,
+        position: 'bottom-right',
+      });
+    } catch (err) {
+      console.error('Error rejecting offer:', err);
+      setError(err instanceof Error ? err.message : 'Failed to reject offer');
+    } finally {
+      setRejectLoading(null);
+    }
+  };
+
+  const handleCancelOffer = async (negotiationId: string) => {
+    if (!user?.uid) return;
+    
+    setCancelLoading(negotiationId);
+    setError(null);
+    
+    try {
+      const response = await fetch(
+        `https://maison-api.jollybush-a62cec71.uksouth.azurecontainerapps.io/api/users/${user.uid}/offers/${negotiationId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'cancel'
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to cancel offer');
+      }
+
+      // Update the application status in the UI
+      setApplications(prevApplications => 
+        prevApplications.map(app => 
+          app.id === negotiationId
+            ? {
+                ...app,
+                status: 'cancelled'
+              }
+            : app
+        )
+      );
+
+      // Update selected application if in detail view
+      if (selectedApplication?.id === negotiationId) {
+        setSelectedApplication(prev => prev ? {
+          ...prev,
+          status: 'cancelled'
+        } : null);
+      }
+
+      toast.success('Offer cancelled successfully!', {
+        duration: 3000,
+        position: 'bottom-right',
+      });
+    } catch (err) {
+      console.error('Error cancelling offer:', err);
+      setError(err instanceof Error ? err.message : 'Failed to cancel offer');
+    } finally {
+      setCancelLoading(null);
+    }
+  };
+
+  const handleCounterOffer = (application: Application) => {
+    setCounterOfferId(application.id);
+    setOfferAmount(application.offerAmount.toString());
+    setIsOfferModalOpen(true);
+  };
+
+  const handleSubmitCounterOffer = async () => {
+    if (!user?.uid || !counterOfferId) return;
+    
+    try {
+      setOfferError(null);
+
+      if (!offerAmount || isNaN(parseFloat(offerAmount))) {
+        setOfferError('Please enter a valid offer amount');
+        return;
+      }
+
+      const application = applications.find(app => app.id === counterOfferId);
+      if (!application) {
+        setOfferError('Application not found');
+        return;
+      }
+
+      const response = await fetch(
+        `https://maison-api.jollybush-a62cec71.uksouth.azurecontainerapps.io/api/users/${user.uid}/offers`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            property_id: application.propertyId,
+            offer_amount: Math.round(parseFloat(offerAmount)),
+            negotiation_id: application.id
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit counter offer');
+      }
+
+      // Reset and close modal
+      setOfferAmount('');
+      setOfferError(null);
+      setIsOfferModalOpen(false);
+      setCounterOfferId(null);
+      
+      toast.success('Counter offer submitted successfully!', {
+        duration: 3000,
+        position: 'bottom-right',
+      });
+
+      // Update the application status in the UI
+      setApplications(prevApplications => 
+        prevApplications.map(app => 
+          app.id === counterOfferId
+            ? {
+                ...app,
+                status: 'pending',
+                offerAmount: Math.round(parseFloat(offerAmount)),
+                lastOfferBy: user.uid
+              }
+            : app
+        )
+      );
+
+      // Update selected application if in detail view
+      if (selectedApplication?.id === counterOfferId) {
+        setSelectedApplication(prev => prev ? {
+          ...prev,
+    status: 'pending',
+          offerAmount: Math.round(parseFloat(offerAmount)),
+          lastOfferBy: user.uid
+        } : null);
+      }
+    } catch (err) {
+      console.error('Error submitting counter offer:', err);
+      setOfferError(err instanceof Error ? err.message : 'Failed to submit counter offer');
+    }
+  };
 
   // Fetch negotiations from dashboard
   useEffect(() => {
@@ -135,26 +400,26 @@ const ApplicationsSection = () => {
             status: mappedStatus,
             submittedDate: negotiation.created_at,
             lastOfferBy: negotiation.last_offer_by,
-            documents: [
+    documents: [
               { name: 'Proof of Funds', status: 'pending' },
-              { name: 'Mortgage in Principle', status: 'pending' }
-            ],
-            milestones: {
-              viewingComplete: true,
-              offerSubmitted: true,
-              documentsVerified: false,
+      { name: 'Mortgage in Principle', status: 'pending' }
+    ],
+    milestones: {
+      viewingComplete: true,
+      offerSubmitted: true,
+      documentsVerified: false,
               solicitorAssigned: mappedStatus === 'accepted'
-            },
-            timeline: [
-              {
-                title: 'Offer Submitted',
+    },
+    timeline: [
+      {
+        title: 'Offer Submitted',
                 date: new Date(negotiation.created_at).toLocaleDateString('en-GB', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'
                 }),
-                completed: true,
-                icon: <FileText className="h-3 w-3" />,
+        completed: true,
+        icon: <FileText className="h-3 w-3" />,
                 info: `£${negotiation.current_offer.toLocaleString()}`
               },
               // Add status update if the offer status has changed
@@ -257,15 +522,31 @@ const ApplicationsSection = () => {
               <h2 className="text-xl font-semibold">{selectedApplication.propertyAddress}</h2>
               <div className="flex items-center gap-4 mt-2">
                 <span className="text-gray-600">Listed for: £{selectedApplication.propertyPrice.toLocaleString()}</span>
-                <span className={`${selectedApplication.lastOfferBy === user?.uid ? 'text-emerald-600' : 'text-blue-600'} font-medium`}>
-                  {selectedApplication.lastOfferBy === user?.uid ? (
+                <span className={`${
+                  selectedApplication.status === 'accepted' 
+                    ? 'text-emerald-600' 
+                    : selectedApplication.status === 'rejected'
+                      ? 'text-red-600'
+                      : selectedApplication.lastOfferBy === user?.uid 
+                        ? 'text-emerald-600' 
+                        : 'text-blue-600'
+                } font-medium`}>
+                  {selectedApplication.status === 'accepted' ? (
+                    <>Accepted offer: £{selectedApplication.offerAmount.toLocaleString()}</>
+                  ) : selectedApplication.status === 'rejected' ? (
+                    <>Rejected offer: £{selectedApplication.offerAmount.toLocaleString()}</>
+                  ) : selectedApplication.lastOfferBy === user?.uid ? (
                     <>Your offer: £{selectedApplication.offerAmount.toLocaleString()}</>
                   ) : (
                     <>Counter offer: £{selectedApplication.offerAmount.toLocaleString()}</>
                   )}
                 </span>
                 <span className="text-gray-500">
-                  {selectedApplication.lastOfferBy === user?.uid ? (
+                  {selectedApplication.status === 'accepted' ? (
+                    <>Offer accepted</>
+                  ) : selectedApplication.status === 'rejected' ? (
+                    <>Offer rejected</>
+                  ) : selectedApplication.lastOfferBy === user?.uid ? (
                     <>You made an offer</>
                   ) : (
                     <>Seller made a counter offer</>
@@ -324,15 +605,31 @@ const ApplicationsSection = () => {
                   <h2 className="text-lg font-semibold">{application.propertyAddress}</h2>
                   <div className="flex items-center gap-4 mt-1">
                     <span className="text-gray-600">Listed for: £{application.propertyPrice.toLocaleString()}</span>
-                    <span className={`${application.lastOfferBy === user?.uid ? 'text-emerald-600' : 'text-blue-600'} font-medium`}>
-                      {application.lastOfferBy === user?.uid ? (
+                    <span className={`${
+                      application.status === 'accepted' 
+                        ? 'text-emerald-600' 
+                        : application.status === 'rejected'
+                          ? 'text-red-600'
+                          : application.lastOfferBy === user?.uid 
+                            ? 'text-emerald-600' 
+                            : 'text-blue-600'
+                    } font-medium`}>
+                      {application.status === 'accepted' ? (
+                        <>Accepted offer: £{application.offerAmount.toLocaleString()}</>
+                      ) : application.status === 'rejected' ? (
+                        <>Rejected offer: £{application.offerAmount.toLocaleString()}</>
+                      ) : application.lastOfferBy === user?.uid ? (
                         <>Your offer: £{application.offerAmount.toLocaleString()}</>
                       ) : (
                         <>Counter offer: £{application.offerAmount.toLocaleString()}</>
                       )}
                     </span>
                     <span className="text-gray-500">
-                      {application.lastOfferBy === user?.uid ? (
+                      {application.status === 'accepted' ? (
+                        <>Offer accepted</>
+                      ) : application.status === 'rejected' ? (
+                        <>Offer rejected</>
+                      ) : application.lastOfferBy === user?.uid ? (
                         <>You made an offer</>
                       ) : (
                         <>Seller made a counter offer</>
@@ -391,20 +688,49 @@ const ApplicationsSection = () => {
                         </span>
                       ))}
                     </div>
-                    {application.lastOfferBy !== user?.uid && (
+                    {application.lastOfferBy !== user?.uid && application.status === 'action_required' ? (
                       <div className="flex gap-3">
-                        <button className="px-3 py-1 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded text-sm font-medium">
-                          Accept
+                        <button 
+                          onClick={() => handleAcceptOffer(application.id)}
+                          disabled={acceptLoading === application.id}
+                          className={`px-3 py-1 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded text-sm font-medium transition-colors
+                            ${acceptLoading === application.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {acceptLoading === application.id ? 'Accepting...' : 'Accept'}
                         </button>
-                        <button className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-sm font-medium">
-                          Reject
+                        <button 
+                          onClick={() => handleRejectOffer(application.id)}
+                          disabled={rejectLoading === application.id}
+                          className={`px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-sm font-medium transition-colors
+                            ${rejectLoading === application.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {rejectLoading === application.id ? 'Rejecting...' : 'Reject'}
                         </button>
-                        <button className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-sm font-medium">
+                        <button 
+                          onClick={() => handleCounterOffer(application)}
+                          className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-sm font-medium"
+                        >
                           Counter
+                        </button>
+                      </div>
+                    ) : application.status === 'pending' && application.lastOfferBy === user?.uid && (
+                      <div className="flex gap-3">
+                        <button 
+                          onClick={() => handleCancelOffer(application.id)}
+                          disabled={cancelLoading === application.id}
+                          className={`px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded text-sm font-medium transition-colors
+                            ${cancelLoading === application.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {cancelLoading === application.id ? 'Cancelling...' : 'Cancel Offer'}
                         </button>
                       </div>
                     )}
                   </div>
+                  {error && (
+                    <div className="mt-2 text-sm text-red-600">
+                      {error}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -444,6 +770,100 @@ const ApplicationsSection = () => {
           </div>
         ))}
       </div>
+
+      {/* Offer Modal */}
+      {isOfferModalOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+          onClick={() => {
+            setIsOfferModalOpen(false);
+            setCounterOfferId(null);
+            setOfferError(null);
+          }}
+        >
+          <div 
+            className="bg-white rounded-lg p-8 w-full max-w-md relative mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setIsOfferModalOpen(false);
+                setCounterOfferId(null);
+                setOfferError(null);
+              }}
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Modal content */}
+            <div className="space-y-6">
+              <h3 className="text-2xl font-semibold text-gray-900">Make Counter Offer</h3>
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <p className="text-lg text-gray-700 font-medium">
+                    {(() => {
+                      const app = applications.find(app => app.id === counterOfferId);
+                      if (!app) return null;
+                      const [streetPart, cityPostcodePart] = app.propertyAddress.split(', ');
+                      const [city, postcode] = cityPostcodePart.split(' ').reduce((acc, part, i, arr) => {
+                        if (i < arr.length - 2) {
+                          acc[0] = (acc[0] ? acc[0] + ' ' : '') + part;
+                        } else {
+                          acc[1] = (acc[1] ? acc[1] + ' ' : '') + part;
+                        }
+                        return acc;
+                      }, ['', '']);
+                      return (
+                        <>
+                          {streetPart},
+                          <br />
+                          {city}, {postcode}
+                        </>
+                      );
+                    })()}
+                  </p>
+                </div>
+                <p className="text-lg font-semibold text-gray-900 ml-4">
+                  £{applications.find(app => app.id === counterOfferId)?.propertyPrice.toLocaleString()}
+                </p>
+              </div>
+              
+              <div className="space-y-3">
+                <label htmlFor="offerAmount" className="block text-sm font-medium text-gray-700">
+                  Counter Offer Amount (£)
+                </label>
+                <input
+                  type="number"
+                  id="offerAmount"
+                  value={offerAmount}
+                  onChange={(e) => {
+                    setOfferAmount(e.target.value);
+                    setOfferError(null);
+                  }}
+                  className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                    offerError ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter your counter offer amount"
+                />
+                {offerError && (
+                  <p className="text-sm text-red-600 mt-1">{offerError}</p>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleSubmitCounterOffer}
+                  className="flex-1 bg-emerald-600 text-white px-4 py-3 rounded-lg hover:bg-emerald-700 transition-colors"
+                >
+                  Submit Counter Offer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
