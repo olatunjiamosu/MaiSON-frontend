@@ -2,19 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Home,
   FileText,
-  Settings,
   Calendar,
-  Bell,
   Heart,
   ClipboardList,
   MessageCircle,
   LogOut,
   Menu,
   List,
-  Handshake,
   X,
 } from 'lucide-react';
-import { useNavigate, Routes, Route, useLocation, useParams } from 'react-router-dom';
+import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
 import PersistentChat from '../../components/chat/PersistentChat';
 import ChatService from '../../services/ChatService';
 import { formatDistanceToNow } from 'date-fns';
@@ -24,15 +21,12 @@ import ReactMarkdown from 'react-markdown';
 import PreviousChats from '../../components/chat/PreviousChats';
 import { useAuth } from '../../context/AuthContext';
 
-// Import Sections (from `buyer-sections`)
+// Import Sections
 import ListingsSection from './buyer-sections/ListingsSection';
-//import MatchesSection from './buyer-sections/MatchesSection';
 import SavedPropertiesSection from './buyer-sections/SavedPropertiesSection';
 import ViewingsSection from './buyer-sections/ViewingsSection';
 import ApplicationsSection from './buyer-sections/ApplicationsSection';
 import PropertyChats from './buyer-sections/PropertyChats';
-//import NotificationsSection from './buyer-sections/NotificationsSection';
-//import PreferencesSection from './buyer-sections/PreferencesSection';
 import DocumentsSection from './buyer-sections/DocumentsSection';
 
 // Add this interface near the top
@@ -51,26 +45,6 @@ interface ChatMessageDisplay {
   content: string;
   timestamp?: string;
 }
-
-const mockProperties = [
-  {
-    id: '1',
-    image: 'https://example.com/image1.jpg',
-    price: '£800,000',
-    road: '123 Park Avenue',
-    city: 'London',
-    postcode: 'SE22 9QA',
-    beds: 2,
-    baths: 2,
-    reception: 1,
-    sqft: 1200,
-    propertyType: 'Terraced',
-    epcRating: 'C',
-    lat: 51.5074,
-    lng: -0.1278,
-  },
-  // Add more properties as needed
-];
 
 const BuyerDashboard: React.FC = () => {
   const location = useLocation();
@@ -106,10 +80,14 @@ const BuyerDashboard: React.FC = () => {
 
   // Update active section based on location
   useEffect(() => {
-    if (location.pathname.includes('/saved')) {
+    if (location.pathname.includes('/applications')) {
+      setActiveSection('applications');
+    } else if (location.pathname.includes('/saved')) {
       setActiveSection('saved');
     } else if (location.pathname.includes('/viewings')) {
       setActiveSection('viewings');
+    } else if (location.pathname.includes('/messages')) {
+      setActiveSection('messages');
     } else if (location.pathname === '/buyer-dashboard') {
       setActiveSection('listings');
     }
@@ -266,7 +244,6 @@ const BuyerDashboard: React.FC = () => {
 
   // Add console.log to debug
   console.log('Rendering BuyerDashboard');
-  console.log('Mock Properties:', mockProperties);
 
   const isMessagesSection = location.pathname.includes('/chats') || 
                            location.pathname.includes('/messages');
@@ -393,13 +370,6 @@ const BuyerDashboard: React.FC = () => {
             onClick={() => setActiveSection('listings')}
             path="/buyer-dashboard"
           />
-          {/* <NavItem
-            icon={<Handshake />}
-            label="Property Matches"
-            active={activeSection === 'matches'}
-            onClick={() => setActiveSection('matches')}
-            path="/buyer-dashboard/matches"
-          /> */}
           <NavItem
             icon={<Heart />}
             label="Saved Properties"
@@ -434,20 +404,6 @@ const BuyerDashboard: React.FC = () => {
             onClick={() => setActiveSection('applications')}
             path="/buyer-dashboard/applications"
           />
-          {/* <NavItem
-            icon={<Bell />}
-            label="Notifications"
-            active={activeSection === 'notifications'}
-            onClick={() => setActiveSection('notifications')}
-            path="/buyer-dashboard/notifications"
-          /> */}
-          {/* <NavItem
-            icon={<Settings />}
-            label="Preferences"
-            active={activeSection === 'preferences'}
-            onClick={() => setActiveSection('preferences')}
-            path="/buyer-dashboard/preferences"
-          /> */}
           <NavItem
             icon={<FileText />}
             label="Documents"
@@ -506,13 +462,12 @@ const BuyerDashboard: React.FC = () => {
             <Routes>
               <Route
                 index
-                element={<ListingsSection initialProperties={mockProperties} />}
+                element={<ListingsSection />}
               />
               <Route path="saved" element={<SavedPropertiesSection />} />
               <Route path="viewings" element={<ViewingsSection />} />
               <Route path="messages" element={<PropertyChats />} />
               <Route path="applications" element={<ApplicationsSection />} />
-              {/* <Route path="notifications" element={<NotificationsSection />} /> */}
               <Route path="documents" element={<DocumentsSection />} />
             </Routes>
           </div>

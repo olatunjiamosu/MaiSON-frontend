@@ -124,14 +124,17 @@ export interface SavedProperty {
   price: number;
   main_image_url: string;
   status: string;
+  bedrooms: number;
+  bathrooms: number;
+  created_at: string;
+  seller_id: string;
   address: {
     street: string;
     city: string;
     postcode: string;
+    house_number?: string;
   };
   specs: {
-    bedrooms: number;
-    bathrooms: number;
     property_type: string;
     square_footage?: number;
   };

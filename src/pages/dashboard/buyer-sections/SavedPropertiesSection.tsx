@@ -167,14 +167,14 @@ export default function SavedPropertiesSection() {
                   main_image_url={property.main_image_url}
                   price={property.price}
                   address={property.address}
-                  bedrooms={property.specs.bedrooms}
-                  bathrooms={property.specs.bathrooms}
+                  bedrooms={property.bedrooms}
+                  bathrooms={property.bathrooms}
                   specs={{
                     property_type: property.specs.property_type,
                     square_footage: property.specs.square_footage || 0
                   }}
                   created_at={property.saved_at}
-                  owner_id={0} // This field isn't used in this context
+                  owner_id={0}
                   isSaved={true}
                   onToggleSave={() => handleUnsaveProperty(property.property_id)}
                   className={viewMode === 'list' ? 'flex' : ''}

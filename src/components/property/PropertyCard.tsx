@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, FileText, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { formatPrice } from '../../lib/formatters';
 import { PropertySummary, Negotiation } from '../../types/property';
@@ -31,6 +31,7 @@ const PropertyCard = ({
   negotiations = [],
 }: PropertyCardProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const formattedPrice = formatPrice(price);
   const [saving, setSaving] = useState(false);
@@ -266,15 +267,25 @@ const PropertyCard = ({
               Schedule Viewing
             </button>
             <button
-              onClick={hasActiveNegotiation ? undefined : handleMakeOffer}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (hasActiveNegotiation) {
+                  navigate('/buyer-dashboard/applications', { 
+                    replace: true,
+                    state: { from: location.pathname }
+                  });
+                } else {
+                  handleMakeOffer(e);
+                }
+              }}
               className={`w-full ${
                 hasActiveNegotiation 
-                  ? 'bg-emerald-100 text-emerald-700 cursor-not-allowed'
+                  ? 'bg-emerald-100 text-emerald-700'
                   : 'bg-emerald-600 hover:bg-emerald-700 text-white'
               } py-2 rounded-lg transition-colors flex items-center justify-center gap-2`}
             >
               <FileText className="h-4 w-4" />
-              <span>{hasActiveNegotiation ? 'Offer submitted' : 'Make an Offer'}</span>
+              <span>{hasActiveNegotiation ? 'Offer Submitted' : 'Make an Offer'}</span>
             </button>
           </div>
         </div>
