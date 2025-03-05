@@ -3,10 +3,11 @@ import { Search, Grid, List, X } from 'lucide-react';
 import PropertyCard from '../../../components/property/PropertyCard';
 import { toast } from 'react-hot-toast';
 import PropertyService from '../../../services/PropertyService';
-import { SavedProperty } from '../../../types/property';
+import { SavedProperty, PropertyDetail } from '../../../types/property';
 
 export default function SavedPropertiesSection() {
   const [savedProperties, setSavedProperties] = useState<SavedProperty[]>([]);
+  const [propertyDetails, setPropertyDetails] = useState<Record<string, PropertyDetail>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -22,6 +23,27 @@ export default function SavedPropertiesSection() {
         const properties = await PropertyService.getSavedProperties();
         setSavedProperties(properties);
         setError(null);
+        
+        // Fetch full property details for each saved property to get seller_id
+        const detailsPromises = properties.map(property => 
+          PropertyService.getPropertyById(property.property_id)
+            .catch(err => {
+              console.error(`Error fetching details for property ${property.property_id}:`, err);
+              return null;
+            })
+        );
+        
+        const details = await Promise.all(detailsPromises);
+        
+        // Create a map of property_id to PropertyDetail
+        const detailsMap: Record<string, PropertyDetail> = {};
+        details.forEach(detail => {
+          if (detail) {
+            detailsMap[detail.id] = detail;
+          }
+        });
+        
+        setPropertyDetails(detailsMap);
       } catch (err) {
         console.error('Error fetching saved properties:', err);
         setError('Unable to load saved properties. Please try again later.');
@@ -157,81 +179,87 @@ export default function SavedPropertiesSection() {
         <div
           className={`${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}`}
         >
-          {filteredProperties.map((property) => (
-            <div key={property.property_id} className="relative">
-              <div className="space-y-2">
-                <PropertyCard
-                  id={property.property_id}
-                  main_image_url={property.main_image_url}
-                  price={property.price}
-                  address={property.address}
-                  bedrooms={property.specs.bedrooms}
-                  bathrooms={property.specs.bathrooms}
-                  specs={{
-                    property_type: property.specs.property_type,
-                    square_footage: property.specs.square_footage || 0
-                  }}
-                  created_at={property.saved_at}
-                  owner_id={0} // This field isn't used in this context
-                  seller_id={property.seller_id}
-                  isSaved={true}
-                  onToggleSave={() => handleUnsaveProperty(property.property_id)}
-                  className={viewMode === 'list' ? 'flex' : ''}
-                  showSaveButton
-                  showChatButton={!!property.seller_id}
-                />
-                
-                <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">
-                  {/* Notes section */}
-                  <div className="mt-2">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-sm font-medium text-gray-700">Notes</h3>
-                      <button
-                        onClick={() => {
-                          setEditingNotes(property.property_id);
-                          setNoteText(property.notes || '');
-                        }}
-                        className="text-xs text-emerald-600 hover:text-emerald-700"
-                      >
-                        {property.notes ? 'Edit' : 'Add notes'}
-                      </button>
-                    </div>
-                    
-                    {/* Display notes or placeholder */}
-                    {editingNotes === property.property_id ? (
-                      <div className="space-y-2">
-                        <textarea
-                          value={noteText}
-                          onChange={(e) => setNoteText(e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                          rows={3}
-                          placeholder="Add your notes about this property..."
-                        />
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => setEditingNotes(null)}
-                            className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={handleNotesUpdate}
-                            className="px-3 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
-                          >
-                            Save
-                          </button>
-                        </div>
+          {filteredProperties.map((property) => {
+            // Get the full property details if available
+            const details = propertyDetails[property.property_id];
+            const seller_id = details?.seller_id;
+            
+            return (
+              <div key={property.property_id} className="relative">
+                <div className="space-y-2">
+                  <PropertyCard
+                    id={property.property_id}
+                    main_image_url={property.main_image_url}
+                    price={property.price}
+                    address={property.address}
+                    bedrooms={property.specs.bedrooms}
+                    bathrooms={property.specs.bathrooms}
+                    specs={{
+                      property_type: property.specs.property_type,
+                      square_footage: property.specs.square_footage || 0
+                    }}
+                    created_at={property.saved_at}
+                    owner_id={0} // This field isn't used in this context
+                    seller_id={seller_id} // Add the seller_id from the full property details
+                    isSaved={true}
+                    onToggleSave={() => handleUnsaveProperty(property.property_id)}
+                    className={viewMode === 'list' ? 'flex' : ''}
+                    showSaveButton
+                    showChatButton={!!seller_id} // Only show chat button if seller_id is available
+                  />
+                  
+                  <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+                    {/* Notes section */}
+                    <div className="mt-2">
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-sm font-medium text-gray-700">Notes</h3>
+                        <button
+                          onClick={() => {
+                            setEditingNotes(property.property_id);
+                            setNoteText(property.notes || '');
+                          }}
+                          className="text-xs text-emerald-600 hover:text-emerald-700"
+                        >
+                          {property.notes ? 'Edit' : 'Add notes'}
+                        </button>
                       </div>
-                    ) : (
-                      <p className="text-sm text-gray-600 mt-1 italic">
-                        {property.notes || 'No notes added yet'}
-                      </p>
-                    )}
+                      
+                      {/* Display notes or placeholder */}
+                      {editingNotes === property.property_id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={noteText}
+                            onChange={(e) => setNoteText(e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            rows={3}
+                            placeholder="Add your notes about this property..."
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => setEditingNotes(null)}
+                              className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={handleNotesUpdate}
+                              className="px-3 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600 mt-1 italic">
+                          {property.notes || 'No notes added yet'}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -76,6 +76,7 @@ export interface PropertyDetail {
   created_at: string;
   last_updated?: string;
   owner_id: number;
+  seller_id: string;
   address: PropertyAddress;
   specs: PropertySpecs;
   details?: PropertyDetails;
