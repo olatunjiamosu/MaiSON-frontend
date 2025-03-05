@@ -15,6 +15,9 @@ import {
 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 import PropertyService from '../../../services/PropertyService';
+import PricingService from '../../../services/PricingService';
+import PriceHistoryChart from '../../../components/property/PriceHistoryChart';
+import { PricingApiResponse } from '../../../types/pricing';
 import { CreatePropertyRequest } from '../../../types/property';
 import { toast } from 'react-hot-toast';
 
@@ -80,6 +83,8 @@ const AddPropertySection = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState({ description: false, price: false });
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [pricingData, setPricingData] = useState<PricingApiResponse | null>(null);
+  const [showPricingChart, setShowPricingChart] = useState(false);
 
   // Fetch property data if in edit mode
   useEffect(() => {
@@ -307,9 +312,8 @@ const AddPropertySection = () => {
         
         // Handle image updates if needed
         if (formData.images.length > 0) {
-          // Note: This is a simplified approach. In a real app, you might need a more
-          // sophisticated way to handle image updates, like a separate endpoint
-          toast.info('Image updates are not supported in this version');
+          // For demo purposes we don't actually upload images
+          toast.success('Image updates are not supported in this version');
         }
         
         toast.success('Property updated successfully!');
@@ -408,20 +412,110 @@ const AddPropertySection = () => {
   };
 
   const getAIPrice = async () => {
+    // Validate postcode first
+    if (!formData.postcode) {
+      toast.error('Please enter a postcode to get a price suggestion');
+      return;
+    }
+    
+    console.log(`Getting AI price suggestion for postcode: ${formData.postcode}`);
+    console.log(`Current square footage: ${formData.sqft || 'Not provided'}`);
+    
     setIsGeneratingAI(prev => ({ ...prev, price: true }));
+    setPricingData(null);
+    setShowPricingChart(false);
     
     try {
-      // TODO: Replace with actual AI API call
-      // For now, using a mock response
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
-    const mockResponse = "495000";
-    setFormData(prev => ({ ...prev, price: mockResponse }));
-      toast.success('AI price suggestion generated!');
+      // Use the pricing service to get pricing data (with improved NaN handling)
+      const data = await PricingService.getPricingData(formData.postcode);
+      
+      if (!data || !data.price_per_floor_area_per_year || data.price_per_floor_area_per_year.length === 0) {
+        toast.error(`No pricing data available for ${formData.postcode}`);
+        setIsGeneratingAI(prev => ({ ...prev, price: false }));
+        return;
+      }
+      
+      setPricingData(data);
+      
+      // Calculate price based on square footage if available
+      let calculatedPrice = 350000; // Default base price
+      
+      if (data) {
+        const recommendedPrice = PricingService.getRecommendedPrice(data);
+        console.log('Recommended price data:', recommendedPrice);
+        
+        if (recommendedPrice) {
+          if (formData.sqft && !isNaN(parseInt(formData.sqft))) {
+            // Convert from price per sqm to price per sqft and calculate total
+            const sqft = parseInt(formData.sqft);
+            console.log(`Using square footage: ${sqft} sq ft`);
+            
+            // Convert sqft to sqm: 1 sq ft = 0.092903 sq m
+            const sqm = sqft * 0.092903;
+            console.log(`Converted to: ${sqm.toFixed(2)} sq m`);
+            
+            // Calculate total price based on price per square meter
+            const rawPrice = recommendedPrice.pricePerSqm * sqm;
+            console.log(`Raw calculation: ${recommendedPrice.pricePerSqm} £/sqm × ${sqm.toFixed(2)} sqm = £${rawPrice.toFixed(2)}`);
+            
+            // Round to the nearest 500
+            calculatedPrice = Math.round(rawPrice / 500) * 500;
+            console.log(`Rounded to nearest 500: £${calculatedPrice}`);
+          } else {
+            // If sqft not provided or invalid, use a default approach
+            console.log('No valid square footage provided, using default price estimate');
+            
+            // Set a base price depending on property type
+            let basePrice = 350000; // Default for undefined property type
+            
+            switch(formData.propertyType) {
+              case 'flat':
+                basePrice = 250000;
+                break;
+              case 'terraced':
+                basePrice = 350000;
+                break;
+              case 'semi-detached':
+                basePrice = 450000;
+                break;
+              case 'detached':
+                basePrice = 550000;
+                break;
+            }
+            
+            // Adjust by the area's price factor compared to average
+            const areaPriceFactor = recommendedPrice.pricePerSqm / 5000; // 5000 is roughly UK average £/sqm
+            const rawPrice = basePrice * areaPriceFactor;
+            console.log(`Raw default price calculation: ${basePrice} × area factor ${areaPriceFactor.toFixed(2)} = £${rawPrice.toFixed(2)}`);
+            
+            // Round to the nearest 500
+            calculatedPrice = Math.round(rawPrice / 500) * 500;
+            console.log(`Rounded to nearest 500: £${calculatedPrice}`);
+          }
+        }
+      }
+      
+      console.log(`Final suggested price: £${calculatedPrice}`);
+      
+      // Update the form with the suggested price
+      setFormData((prevData) => ({
+        ...prevData,
+        price: calculatedPrice.toString(),
+      }));
+      
+      // Show the pricing chart
+      setShowPricingChart(true);
+      
+      toast.success("Price suggestion generated successfully!");
     } catch (error) {
-      console.error('Error generating AI price:', error);
-      toast.error('Failed to generate AI price suggestion');
+      console.error("Error generating price suggestion:", error);
+      toast.error(`Failed to generate price suggestion: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Reset states
+      setShowPricingChart(false);
+      setPricingData(null);
     } finally {
-      setIsGeneratingAI(prev => ({ ...prev, price: false }));
+      setIsGeneratingAI((prev) => ({ ...prev, price: false }));
     }
   };
 
@@ -901,18 +995,74 @@ const AddPropertySection = () => {
               className="flex items-center gap-2 px-4 py-2 text-emerald-600 border border-emerald-600 rounded-lg hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGeneratingAI.price ? (
-                <Loader className="h-4 w-4 animate-spin" />
+                <>
+                  <Loader className="h-4 w-4 animate-spin" />
+                  <span>Analyzing market data...</span>
+                </>
               ) : (
-                <Sparkles className="h-4 w-4" />
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  <span>Generate Mia Suggestion</span>
+                </>
               )}
-              <span>Get Mia's Suggestion</span>
-                  </button>
-                </div>
+            </button>
+          </div>
+          
+          {/* Pricing Chart and Explanation */}
+          {showPricingChart && pricingData && (
+            <div className="mt-6 border-t pt-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Price Analysis</h3>
+                <p className="text-sm text-gray-600">
+                  Based on historical property transactions in {formData.postcode}
+                </p>
+              </div>
+              
+              {/* Pricing Chart */}
+              <PriceHistoryChart 
+                data={pricingData.price_per_floor_area_per_year} 
+                recommendedYear={
+                  PricingService.getRecommendedPrice(pricingData)?.year
+                }
+              />
+              
+              {/* Pricing Explanation */}
+              <div className="mt-4 p-4 bg-emerald-50 rounded-lg border border-emerald-100">
+                <h4 className="font-medium text-emerald-800 mb-2">How we calculated this price:</h4>
+                <ul className="list-disc list-inside text-sm space-y-1 text-gray-700">
+                  <li>
+                    Used {formData.postcode} area property data from Land Registry and EPC certificates
+                  </li>
+                  {PricingService.getRecommendedPrice(pricingData) && (
+                    <li>
+                      Current market rate: £{PricingService.getRecommendedPrice(pricingData)?.pricePerSqm.toLocaleString('en-GB')} per m²
+                      (£{Math.round((PricingService.getRecommendedPrice(pricingData)?.pricePerSqm || 0) * 0.092903).toLocaleString('en-GB')} per sq ft)
+                    </li>
+                  )}
+                  {formData.sqft && PricingService.getRecommendedPrice(pricingData) && (
+                    <li>
+                      Your property: {formData.sqft} sq ft × £{Math.round((PricingService.getRecommendedPrice(pricingData)?.pricePerSqm || 0) * 0.092903).toLocaleString('en-GB')} = £{parseInt(formData.price).toLocaleString('en-GB')} (rounded to nearest £500)
+                    </li>
+                  )}
+                  {PricingService.getRecommendedPrice(pricingData) && (
+                    <li>
+                      Based on {PricingService.getRecommendedPrice(pricingData)?.sampleSize} properties in this area
+                    </li>
+                  )}
+                </ul>
+                <p className="text-xs text-gray-500 mt-3">
+                  Note: This is an AI-generated suggestion. Final pricing decisions should consider 
+                  property condition, unique features, and current market trends.
+                </p>
+              </div>
+            </div>
+          )}
+
           {errors.price && (
             <p className="text-red-500 text-sm">{errors.price}</p>
           )}
           <p className="text-sm text-gray-500">
-            Let Mia suggest a competitive price based on market data
+            Thanks for letting Mia suggest a competitive price for you based on market data!
           </p>
         </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -7,8 +7,19 @@ import {
   XCircle,
   BarChart,
   Clock,
-  Info
+  Info,
+  Loader
 } from 'lucide-react';
+import PricingService from '../../../services/PricingService';
+import PropertyService from '../../../services/PropertyService';
+import { PricingApiResponse } from '../../../types/pricing';
+import { toast } from 'react-hot-toast';
+
+// Local storage keys
+const LS_PRICING_DATA_PREFIX = 'maison_pricing_data_';
+const LS_PRICING_TIMESTAMP_PREFIX = 'maison_pricing_timestamp_';
+// Cache expiry time - 24 hours in milliseconds
+const CACHE_EXPIRY_TIME = 24 * 60 * 60 * 1000;
 
 interface Offer {
   id: string;
@@ -41,6 +52,10 @@ interface PropertyDetailWithStatus {
   id: string;
   price: number;
   status?: 'active' | 'pending' | 'sold' | 'withdrawn';
+  address?: {
+    postcode?: string;
+    city?: string;
+  };
   // Other property fields can be added as needed
 }
 
@@ -90,9 +105,153 @@ const mockStats: PropertyStats = {
 
 const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ property }) => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'pending' | 'accepted' | 'rejected'>('all');
+  const [localAverage, setLocalAverage] = useState<number | null>(null);
+  const [isLoadingPriceData, setIsLoadingPriceData] = useState(false);
+  const [sampleSize, setSampleSize] = useState<number | null>(null);
+  const [completePropertyData, setCompletePropertyData] = useState<any | null>(null);
+  const [isLoadingPropertyData, setIsLoadingPropertyData] = useState(false);
 
   // Use property.price if available, otherwise fallback to mock
   const askingPrice = property?.price || mockStats.askingPrice;
+  
+  // First fetch complete property data to get all details
+  useEffect(() => {
+    const fetchPropertyDetails = async () => {
+      if (!property || !property.id) return;
+      
+      try {
+        setIsLoadingPropertyData(true);
+        const propertyData = await PropertyService.getPropertyById(property.id);
+        setCompletePropertyData(propertyData);
+      } catch (error) {
+        console.error('Error fetching property details:', error);
+        toast.error('Failed to load property details');
+      } finally {
+        setIsLoadingPropertyData(false);
+      }
+    };
+    
+    fetchPropertyDetails();
+  }, [property?.id]);
+  
+  // Once we have property data, fetch pricing data
+  useEffect(() => {
+    if (isLoadingPropertyData || !completePropertyData) return;
+    
+    const fetchLocalAveragePrice = async () => {
+      try {
+        // Get postcode from the complete property data
+        const postcode = completePropertyData.address?.postcode;
+        
+        if (!postcode) {
+          console.error('No postcode available in property data');
+          return;
+        }
+        
+        console.log(`Fetching pricing data for postcode: ${postcode}`);
+        
+        // Check localStorage first
+        const cacheKey = `${LS_PRICING_DATA_PREFIX}${postcode}`;
+        const timestampKey = `${LS_PRICING_TIMESTAMP_PREFIX}${postcode}`;
+        const cachedData = localStorage.getItem(cacheKey);
+        const cachedTimestamp = localStorage.getItem(timestampKey);
+        
+        // Check if we have valid cached data that hasn't expired
+        if (cachedData && cachedTimestamp) {
+          const timestamp = parseInt(cachedTimestamp, 10);
+          const now = Date.now();
+          
+          // If cache is still valid (less than 24 hours old)
+          if (now - timestamp < CACHE_EXPIRY_TIME) {
+            console.log('Using cached pricing data for', postcode);
+            const data = JSON.parse(cachedData) as PricingApiResponse;
+            updateLocalAverageFromData(data);
+            return;
+          }
+        }
+        
+        // Cache expired or doesn't exist, fetch fresh data
+        setIsLoadingPriceData(true);
+        const data = await PricingService.getPricingData(postcode);
+        
+        // Cache the result in localStorage
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+        localStorage.setItem(timestampKey, Date.now().toString());
+        
+        updateLocalAverageFromData(data);
+      } catch (error) {
+        console.error('Error fetching local average price:', error);
+        setLocalAverage(null);
+        setSampleSize(null);
+      } finally {
+        setIsLoadingPriceData(false);
+      }
+    };
+    
+    fetchLocalAveragePrice();
+  }, [completePropertyData, isLoadingPropertyData]);
+  
+  // Calculate local average price from pricing data
+  const updateLocalAverageFromData = (data: PricingApiResponse) => {
+    if (!data || !data.price_per_floor_area_per_year || data.price_per_floor_area_per_year.length === 0 || !completePropertyData) {
+      console.error('Insufficient data to calculate local average');
+      setLocalAverage(null);
+      setSampleSize(null);
+      return;
+    }
+    
+    try {
+      // Get the recommended price info
+      const recommendedPrice = PricingService.getRecommendedPrice(data);
+      
+      if (!recommendedPrice) {
+        console.error('No recommended price available');
+        setLocalAverage(null);
+        setSampleSize(null);
+        return;
+      }
+      
+      // Extract property size from complete property data
+      // API might provide square_footage in different formats - handle them all
+      let propertySizeInSqFt = 0;
+      
+      if (completePropertyData.specs?.square_footage) {
+        propertySizeInSqFt = Number(completePropertyData.specs.square_footage);
+      } else if (completePropertyData.square_footage) {
+        propertySizeInSqFt = Number(completePropertyData.square_footage);
+      } else if (completePropertyData.sqft) {
+        propertySizeInSqFt = Number(completePropertyData.sqft);
+      }
+      
+      if (!propertySizeInSqFt || isNaN(propertySizeInSqFt)) {
+        console.error('No valid square footage available for the property');
+        setLocalAverage(null);
+        setSampleSize(null);
+        return;
+      }
+      
+      console.log(`Using property size: ${propertySizeInSqFt} sq ft`);
+      
+      // Convert sq ft to sq m (1 sq ft = 0.092903 sq m)
+      const propertySizeInSqM = propertySizeInSqFt * 0.092903;
+      console.log(`Property size in sq m: ${propertySizeInSqM.toFixed(2)}`);
+      
+      // Calculate the average price for this size of property in the area
+      const calculatedPrice = recommendedPrice.pricePerSqm * propertySizeInSqM;
+      console.log(`Raw calculation: ${recommendedPrice.pricePerSqm} £/sqm × ${propertySizeInSqM.toFixed(2)} sqm = £${calculatedPrice.toFixed(2)}`);
+      
+      // Round to nearest 1000
+      const roundedPrice = Math.round(calculatedPrice / 1000) * 1000;
+      console.log(`Rounded local average: £${roundedPrice}`);
+      
+      setLocalAverage(roundedPrice);
+      setSampleSize(recommendedPrice.sampleSize);
+    } catch (error) {
+      console.error('Error calculating local average:', error);
+      setLocalAverage(null);
+      setSampleSize(null);
+    }
+  };
 
   const getOfferStrength = (amount: number): { strength: string; color: string } => {
     const percentageOfAsking = (amount / askingPrice) * 100;
@@ -109,6 +268,39 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
       maximumFractionDigits: 0
     }).format(price);
   };
+
+  // Get market position analysis
+  const getMarketPositionAnalysis = () => {
+    if (!localAverage || isLoadingPriceData || isLoadingPropertyData) {
+      return {
+        position: 'unknown',
+        message: 'Market position information not available'
+      };
+    }
+    
+    // Calculate the percentage difference
+    const priceDifference = ((askingPrice - localAverage) / localAverage) * 100;
+    
+    // Determine market position with more nuance
+    let position: 'above' | 'below' | 'competitive' = 'competitive';
+    let message = '';
+    
+    if (priceDifference > 5) {
+      position = 'above';
+      message = `Your asking price is ${Math.abs(priceDifference).toFixed(1)}% above the local market average, which could extend the time to sell but may maximise your return.`;
+    } else if (priceDifference < -5) {
+      position = 'below';
+      message = `Your asking price is ${Math.abs(priceDifference).toFixed(1)}% below the local market average, which could reduce the time to sell but may impact your total return.`;
+    } else {
+      position = 'competitive';
+      message = `Your asking price is competitively positioned (within 5% of local average), which typically attracts good buyer interest while maximising value.`;
+    }
+    
+    return { position, message };
+  };
+  
+  // Get market position data
+  const marketPosition = getMarketPositionAnalysis();
 
   return (
     <div className="space-y-6">
@@ -152,15 +344,30 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Local Average</p>
-                <h3 className="text-2xl font-bold text-gray-900">{formatPrice(mockStats.averageLocalPrice)}</h3>
+                {isLoadingPropertyData || isLoadingPriceData ? (
+                  <div className="flex items-center gap-2 h-9 mt-1">
+                    <Loader className="h-5 w-5 text-emerald-600 animate-spin" />
+                    <span className="text-gray-500">Loading data...</span>
+                  </div>
+                ) : localAverage ? (
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {formatPrice(localAverage)}
+                  </h3>
+                ) : (
+                  <p className="text-gray-500 mt-1">Not available</p>
+                )}
               </div>
               <div className="p-3 bg-purple-50 rounded-full">
                 <BarChart className="h-6 w-6 text-purple-600" />
               </div>
             </div>
-            <p className="mt-2 text-sm text-gray-500">
-              Based on recent sales in your area
-            </p>
+            {!isLoadingPropertyData && !isLoadingPriceData && (
+              <p className="mt-2 text-sm text-gray-500">
+                {localAverage ? 
+                  `Based on ${sampleSize ? `${sampleSize} ` : ''}similar properties in your area` :
+                  'Property data or pricing information not available'}
+              </p>
+            )}
           </div>
 
           <div className="bg-white p-6 rounded-lg border shadow-sm">
@@ -272,16 +479,17 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
             </div>
           </div>
           
-          <div className="flex items-start gap-4 p-4 bg-emerald-50 rounded-lg">
-            <div className="p-2 bg-emerald-100 rounded-full">
-              <BarChart className="h-5 w-5 text-emerald-600" />
+          <div className={`flex items-start gap-4 p-4 rounded-lg bg-emerald-50`}>
+            <div className={`p-2 rounded-full bg-emerald-100`}>
+              {marketPosition.position === 'above' && <TrendingUp className="h-5 w-5 text-emerald-600" />}
+              {marketPosition.position === 'below' && <TrendingDown className="h-5 w-5 text-emerald-600" />}
+              {marketPosition.position === 'competitive' && <BarChart className="h-5 w-5 text-emerald-600" />}
+              {marketPosition.position === 'unknown' && <Info className="h-5 w-5 text-emerald-600" />}
             </div>
             <div>
-              <h4 className="font-medium text-emerald-900">Market Position</h4>
-              <p className="text-sm text-emerald-700">
-                Your asking price is positioned {askingPrice > mockStats.averageLocalPrice ? 'above' : 'below'} 
-                the local market average, which could {askingPrice > mockStats.averageLocalPrice ? 'extend' : 'reduce'} 
-                the time to sell.
+              <h4 className={`font-medium text-emerald-900`}>Market Position</h4>
+              <p className={`text-sm text-emerald-700`}>
+                {marketPosition.message}
               </p>
             </div>
           </div>
