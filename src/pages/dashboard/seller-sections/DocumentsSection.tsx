@@ -304,10 +304,34 @@ export default function DocumentsSection() {
     }
   };
 
-  const handleDelete = async (documentId: string) => {
-    // This would require an additional API endpoint for document deletion
-    // For now, we'll just show a toast message
-    toast.info('Document deletion is not implemented yet.');
+  const handleDelete = async (documentId: string, documentTag: string) => {
+    try {
+      if (!window.confirm('Are you sure you want to delete this document? This action cannot be undone.')) {
+        return;
+      }
+      
+      console.log('Deleting document:', documentId, 'with tag:', documentTag);
+      
+      // Show loading toast
+      const toastId = toast.loading('Deleting document...');
+      
+      // Delete document with required parameters
+      await DocumentService.deleteDocument(
+        currentPropertyId,
+        'seller',
+        documentTag
+      );
+      
+      // Update toast
+      toast.success('Document deleted successfully');
+      toast.dismiss(toastId);
+      
+      // Refresh documents list
+      fetchDocuments(currentPropertyId);
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast.error('Failed to delete document. Please try again.');
+    }
   };
 
   const handleSpecificDocumentUpload = (documentType: DocumentType) => {
@@ -551,7 +575,7 @@ export default function DocumentsSection() {
                                 <Download className="h-5 w-5" />
                               </button>
                               <button 
-                                onClick={() => handleDelete(uploadedDoc.document_id)}
+                                onClick={() => handleDelete(uploadedDoc.document_id, uploadedDoc.document_tag)}
                                 className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg"
                                 title="Delete"
                               >
@@ -613,7 +637,7 @@ export default function DocumentsSection() {
                           <Download className="h-5 w-5" />
                         </button>
                         <button 
-                          onClick={() => handleDelete(doc.document_id)}
+                          onClick={() => handleDelete(doc.document_id, doc.document_tag)}
                           className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg"
                           title="Delete"
                         >

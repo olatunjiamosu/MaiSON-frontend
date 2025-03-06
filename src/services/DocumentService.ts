@@ -625,6 +625,103 @@ class DocumentService {
       };
     }
   }
+
+  /**
+   * Delete a document from the main documents table
+   * @param property_id Property identifier (Required)
+   * @param uploaded_by Must be either "buyer" or "seller" (Required)
+   * @param document_tag Type or category of document (Required)
+   * @param buyer_id Buyer identifier (Required if uploaded_by="buyer")
+   * @returns Promise with success message
+   */
+  async deleteDocument(
+    property_id: string,
+    uploaded_by: 'buyer' | 'seller',
+    document_tag: string,
+    buyer_id?: string
+  ): Promise<{ message: string }> {
+    try {
+      console.log('Deleting document with params:', { property_id, uploaded_by, document_tag, buyer_id });
+      
+      // Build query parameters exactly as specified in the API docs
+      const params = new URLSearchParams();
+      params.append('property_id', property_id);
+      params.append('uploaded_by', uploaded_by);
+      params.append('document_tag', document_tag);
+      
+      if (uploaded_by === 'buyer' && buyer_id) {
+        params.append('buyer_id', buyer_id);
+      }
+      
+      const url = `${DOCUMENT_API_URL}/documents/delete?${params.toString()}`;
+      console.log('Delete URL:', url);
+      
+      const headers = await this.getHeaders();
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers
+      });
+      
+      console.log('Delete response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error deleting document:', errorText);
+        throw new Error(`Failed to delete document: ${response.status} ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Error in deleteDocument:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Delete a document from the buyer documents table
+   * @param buyer_id Buyer identifier (Required)
+   * @param document_tag Type or category of document (Required)
+   * @returns Promise with success message
+   */
+  async deleteBuyerDocument(
+    buyer_id: string,
+    document_tag: string
+  ): Promise<{ message: string }> {
+    try {
+      console.log('Deleting buyer document with params:', { buyer_id, document_tag });
+      
+      // Build query parameters exactly as specified in the API docs
+      const params = new URLSearchParams();
+      params.append('buyer_id', buyer_id);
+      params.append('document_tag', document_tag);
+      
+      const url = `${DOCUMENT_API_URL}/documents/buyer/delete?${params.toString()}`;
+      console.log('Delete URL:', url);
+      
+      const headers = await this.getHeaders();
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers
+      });
+      
+      console.log('Delete response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error deleting buyer document:', errorText);
+        throw new Error(`Failed to delete buyer document: ${response.status} ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Error in deleteBuyerDocument:', error);
+      throw error;
+    }
+  }
 }
 
 export default new DocumentService(); 

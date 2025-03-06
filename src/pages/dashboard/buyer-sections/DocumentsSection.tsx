@@ -26,6 +26,7 @@ interface Document {
   size: string;
   uploadedAt: string;
   category: 'financial' | 'identity' | 'other';
+  document_tag: string;
 }
 
 interface DocumentType {
@@ -206,10 +207,38 @@ const DocumentsSection = () => {
     }
   };
 
-  const handleDelete = async (documentId: string) => {
-    // TODO: Implement document deletion when API supports it
-    console.log('Deleting document:', documentId);
-    toast.info('Document deletion not yet implemented');
+  const handleDelete = async (documentId: string, documentTag: string) => {
+    try {
+      if (!window.confirm('Are you sure you want to delete this document? This action cannot be undone.')) {
+        return;
+      }
+      
+      console.log('Deleting document:', documentId, 'with tag:', documentTag);
+      
+      if (!currentUserId) {
+        toast.error('User ID not found. Please try again later.');
+        return;
+      }
+      
+      // Show loading toast
+      const toastId = toast.loading('Deleting document...');
+      
+      // Delete document with required parameters
+      await DocumentService.deleteBuyerDocument(
+        currentUserId,
+        documentTag
+      );
+      
+      // Update toast
+      toast.success('Document deleted successfully');
+      toast.dismiss(toastId);
+      
+      // Refresh documents list
+      fetchDocuments();
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast.error('Failed to delete document. Please try again.');
+    }
   };
 
   const handleSpecificDocumentUpload = (documentType: DocumentType) => {
@@ -258,7 +287,7 @@ const DocumentsSection = () => {
     };
   };
 
-  // Convert API documents to the format expected by the UI
+  // Convert API documents to the UI format
   const convertApiDocumentsToUiFormat = (): Document[] => {
     return documents.map(doc => ({
       id: doc.document_id,
@@ -266,7 +295,8 @@ const DocumentsSection = () => {
       type: doc.file_type.split('/')[1]?.toUpperCase() || 'FILE',
       size: 'Unknown', // Size information not available from API
       uploadedAt: doc.datetime_uploaded,
-      category: mapDocumentTagToCategory(doc.document_tag)
+      category: mapDocumentTagToCategory(doc.document_tag),
+      document_tag: doc.document_tag // Store the original document_tag for deletion
     }));
   };
 
@@ -458,12 +488,12 @@ const DocumentsSection = () => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleDelete(uploadedDoc.id);
+                                  handleDelete(uploadedDoc.id, uploadedDoc.document_tag);
                                 }}
                                 className="p-1 text-gray-400 hover:text-red-600"
                                 title="Delete"
                               >
-                                <Trash2 className="h-5 w-5" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </>
                           ) : uploading ? (
@@ -528,12 +558,12 @@ const DocumentsSection = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete(document.id);
+                              handleDelete(document.id, document.document_tag);
                             }}
                             className="p-1 text-gray-400 hover:text-red-600"
                             title="Delete"
                           >
-                            <Trash2 className="h-5 w-5" />
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </div>
