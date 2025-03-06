@@ -3,7 +3,7 @@ import UserService from './UserService';
 import { UserRole } from '../types/property';
 
 // Document API URL - ensure no trailing slash
-const DOCUMENT_API_URL = import.meta.env.VITE_DOCUMENT_API_URL;
+const DOCUMENT_API_URL = import.meta.env.VITE_DOCUMENATION_API_URL;
 
 // Test the API connection on module load
 (async function testApiConnection() {
