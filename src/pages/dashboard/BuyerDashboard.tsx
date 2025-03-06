@@ -2,20 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Home,
   FileText,
-  Settings,
   Calendar,
-  Bell,
   Heart,
   ClipboardList,
   MessageCircle,
   LogOut,
   Menu,
   List,
-  Handshake,
   X,
   SwitchCamera,
 } from 'lucide-react';
-import { useNavigate, Routes, Route, useLocation, useParams } from 'react-router-dom';
+import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
 import PersistentChat from '../../components/chat/PersistentChat';
 import ChatService from '../../services/ChatService';
 import { formatDistanceToNow } from 'date-fns';
@@ -26,15 +23,12 @@ import PreviousChats from '../../components/chat/PreviousChats';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
-// Import Sections (from `buyer-sections`)
+// Import Sections
 import ListingsSection from './buyer-sections/ListingsSection';
-//import MatchesSection from './buyer-sections/MatchesSection';
 import SavedPropertiesSection from './buyer-sections/SavedPropertiesSection';
 import ViewingsSection from './buyer-sections/ViewingsSection';
 import ApplicationsSection from './buyer-sections/ApplicationsSection';
 import PropertyChats from './buyer-sections/PropertyChats';
-//import NotificationsSection from './buyer-sections/NotificationsSection';
-//import PreferencesSection from './buyer-sections/PreferencesSection';
 import DocumentsSection from './buyer-sections/DocumentsSection';
 
 // Add this interface near the top
@@ -89,10 +83,16 @@ const BuyerDashboard: React.FC = () => {
 
   // Update active section based on location
   useEffect(() => {
-    if (location.pathname.includes('/saved')) {
+    if (location.pathname.includes('/applications')) {
+      setActiveSection('applications');
+    } else if (location.pathname.includes('/saved')) {
       setActiveSection('saved');
     } else if (location.pathname.includes('/viewings')) {
       setActiveSection('viewings');
+    } else if (location.pathname.includes('/property-chats') || location.pathname.includes('/messages')) {
+      setActiveSection('messages');
+      // Clear selected chat when navigating to property chats
+      setSelectedChat(null);
     } else if (location.pathname === '/buyer-dashboard') {
       setActiveSection('listings');
     }
@@ -256,7 +256,9 @@ const BuyerDashboard: React.FC = () => {
   // Add console.log to debug
   console.log('Rendering BuyerDashboard');
 
-  const isMessagesSection = location.pathname.includes('/chats') || 
+  // Compute if we're in the messages section to hide the persistent chat
+  const isMessagesSection = activeSection === 'messages' || 
+                           location.pathname.includes('/property-chats') || 
                            location.pathname.includes('/messages');
 
   // Add a function to handle sending a message in the modal
@@ -418,8 +420,11 @@ const BuyerDashboard: React.FC = () => {
             icon={<MessageCircle />}
             label="Property Chats"
             active={activeSection === 'messages'}
-            onClick={() => setActiveSection('messages')}
-            path="/buyer-dashboard/messages"
+            onClick={() => {
+              setActiveSection('messages');
+              navigate('/buyer-dashboard/property-chats');
+            }}
+            path="/buyer-dashboard/property-chats"
           />
           <NavItem
             icon={<Calendar />}
@@ -438,20 +443,6 @@ const BuyerDashboard: React.FC = () => {
             onClick={() => setActiveSection('applications')}
             path="/buyer-dashboard/applications"
           />
-          {/* <NavItem
-            icon={<Bell />}
-            label="Notifications"
-            active={activeSection === 'notifications'}
-            onClick={() => setActiveSection('notifications')}
-            path="/buyer-dashboard/notifications"
-          /> */}
-          {/* <NavItem
-            icon={<Settings />}
-            label="Preferences"
-            active={activeSection === 'preferences'}
-            onClick={() => setActiveSection('preferences')}
-            path="/buyer-dashboard/preferences"
-          /> */}
           <NavItem
             icon={<FileText />}
             label="Documents"
@@ -513,8 +504,8 @@ const BuyerDashboard: React.FC = () => {
               <Route path="saved" element={<SavedPropertiesSection />} />
               <Route path="viewings" element={<ViewingsSection />} />
               <Route path="messages" element={<PropertyChats />} />
+              <Route path="property-chats" element={<PropertyChats />} />
               <Route path="applications" element={<ApplicationsSection />} />
-              {/* <Route path="notifications" element={<NotificationsSection />} /> */}
               <Route path="documents" element={<DocumentsSection />} />
             </Routes>
           </div>

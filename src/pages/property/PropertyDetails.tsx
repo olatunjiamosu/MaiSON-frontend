@@ -9,6 +9,8 @@ import {
   X,
   Maximize2,
   Minimize2,
+  FileText,
+  MessageCircle,
 } from 'lucide-react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import SinglePropertyMap from '../../components/map/SinglePropertyMap';
@@ -16,6 +18,8 @@ import PropertyService from '../../services/PropertyService';
 import { PropertyDetail } from '../../types/property';
 import { formatPrice, formatDate } from '../../lib/formatters';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
+import ChatService from '../../services/ChatService';
 
 interface PropertyDetailsProps {
   property?: {
@@ -35,6 +39,7 @@ interface PropertyDetailsProps {
     floorPlan: string;
     lat: number;
     lng: number;
+    seller_id: string;
   };
 }
 
@@ -44,6 +49,7 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +57,12 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [savingProperty, setSavingProperty] = useState(false);
   const [userDashboard, setUserDashboard] = useState<any>(null);
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+  const [offerAmount, setOfferAmount] = useState('');
+  const [displayOfferAmount, setDisplayOfferAmount] = useState('');
+  const [offerError, setOfferError] = useState<string | null>(null);
+  const [hasActiveNegotiation, setHasActiveNegotiation] = useState(false);
+  const [initiatingChat, setInitiatingChat] = useState(false);
 
   useEffect(() => {
     // If property is provided via props, use that
@@ -93,6 +105,7 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
           lat: propertyData.address.latitude || 51.5074,
           lng: propertyData.address.longitude || -0.1278,
           createdAt: propertyData.created_at ? formatDate(propertyData.created_at) : 'N/A',
+          seller_id: propertyData.seller_id,
         };
         
         setProperty(transformedProperty);
@@ -133,6 +146,17 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
 
     checkIfPropertyIsSaved();
   }, [id]);
+
+  // Check for active negotiations
+  useEffect(() => {
+    if (!id || !userDashboard) return;
+    
+    const hasNegotiation = userDashboard.negotiations_as_buyer?.some(
+      (negotiation: any) => negotiation.property_id === id && negotiation.status !== 'cancelled'
+    );
+    
+    setHasActiveNegotiation(hasNegotiation || false);
+  }, [id, userDashboard]);
 
   const handleBack = () => {
     // Check if we came from saved properties
@@ -213,12 +237,179 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
     });
   };
 
+  const handleChatAboutProperty = async () => {
+    if (!id) return;
+    
+    try {
+      setInitiatingChat(true);
+      
+      // Check if we already have a conversation for this property in localStorage
+      const existingConversationId = localStorage.getItem(`property_chat_conversation_${id}`);
+      
+      if (existingConversationId) {
+        console.log(`Found existing conversation (${existingConversationId}) for property ${id} in localStorage, verifying with backend`);
+        
+        try {
+          // Verify with backend that this conversation still exists
+          const conversationExists = await ChatService.verifyConversationExists(Number(existingConversationId), true);
+          
+          // If the conversation exists, redirect to it
+          if (conversationExists) {
+            console.log(`Verified conversation ${existingConversationId} exists on backend, redirecting to it`);
+            
+            // Store the conversation ID to select it on the property chats page
+            localStorage.setItem('last_property_chat_id', existingConversationId);
+            
+            // Show success message
+            toast.success('Redirecting to existing chat...', {
+              duration: 3000,
+              position: 'bottom-right',
+            });
+            
+            // Navigate to property chats page
+            navigate('/buyer-dashboard/property-chats');
+            return;
+          } else {
+            console.log(`Conversation ${existingConversationId} not found on backend, creating new one`);
+            // If verification fails, remove the stale conversation ID from localStorage
+            localStorage.removeItem(`property_chat_conversation_${id}`);
+            localStorage.removeItem(`property_chat_session_${id}`);
+            localStorage.removeItem(`property_chat_messages_${id}`);
+          }
+        } catch (verifyError) {
+          console.error('Error verifying conversation:', verifyError);
+          // If verification fails, remove the stale conversation ID from localStorage
+          localStorage.removeItem(`property_chat_conversation_${id}`);
+          localStorage.removeItem(`property_chat_session_${id}`);
+          localStorage.removeItem(`property_chat_messages_${id}`);
+        }
+      }
+      
+      // Get property details if not already loaded
+      let propertyData = property;
+      if (!propertyData) {
+        propertyData = await PropertyService.getPropertyById(id);
+      }
+      
+      // Get seller ID from property data
+      if (!propertyData.seller_id) {
+        throw new Error('Seller information not available for this property');
+      }
+      
+      // Initial message to send
+      const initialMessage = `I'm interested in this property at ${property.road}, ${property.city}. Can you tell me more about it?`;
+      
+      try {
+        // Clear any existing selected chat to prevent general chats from being shown
+        localStorage.removeItem('selected_chat');
+        
+        // Initiate the property chat
+        const response = await ChatService.initiatePropertyChat(id, propertyData.seller_id, initialMessage);
+        
+        // Show success message
+        toast.success('Chat started! Redirecting to chat window...', {
+          duration: 3000,
+          position: 'bottom-right',
+        });
+        
+        // Store the conversation ID in localStorage to select it on the property chats page
+        if (response.conversation_id) {
+          localStorage.setItem('last_property_chat_id', response.conversation_id.toString());
+          
+          // Also store it as the conversation for this specific property
+          localStorage.setItem(`property_chat_conversation_${id}`, response.conversation_id.toString());
+        }
+        
+        // Navigate to property chats page
+        navigate('/buyer-dashboard/property-chats');
+      } catch (chatError: any) {
+        console.error('Error initiating chat:', chatError);
+        
+        // Check if it's an authentication error
+        if (chatError.message && chatError.message.includes('authentication required')) {
+          toast.error('Please log in to chat about this property');
+          // Redirect to login page with a return URL
+          navigate(`/login?returnUrl=${encodeURIComponent(`/property/${id}`)}`);
+        } else {
+          // For other errors, show a generic message
+          toast.error(`Failed to start chat: ${chatError.message}`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error starting property chat:', error);
+      toast.error(`Error: ${error.message || 'Failed to start chat'}`);
+    } finally {
+      setInitiatingChat(false);
+    }
+  };
+
   const nextImage = () => {
     setSelectedImage((prev) => (prev + 1) % property.images.length);
   };
 
   const previousImage = () => {
     setSelectedImage((prev) => (prev - 1 + property.images.length) % property.images.length);
+  };
+
+  const handleMakeOffer = () => {
+    setIsOfferModalOpen(true);
+  };
+
+  const handleSubmitOffer = async () => {
+    try {
+      setOfferError(null);
+
+      if (!user) {
+        setOfferError('Please log in to submit an offer');
+        return;
+      }
+
+      const numericAmount = parseFloat(offerAmount.replace(/,/g, ''));
+      if (!offerAmount || isNaN(numericAmount)) {
+        setOfferError('Please enter a valid offer amount');
+        return;
+      }
+
+      const requestBody = {
+        property_id: id,
+        offer_amount: Math.round(numericAmount)
+      };
+
+      const response = await fetch(
+        `${import.meta.env.VITE_PROPERTY_API_URL}/api/users/${user.uid}/offers`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || errorData?.error || 'Failed to submit offer');
+      }
+
+      // Reset and close modal
+      setOfferAmount('');
+      setDisplayOfferAmount('');
+      setOfferError(null);
+      setIsOfferModalOpen(false);
+      
+      toast.success('Offer submitted successfully!', {
+        duration: 3000,
+        position: 'bottom-right',
+      });
+
+      // Update local state to show "Offer Submitted" button
+      setHasActiveNegotiation(true);
+
+    } catch (error) {
+      console.error('Error submitting offer:', error);
+      setOfferError(error instanceof Error ? error.message : 'Failed to submit offer');
+      toast.error('Failed to submit offer. Please try again.');
+    }
   };
 
   if (loading) {
@@ -464,9 +655,50 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
           {/* Right Column - Actions */}
           <div className="space-y-4">
             <div className="bg-white p-6 rounded-lg border sticky top-24">
-              <button className="w-full bg-emerald-600 text-white px-4 py-3 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Request Viewing
+              <div className="space-y-3">
+                <button className="w-full border border-emerald-600 text-emerald-600 px-4 py-3 rounded-lg hover:bg-emerald-50 transition-colors flex items-center justify-center gap-2 mb-3">
+                  <Calendar className="h-5 w-5" />
+                  Request Viewing
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (hasActiveNegotiation) {
+                      navigate('/buyer-dashboard/applications', { 
+                        replace: true,
+                        state: { from: location.pathname }
+                      });
+                    } else {
+                      handleMakeOffer();
+                    }
+                  }}
+                  className={`w-full ${
+                    hasActiveNegotiation 
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  } px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2`}
+                >
+                  <FileText className="h-5 w-5" />
+                  {hasActiveNegotiation ? 'Offer Submitted' : 'Make an Offer'}
+                </button>
+              </div>
+              
+              <button
+                onClick={handleChatAboutProperty}
+                disabled={initiatingChat}
+                className={`w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mt-3 ${initiatingChat ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                {initiatingChat ? (
+                  <>
+                    <div className="h-5 w-5 border-t-2 border-white border-solid rounded-full animate-spin"></div>
+                    Starting chat...
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="h-5 w-5" />
+                    Chat with Mia about this property
+                  </>
+                )}
               </button>
 
               {/* Additional Property Info */}
@@ -524,6 +756,61 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4">
               <div className="px-4 py-2 rounded-full bg-black/50 text-white">
                 {selectedImage + 1} / {property.images.length}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Offer Modal */}
+      {isOfferModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md relative mx-4">
+            {/* Close button */}
+            <button
+              onClick={() => setIsOfferModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Modal content */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold text-gray-900">Make an Offer</h3>
+              <p className="text-gray-600">{property.road}, {property.city}</p>
+              
+              <div className="space-y-2">
+                <label htmlFor="offerAmount" className="block text-sm font-medium text-gray-700">
+                  Offer Amount (£)
+                </label>
+                <input
+                  type="text"
+                  id="offerAmount"
+                  value={displayOfferAmount}
+                  onChange={(e) => {
+                    // Remove any non-digit characters except commas
+                    const value = e.target.value.replace(/[^\d,]/g, '');
+                    // Remove all commas and store as raw number string
+                    const rawValue = value.replace(/,/g, '');
+                    setOfferAmount(rawValue);
+                    // Add commas for display
+                    setDisplayOfferAmount(rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="Enter your offer amount"
+                />
+                {offerError && (
+                  <p className="text-red-600 text-sm mt-1">{offerError}</p>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleSubmitOffer}
+                  className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+                >
+                  Submit Offer
+                </button>
               </div>
             </div>
           </div>

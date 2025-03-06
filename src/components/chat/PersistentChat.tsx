@@ -41,6 +41,28 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Check if we're on the property chats page
+  useEffect(() => {
+    const checkPropertyChatsPage = () => {
+      const onPropertyChatsPage = localStorage.getItem('on_property_chats_page') === 'true';
+      if (onPropertyChatsPage) {
+        // If we're on the property chats page, hide this component
+        setIsExpanded(false);
+      }
+    };
+
+    // Check initially
+    checkPropertyChatsPage();
+
+    // Set up a listener for storage events
+    const handleStorageChange = () => {
+      checkPropertyChatsPage();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   useEffect(() => {
     const savedMessages = localStorage.getItem('chatMessages');
     if (savedMessages) {
@@ -116,7 +138,9 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
     }
   };
 
-  if (hide) return null;
+  // Check if we should hide this component
+  const onPropertyChatsPage = localStorage.getItem('on_property_chats_page') === 'true';
+  if (hide || onPropertyChatsPage) return null;
 
   return (
     <div 

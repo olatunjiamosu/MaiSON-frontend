@@ -157,7 +157,7 @@ class PropertyService {
       }
       
       const userId = user.uid;
-      const url = `${PROPERTY_API_URL}/api/users/${userId}/dashboard`;
+      const url = `${PROPERTY_API_URL}api/users/${userId}/dashboard`;
       
       const response = await fetch(url, {
         headers: await this.getHeaders(true)
