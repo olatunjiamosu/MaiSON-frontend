@@ -14,7 +14,7 @@ import {
   SwitchCamera,
   LogOut
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 import PropertyService from '../../services/PropertyService';
 import { PropertySummary, PropertyFilters, SavedProperty, DashboardResponse } from '../../types/property';
@@ -38,6 +38,7 @@ interface PropertyWithStatus extends PropertySummary {
 
 const SellerPropertyGrid = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [properties, setProperties] = useState<PropertySummary[]>([]);
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,6 +60,12 @@ const SellerPropertyGrid = () => {
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Initial fetch of properties when component mounts
+  useEffect(() => {
+    // Fetch properties immediately when component mounts
+    getUserProperties();
+  }, []);
 
   // Get user ID on component mount
   useEffect(() => {
@@ -95,11 +102,6 @@ const SellerPropertyGrid = () => {
       console.error('Error refreshing properties:', error);
       setIsRefreshing(false);
     }
-  }, []);
-
-  // Initial fetch of properties when component mounts
-  useEffect(() => {
-    getUserProperties();
   }, []);
 
   // Handle property deletion

@@ -316,7 +316,10 @@ const AddPropertySection = () => {
           toast.success('Image updates are not supported in this version');
         }
         
+        // Show success message and navigate immediately
         toast.success('Property updated successfully!');
+        // Force navigation using window.location
+        window.location.href = '/seller-dashboard';
       } else {
         // Create new property - we have two options:
         // 1. If images are present, use createPropertyWithImages
@@ -362,7 +365,9 @@ const AddPropertySection = () => {
             );
             
             console.log('Property created successfully with images:', response);
-            toast.success('Property added successfully!');
+            
+            // Force navigation using window.location
+            window.location.href = '/seller-dashboard';
           } catch (apiError: any) {
             console.error('API Error details:', apiError);
             toast.error(`Failed to create property: ${apiError.message}`);
@@ -374,7 +379,9 @@ const AddPropertySection = () => {
           try {
             response = await PropertyService.createProperty(propertyData);
             console.log('Property created successfully without images:', response);
-            toast.success('Property added successfully!');
+            
+            // Force navigation using window.location
+            window.location.href = '/seller-dashboard';
           } catch (apiError: any) {
             console.error('API Error details:', apiError);
             toast.error(`Failed to create property: ${apiError.message}`);
@@ -383,8 +390,6 @@ const AddPropertySection = () => {
           }
         }
       }
-      
-      navigate('/seller-dashboard');
     } catch (err: any) {
       console.error('Error in form submission:', err);
       toast.error(`Failed to save property: ${err.message}`);
