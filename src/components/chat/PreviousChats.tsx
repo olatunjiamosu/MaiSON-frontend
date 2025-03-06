@@ -1,5 +1,6 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
+import { useLocation } from 'react-router-dom';
 
 interface ChatHistory {
   id: string;
@@ -16,6 +17,17 @@ interface PreviousChatsProps {
 
 const PreviousChats: React.FC<PreviousChatsProps> = ({ onSelectChat, selectedChatId }) => {
   const { chatHistory, isLoadingChats, refreshChatHistory } = useChat();
+  const location = useLocation();
+  
+  // Check if we're on the property chats page
+  const isPropertyChatsPage = location.pathname.includes('/property-chats');
+  
+  // If we're on the property chats page, don't allow selecting general chats
+  const handleSelectChat = (chat: ChatHistory) => {
+    if (!isPropertyChatsPage) {
+      onSelectChat(chat);
+    }
+  };
 
   return (
     <div className="flex-grow flex flex-col overflow-hidden">
@@ -41,10 +53,10 @@ const PreviousChats: React.FC<PreviousChatsProps> = ({ onSelectChat, selectedCha
           {chatHistory.map((chat: ChatHistory) => (
             <button
               key={chat.id}
-              onClick={() => onSelectChat(chat)}
+              onClick={() => handleSelectChat(chat)}
               className={`w-full text-left p-2 rounded-lg hover:bg-gray-50 group ${
                 selectedChatId === chat.id ? 'bg-gray-50' : ''
-              }`}
+              } ${isPropertyChatsPage ? 'pointer-events-none opacity-70' : ''}`}
             >
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-5 h-5 mt-1 rounded-full bg-emerald-100 flex items-center justify-center">

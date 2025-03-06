@@ -5,7 +5,17 @@ import ChatService from '../../../services/ChatService';
 import { render } from 'test-utils';
 
 // Mock the ChatService
-jest.mock('../../../services/ChatService');
+jest.mock('../../../services/ChatService', () => ({
+  sendMessage: jest.fn(),
+  getSessionId: jest.fn(),
+  clearSession: jest.fn(),
+  clearAllChatData: jest.fn(),
+  getChatHistory: jest.fn(),
+  getUserConversations: jest.fn(),
+  initiatePropertyChat: jest.fn(),
+  verifyConversationExists: jest.fn(),
+  sendPropertyMessage: jest.fn()
+}));
 
 describe('MaisonChat', () => {
   beforeEach(() => {

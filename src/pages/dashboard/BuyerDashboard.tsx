@@ -86,8 +86,10 @@ const BuyerDashboard: React.FC = () => {
       setActiveSection('saved');
     } else if (location.pathname.includes('/viewings')) {
       setActiveSection('viewings');
-    } else if (location.pathname.includes('/messages')) {
+    } else if (location.pathname.includes('/property-chats') || location.pathname.includes('/messages')) {
       setActiveSection('messages');
+      // Clear selected chat when navigating to property chats
+      setSelectedChat(null);
     } else if (location.pathname === '/buyer-dashboard') {
       setActiveSection('listings');
     }
@@ -245,7 +247,9 @@ const BuyerDashboard: React.FC = () => {
   // Add console.log to debug
   console.log('Rendering BuyerDashboard');
 
-  const isMessagesSection = location.pathname.includes('/chats') || 
+  // Compute if we're in the messages section to hide the persistent chat
+  const isMessagesSection = activeSection === 'messages' || 
+                           location.pathname.includes('/property-chats') || 
                            location.pathname.includes('/messages');
 
   // Add a function to handle sending a message in the modal
@@ -384,8 +388,11 @@ const BuyerDashboard: React.FC = () => {
             icon={<MessageCircle />}
             label="Property Chats"
             active={activeSection === 'messages'}
-            onClick={() => setActiveSection('messages')}
-            path="/buyer-dashboard/messages"
+            onClick={() => {
+              setActiveSection('messages');
+              navigate('/buyer-dashboard/property-chats');
+            }}
+            path="/buyer-dashboard/property-chats"
           />
           <NavItem
             icon={<Calendar />}
@@ -467,6 +474,7 @@ const BuyerDashboard: React.FC = () => {
               <Route path="saved" element={<SavedPropertiesSection />} />
               <Route path="viewings" element={<ViewingsSection />} />
               <Route path="messages" element={<PropertyChats />} />
+              <Route path="property-chats" element={<PropertyChats />} />
               <Route path="applications" element={<ApplicationsSection />} />
               <Route path="documents" element={<DocumentsSection />} />
             </Routes>

@@ -44,13 +44,22 @@ const Login = () => {
         console.error('Failed to refresh chat history:', chatError);
       }
       
-      // Navigate based on user role
-      if (userData?.role === 'buyer') {
-        navigate('/buyer-dashboard');
-      } else if (userData?.role === 'seller') {
-        navigate('/seller-dashboard');
+      // Check if we have a returnUrl in the query parameters
+      const searchParams = new URLSearchParams(location.search);
+      const returnUrl = searchParams.get('returnUrl');
+      
+      if (returnUrl) {
+        // Navigate back to the page the user was trying to access
+        navigate(returnUrl);
       } else {
-        navigate('/select-user-type');
+        // Navigate based on user role
+        if (userData?.role === 'buyer') {
+          navigate('/buyer-dashboard');
+        } else if (userData?.role === 'seller') {
+          navigate('/seller-dashboard');
+        } else {
+          navigate('/select-user-type');
+        }
       }
     } catch (error: any) {
       // Convert Firebase error codes to user-friendly messages
