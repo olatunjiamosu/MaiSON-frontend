@@ -961,6 +961,199 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
           </div>
         </div>
       )}
+
+      {/* Counter Offer Modal */}
+      {isOfferModalOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+          onClick={() => {
+            setIsOfferModalOpen(false);
+            setCounterOfferId(null);
+            setOfferError(null);
+          }}
+        >
+          <div 
+            className="bg-white rounded-lg p-8 w-full max-w-md relative mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setIsOfferModalOpen(false);
+                setCounterOfferId(null);
+                setOfferError(null);
+              }}
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Modal content */}
+            <div className="space-y-6">
+              <h3 className="text-2xl font-semibold text-gray-900">Make Counter Offer</h3>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="offerAmount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Counter Offer
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">£</span>
+                    <input
+                      type="text"
+                      id="offerAmount"
+                      value={displayOfferAmount}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9,]/g, '');
+                        setDisplayOfferAmount(value);
+                        setOfferAmount(value.replace(/,/g, ''));
+                      }}
+                      className="block w-full pl-8 pr-12 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
+                      placeholder="Enter amount"
+                    />
+                  </div>
+                  {offerError && (
+                    <p className="mt-2 text-sm text-red-600">{offerError}</p>
+                  )}
+                </div>
+                <button
+                  onClick={handleSubmitCounterOffer}
+                  className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-md shadow-sm transition-colors"
+                >
+                  Submit Counter Offer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Accept Offer Confirmation Modal */}
+      {isAcceptModalOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+          onClick={() => {
+            setIsAcceptModalOpen(false);
+            setAcceptOfferId(null);
+          }}
+        >
+          <div 
+            className="bg-white rounded-lg p-8 w-full max-w-md relative mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setIsAcceptModalOpen(false);
+                setAcceptOfferId(null);
+              }}
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Modal content */}
+            <div className="space-y-6">
+              <div className="flex justify-center">
+                <div className="p-3 bg-emerald-100 rounded-full">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+                </div>
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-2xl font-semibold text-gray-900">Accept Offer</h3>
+                <p className="text-gray-600">
+                  Are you sure you want to accept this offer? This action cannot be undone.
+                </p>
+                {acceptOfferId && (
+                  <p className="font-medium text-lg text-emerald-600">
+                    {formatPrice(negotiations.find(n => n.negotiation_id === acceptOfferId)?.current_offer || 0)}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    setIsAcceptModalOpen(false);
+                    setAcceptOfferId(null);
+                  }}
+                  className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-md shadow-sm transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmAccept}
+                  className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-md shadow-sm transition-colors"
+                >
+                  Confirm Accept
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Offer Confirmation Modal */}
+      {isRejectModalOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+          onClick={() => {
+            setIsRejectModalOpen(false);
+            setRejectOfferId(null);
+          }}
+        >
+          <div 
+            className="bg-white rounded-lg p-8 w-full max-w-md relative mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setIsRejectModalOpen(false);
+                setRejectOfferId(null);
+              }}
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Modal content */}
+            <div className="space-y-6">
+              <div className="flex justify-center">
+                <div className="p-3 bg-red-100 rounded-full">
+                  <XCircle className="h-8 w-8 text-red-600" />
+                </div>
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-2xl font-semibold text-gray-900">Reject Offer</h3>
+                <p className="text-gray-600">
+                  Are you sure you want to reject this offer? This action cannot be undone.
+                </p>
+                {rejectOfferId && (
+                  <p className="font-medium text-lg text-red-600">
+                    {formatPrice(negotiations.find(n => n.negotiation_id === rejectOfferId)?.current_offer || 0)}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    setIsRejectModalOpen(false);
+                    setRejectOfferId(null);
+                  }}
+                  className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-md shadow-sm transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmReject}
+                  className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md shadow-sm transition-colors"
+                >
+                  Confirm Reject
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
