@@ -374,6 +374,27 @@ const PropertyCard = ({
               <FileText className="h-4 w-4" />
               <span>{hasActiveNegotiation ? 'Offer Submitted' : 'Make an Offer'}</span>
             </button>
+            {showChatButton && seller_id && (
+              <button
+                onClick={handleChatWithMia}
+                disabled={initiatingChat}
+                className={`w-full flex justify-center items-center gap-2 border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors ${
+                  initiatingChat ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                {initiatingChat ? (
+                  <>
+                    <div className="h-4 w-4 border-t-2 border-emerald-500 border-solid rounded-full animate-spin"></div>
+                    Starting chat...
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="h-4 w-4" />
+                    Chat with Mia about this property
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -443,28 +464,7 @@ const PropertyCard = ({
                   Submit Offer
                 </button>
               </div>
-              {showChatButton && seller_id && (
-            <button
-              onClick={handleChatWithMia}
-              disabled={initiatingChat}
-              className={`w-full flex justify-center items-center gap-2 border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors ${
-                initiatingChat ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
-              {initiatingChat ? (
-                <>
-                  <div className="h-4 w-4 border-t-2 border-emerald-500 border-solid rounded-full animate-spin"></div>
-                  Starting chat...
-                </>
-              ) : (
-                <>
-                  <MessageCircle className="h-4 w-4" />
-                  Chat with Mia about this property
-                </>
-              )}
-            </button>
-          )}
-        </div>
+            </div>
           </div>
         </div>
       )}

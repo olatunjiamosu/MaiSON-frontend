@@ -647,10 +647,10 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
                 </button>
               </div>
               
-              <button 
+              <button
                 onClick={handleChatAboutProperty}
                 disabled={initiatingChat}
-                className={`w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 ${initiatingChat ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mt-3 ${initiatingChat ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 {initiatingChat ? (
                   <>
