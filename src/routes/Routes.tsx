@@ -23,6 +23,7 @@ import SellerDashboard from '../pages/dashboard/SellerDashboard';
 import SellerPropertyGrid from '../pages/dashboard/SellerPropertyGrid';
 import RoleRoute from './RoleRoute';
 import { TestApi } from '../components/TestApi';
+import TestAvailability from '../pages/TestAvailability';
 
 // Remove mock property data as we're now using the API
 
@@ -40,8 +41,9 @@ const AppRoutes = () => (
     <Route path="/contact" element={<PublicRoute><ContactPage /></PublicRoute>} />
     <Route path="/select-user-type" element={<PrivateRoute><SelectUserType /></PrivateRoute>} />
     
-    {/* Test Route */}
+    {/* Test Routes */}
     <Route path="/test-api" element={<PublicRoute><TestApi /></PublicRoute>} />
+    <Route path="/test-availability" element={<PublicRoute><TestAvailability /></PublicRoute>} />
     
     {/* Dashboard Selection for Both-Role Users */}
     <Route 
