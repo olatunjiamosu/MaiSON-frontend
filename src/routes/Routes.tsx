@@ -14,6 +14,7 @@ import SignUp from '../pages/auth/SignUp';
 import PropertyDetails from '../pages/property/PropertyDetails';
 import SavedPropertiesSection from '../pages/dashboard/buyer-sections/SavedPropertiesSection';
 import ViewingsSection from '../pages/dashboard/buyer-sections/ViewingsSection';
+import AvailabilitySection from '../pages/dashboard/seller-sections/AvailabilitySection';
 import PublicListings from '../pages/PublicListings';
 import FeaturesPage from '../pages/FeaturesPage';
 import AboutPage from '../pages/AboutPage';
@@ -73,7 +74,17 @@ const AppRoutes = () => (
         </PrivateRoute>
       }
     />
-    
+    <Route 
+      path="/seller-dashboard/availability" 
+      element={
+        <PrivateRoute>
+          <RoleRoute allowedRoles={['seller', 'both']}>
+            <AvailabilitySection />
+          </RoleRoute>
+        </PrivateRoute>
+      }
+    />
+
     <Route 
       path="/seller-dashboard/properties" 
       element={

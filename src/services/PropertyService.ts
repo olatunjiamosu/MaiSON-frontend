@@ -10,8 +10,8 @@ import {
 } from '../types/property';
 import { getAuth } from 'firebase/auth';
 
-const PROPERTY_API_URL = import.meta.env.VITE_PROPERTY_API_URL;
-const PROPERTY_API_ENDPOINT = import.meta.env.VITE_PROPERTY_API_ENDPOINT;
+// Update the API base URL to point to the Flask backend
+const API_BASE_URL = 'http://localhost:8000';
 
 class PropertyService {
   private async getAuthToken(): Promise<string | null> {
@@ -48,7 +48,7 @@ class PropertyService {
   }
 
   private buildUrl(path: string = '', queryParams?: Record<string, any>): string {
-    const baseUrl = `${PROPERTY_API_URL}${PROPERTY_API_ENDPOINT}${path}`;
+    const baseUrl = `${API_BASE_URL}${path}`;
     
     if (!queryParams) return baseUrl;
     
@@ -92,23 +92,49 @@ class PropertyService {
 
   async getPropertyById(id: string): Promise<PropertyDetail> {
     try {
-      const url = this.buildUrl(`/${id}`);
-      const response = await fetch(url, {
-        headers: await this.getHeaders(false)
+      console.log(`Fetching property details for ${id}`);
+      const response = await fetch(`${API_BASE_URL}/api/property/${id}`, {
+        headers: {
+          'Accept': 'application/json',
+        }
       });
       
+      console.log('Property details response status:', response.status);
+      const text = await response.text();
+      console.log('Property details raw response:', text);
+      
       if (!response.ok) {
-        throw new Error(`Failed to fetch property details: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to fetch property: ${text}`);
       }
       
-      const property = await response.json();
+      const data = JSON.parse(text);
       
-      // Ensure we have a consistent id field regardless of whether API returns id or property_id
-      if (!property.id && property.property_id) {
-        property.id = property.property_id;
+      // Transform the simplified test property data into the expected format
+      if (data.name && !data.address) {
+        // This is a test property with simplified structure
+        return {
+          id: data.id,
+          name: data.name,
+          description: 'Test property created for development purposes',
+          price: 500000, // Default price for test properties
+          address: {
+            street: data.name,
+            city: 'Test City',
+            postcode: 'TE5T 1ST',
+            country: 'United Kingdom'
+          },
+          bedrooms: 3,
+          bathrooms: 2,
+          property_type: 'house',
+          status: 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          seller_id: 'test-seller',
+          availability_count: data.availability_count || 0
+        };
       }
       
-      return property;
+      return data;
     } catch (error) {
       console.error('Error fetching property details:', error);
       throw error;
@@ -157,7 +183,7 @@ class PropertyService {
       }
       
       const userId = user.uid;
-      const url = `${PROPERTY_API_URL}/api/users/${userId}/dashboard`;
+      const url = `${API_BASE_URL}/api/users/${userId}/dashboard`;
       
       const response = await fetch(url, {
         headers: await this.getHeaders(true)
@@ -341,7 +367,7 @@ class PropertyService {
       
       const userId = user.uid;
       // Fix potential double slash by ensuring proper URL construction
-      const baseUrl = PROPERTY_API_URL.endsWith('/') ? PROPERTY_API_URL.slice(0, -1) : PROPERTY_API_URL;
+      const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
       const url = `${baseUrl}/api/users/${userId}/saved-properties`;
       
       console.log('POST URL:', url); // For debugging
@@ -387,7 +413,7 @@ class PropertyService {
       
       const userId = user.uid;
       // Fix potential double slash by ensuring proper URL construction
-      const baseUrl = PROPERTY_API_URL.endsWith('/') ? PROPERTY_API_URL.slice(0, -1) : PROPERTY_API_URL;
+      const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
       const url = `${baseUrl}/api/users/${userId}/saved-properties/${propertyId}`;
       
       console.log('DELETE URL:', url); // For debugging
@@ -430,7 +456,7 @@ class PropertyService {
       
       const userId = user.uid;
       // Fix potential double slash by ensuring proper URL construction
-      const baseUrl = PROPERTY_API_URL.endsWith('/') ? PROPERTY_API_URL.slice(0, -1) : PROPERTY_API_URL;
+      const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
       const url = `${baseUrl}/api/users/${userId}/saved-properties/${propertyId}/notes`;
       
       console.log('PATCH URL:', url); // For debugging

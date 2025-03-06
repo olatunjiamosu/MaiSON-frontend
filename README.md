@@ -12,7 +12,7 @@ MaiSON is an AI-powered property marketplace designed to connect buyers and sell
 - [Contributing](#-contributing)
 - [Troubleshooting](#-troubleshooting)
 - [Property Listings API Integration](#-property-listings-api-integration)
-
+ 
 ## 🚀 Quick Start
 
 ### Prerequisites

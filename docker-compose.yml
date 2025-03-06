@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Frontend Service (Next.js)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: maison-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  # Calendar Backend Service (Python-based)
+  calendar-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: maison-calendar-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=property-db-server-123.postgres.database.azure.com
+      - DB_NAME=property_viewings
+      - DB_USER=dbadmin
+      - DB_PASSWORD=xxx!
+      - DB_PORT=5432
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./:/app
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local

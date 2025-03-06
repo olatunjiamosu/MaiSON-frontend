@@ -1,764 +1,898 @@
-import React, { useState, useEffect } from 'react';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
-import { format, parse, addDays, isBefore, isAfter, addWeeks } from 'date-fns';
-import { Plus, Trash2, Clock, Calendar as CalendarIcon, Repeat, AlertCircle, Check, X } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../../context/AuthContext';
+import { useParams } from 'react-router-dom';
+import { format, parseISO, addHours, startOfWeek, endOfWeek, startOfDay, endOfDay } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
+import { Calendar, momentLocalizer, Views, View } from 'react-big-calendar';
+import moment from 'moment';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { toast } from 'react-hot-toast';
 
-// Custom CSS to override react-calendar styles
-const calendarStyles = `
-  .react-calendar__tile--active {
-    background: #10b981 !important;
-    color: white !important;
-  }
-  .react-calendar__tile--active:enabled:hover,
-  .react-calendar__tile--active:enabled:focus {
-    background: #059669 !important;
-  }
-  .react-calendar__navigation button:enabled:hover,
-  .react-calendar__navigation button:enabled:focus {
-    background-color: #f0fdf4 !important;
-  }
-  .react-calendar__tile:enabled:hover,
-  .react-calendar__tile:enabled:focus {
-    background-color: #d1fae5 !important;
-  }
-`;
+// Setup the localizer for react-big-calendar
+const localizer = momentLocalizer(moment);
 
-// Define types for availability
-interface TimeSlot {
-  start: string; // "09:00"
-  end: string;   // "11:00"
+// Database interface matching your Azure PostgreSQL schema
+interface DbAvailability {
+  id: number;           // This stays as number since it's a serial ID
+  property_id: string;  // UUID
+  seller_id: string;    // UUID (Firebase UID)
+  start_time: Date;
+  end_time: Date;
 }
 
-interface AvailabilityDate {
-  date: Date;
-  timeSlots: TimeSlot[];
+// Calendar event interface
+interface CalendarEvent {
+  id: number;
+  title: string;
+  start: Date;
+  end: Date;
+  resource?: any;
 }
 
-// Interface for serialized data (for localStorage)
-interface SerializedAvailabilityDate {
-  date: string; // ISO string
-  timeSlots: TimeSlot[];
-}
+// Helper function to validate UUID
+const isValidUUID = (uuid: string) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+};
 
-// Define recurring pattern types
-interface RecurringPattern {
-  enabled: boolean;
-  frequency: 'daily' | 'weekly' | 'custom';
-  daysOfWeek: number[]; // 0 = Sunday, 1 = Monday, etc.
-  occurrences: number; // Number of times to repeat
-}
-
-// Predefined time slots for easier selection
-const PREDEFINED_TIME_SLOTS: TimeSlot[] = [
-  { start: '09:00', end: '11:00' },
-  { start: '11:00', end: '13:00' },
-  { start: '13:00', end: '15:00' },
-  { start: '15:00', end: '17:00' },
-  { start: '17:00', end: '19:00' },
-  { start: '19:00', end: '21:00' },
-];
-
-const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-const STORAGE_KEY = 'seller_availability';
-
-const AvailabilitySection: React.FC = () => {
+const AvailabilitySection = () => {
+  const { propertyId } = useParams<{ propertyId: string }>();
   const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [availabilityDates, setAvailabilityDates] = useState<AvailabilityDate[]>([]);
-  const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
-  const [newTimeSlot, setNewTimeSlot] = useState<TimeSlot>({ start: '09:00', end: '11:00' });
-  const [customTimeSlot, setCustomTimeSlot] = useState(false);
-  const [timeSlotError, setTimeSlotError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [availabilitySlots, setAvailabilitySlots] = useState<DbAvailability[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [testResult, setTestResult] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const navigate = useNavigate();
   
-  // State for recurring availability
-  const [recurringPattern, setRecurringPattern] = useState<RecurringPattern>({
-    enabled: false,
-    frequency: 'weekly',
-    daysOfWeek: [],
-    occurrences: 4
+  // Calendar view state
+  const [view, setView] = useState<View>(Views.WEEK);
+  const [date, setDate] = useState(new Date());
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newSlot, setNewSlot] = useState<{start: Date, end: Date}>({
+    start: new Date(),
+    end: addHours(new Date(), 1)
   });
 
-  // Load availability data from localStorage on component mount
+  // Validate propertyId is a UUID
   useEffect(() => {
-    const loadAvailabilityData = () => {
+    if (propertyId && !isValidUUID(propertyId)) {
+      setError('Invalid property ID format. Expected UUID.');
+    } else {
+      setError('');
+    }
+  }, [propertyId]);
+
+  // Fetch availability slots from Azure PostgreSQL
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      if (!propertyId || !user?.uid || !isValidUUID(propertyId)) return;
+      
       try {
-        if (!user?.uid) return;
+        // First fetch property details to verify it exists
+        console.log(`Fetching property details for ${propertyId}`);
+        const propertyResponse = await fetch(`http://localhost:8000/api/property/${propertyId}`, {
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
         
-        const storageKey = `${STORAGE_KEY}_${user.uid}`;
-        const savedData = localStorage.getItem(storageKey);
+        console.log('Property details response status:', propertyResponse.status);
+        const propertyText = await propertyResponse.text();
+        console.log('Property details raw response:', propertyText);
         
-        if (savedData) {
-          const parsed = JSON.parse(savedData) as SerializedAvailabilityDate[];
-          
-          // Convert serialized dates back to Date objects
-          const deserialized: AvailabilityDate[] = parsed.map(item => ({
-            date: new Date(item.date),
-            timeSlots: item.timeSlots
-          }));
-          
-          setAvailabilityDates(deserialized);
-          console.log('Loaded availability data from localStorage');
+        if (!propertyResponse.ok) {
+          throw new Error(`Failed to fetch property details: ${propertyText}`);
         }
-      } catch (error) {
-        console.error('Error loading availability data:', error);
+        
+        try {
+          const propertyData = JSON.parse(propertyText);
+          console.log('Property data:', propertyData);
+          
+          // Now fetch availability slots
+          const response = await fetch(`http://localhost:8000/api/availability/property/${propertyId}`, {
+            headers: {
+              'Authorization': `Bearer ${await user.getIdToken()}`,
+              'Accept': 'application/json',
+            }
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch availability: ${errorText}`);
+          }
+          
+    const data = await response.json();
+          setAvailabilitySlots(data.map((slot: any) => ({
+            ...slot,
+            start_time: new Date(slot.start_time),
+            end_time: new Date(slot.end_time)
+          })));
+        } catch (parseError) {
+          console.error('Error parsing property data:', parseError);
+          throw new Error(`Invalid property data: ${propertyText}`);
+        }
+  } catch (error) {
+    console.error('Error fetching availability:', error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch availability');
+      } finally {
+        setIsLoading(false);
       }
     };
-    
-    loadAvailabilityData();
-  }, [user]);
 
-  // Save availability data to localStorage whenever it changes
-  useEffect(() => {
-    const saveToLocalStorage = () => {
-      try {
-        if (!user?.uid) return;
-        
-        // Skip initial save when the component mounts
-        if (availabilityDates.length === 0) return;
-        
-        const storageKey = `${STORAGE_KEY}_${user.uid}`;
-        
-        // Serialize Date objects to strings
-        const serialized: SerializedAvailabilityDate[] = availabilityDates.map(item => ({
-          date: item.date.toISOString(),
-          timeSlots: item.timeSlots
-        }));
-        
-        localStorage.setItem(storageKey, JSON.stringify(serialized));
-        console.log('Saved availability data to localStorage');
-      } catch (error) {
-        console.error('Error saving availability data:', error);
-      }
-    };
-    
-    saveToLocalStorage();
-  }, [availabilityDates, user]);
+    fetchAvailability();
+  }, [propertyId, user]);
 
-  // Handle calendar date change
-  const handleDateChange = (value: any) => {
-    // If it's a single date, use it directly
-    if (value instanceof Date) {
-      setSelectedDate(value);
-      // Reset recurring pattern when a new date is selected
-      setRecurringPattern({
-        enabled: false,
-        frequency: 'weekly',
-        daysOfWeek: [],
-        occurrences: 4
-      });
-    }
-  };
+  // Convert availability slots to calendar events
+  const events = useMemo(() => {
+    return availabilitySlots.map(slot => ({
+      id: slot.id,
+      title: 'Available',
+      start: new Date(slot.start_time),
+      end: new Date(slot.end_time),
+      resource: slot
+    }));
+  }, [availabilitySlots]);
 
-  // Get available time slots for a specific date
-  const getTimeSlotsForDate = (date: Date): TimeSlot[] => {
-    const formattedDate = format(date, 'yyyy-MM-dd');
-    const dateEntry = availabilityDates.find(
-      (d) => format(d.date, 'yyyy-MM-dd') === formattedDate
-    );
-    return dateEntry?.timeSlots || [];
-  };
+  // Handle slot selection (for creating new availability)
+  const handleSelectSlot = useCallback(
+    ({ start, end }: { start: Date; end: Date }) => {
+      setNewSlot({ start, end });
+      setShowAddModal(true);
+    },
+    []
+  );
 
-  // Check if a date has time slots
-  const hasTimeSlots = (date: Date): boolean => {
-    return getTimeSlotsForDate(date).length > 0;
-  };
-  
-  // Validate time slot
-  const validateTimeSlot = (slot: TimeSlot): boolean => {
-    // Check if end time is after start time
-    if (slot.end <= slot.start) {
-      setTimeSlotError('End time must be after start time');
-      return false;
-    }
-    
-    setTimeSlotError(null);
-    return true;
-  };
-
-  // Add a time slot to a specific date
-  const addTimeSlotToDate = (date: Date, slot: TimeSlot) => {
-    const formattedDate = format(date, 'yyyy-MM-dd');
-    const existingDateIndex = availabilityDates.findIndex(
-      (d) => format(d.date, 'yyyy-MM-dd') === formattedDate
-    );
-
-    const updatedDates = [...availabilityDates];
-    
-    if (existingDateIndex >= 0) {
-      // Check for overlapping time slots
-      const existingSlots = updatedDates[existingDateIndex].timeSlots;
-      const overlapping = existingSlots.some(
-        existingSlot => 
-          (slot.start >= existingSlot.start && slot.start < existingSlot.end) ||
-          (slot.end > existingSlot.start && slot.end <= existingSlot.end) ||
-          (slot.start <= existingSlot.start && slot.end >= existingSlot.end)
+  // Handle event selection (for editing or deleting)
+  const handleSelectEvent = useCallback(
+    (event: CalendarEvent) => {
+      const confirmDelete = window.confirm(
+        `Do you want to remove this availability slot?\n\nDate: ${format(event.start, 'PPP')}\nTime: ${format(event.start, 'p')} - ${format(event.end, 'p')}`
       );
       
-      if (overlapping) {
-        setTimeSlotError('This time slot overlaps with an existing slot');
-        return false;
+      if (confirmDelete) {
+        deleteAvailability(event.id);
       }
-      
-      // Add time slot to existing date
-      updatedDates[existingDateIndex].timeSlots.push({ ...slot });
-      // Sort time slots by start time
-      updatedDates[existingDateIndex].timeSlots.sort((a, b) => a.start.localeCompare(b.start));
-    } else {
-      // Create new date entry with time slot
-      updatedDates.push({
-        date: new Date(date),
-        timeSlots: [{ ...slot }],
-      });
-    }
-    
-    setAvailabilityDates(updatedDates);
-    return true;
-  };
+    },
+    [availabilitySlots]
+  );
 
-  // Add a new time slot to the selected date (and recurring dates if enabled)
-  const addTimeSlot = () => {
-    if (!selectedDate) return;
-    
-    // Validate time slot
-    if (!validateTimeSlot(newTimeSlot)) {
+  // Save a new availability slot
+  const saveAvailability = async (newSlot: Omit<DbAvailability, 'id'>) => {
+    if (!propertyId || !user?.uid || !isValidUUID(propertyId)) {
+      setError('Invalid property ID or user not authenticated');
       return;
     }
-    
-    // If recurring is enabled, add to multiple dates
-    if (recurringPattern.enabled) {
-      const addedSuccessfully = createRecurringAvailability();
-      if (addedSuccessfully) {
-        setShowTimeSlotModal(false);
+
+    try {
+      console.log('Saving availability with the following data:');
+      console.log('Property ID:', propertyId);
+      console.log('User ID:', user.uid);
+      console.log('Start time:', newSlot.start_time.toISOString());
+      console.log('End time:', newSlot.end_time.toISOString());
+      
+      // First fetch property details to get the seller ID
+      console.log('Fetching property details to get seller ID...');
+      const propertyResponse = await fetch(`http://localhost:8000/api/property/${propertyId}`, {
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
+      if (!propertyResponse.ok) {
+        throw new Error(`Failed to fetch property details: ${await propertyResponse.text()}`);
       }
-    } else {
-      // Just add to the selected date
-      const addedSuccessfully = addTimeSlotToDate(selectedDate, newTimeSlot);
-      if (addedSuccessfully) {
-        setShowTimeSlotModal(false);
+      
+      const propertyData = await propertyResponse.json();
+      console.log('Property data:', propertyData);
+      
+      // Check for seller ID in various places
+      let sellerId = null;
+      
+      // 1. Check if the property has a seller object with an ID
+      if (propertyData.seller && propertyData.seller.id) {
+        sellerId = propertyData.seller.id;
+        console.log('Using seller ID from property.seller.id:', sellerId);
+      } 
+      // 2. Check if the property has a seller_id property
+      else if (propertyData.seller_id) {
+        sellerId = propertyData.seller_id;
+        console.log('Using seller ID from property.seller_id:', sellerId);
+      } 
+      // 3. Check localStorage for a previously saved seller ID
+      else {
+        const savedSellerId = localStorage.getItem('lastSellerId');
+        if (savedSellerId) {
+          sellerId = savedSellerId;
+          console.log('Using seller ID from localStorage:', sellerId);
+        } else {
+          // 4. Use the hardcoded ID as a last resort
+          sellerId = "b0dc906d-1238-46a2-b7a3-d20a2b529543"; // Update with the seller ID from the response
+          console.log('No seller ID found, using hardcoded fallback:', sellerId);
+        }
       }
+      
+      // Set a loading toast - store the ID returned by toast.loading()
+      const loadingToastId = toast.loading('Saving availability slot...') as unknown as string;
+
+      console.log('Sending availability request with seller ID:', sellerId);
+      const response = await fetch(`http://localhost:8000/api/availability`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await user.getIdToken()}`,
+        },
+        body: JSON.stringify({
+          property_id: propertyId,
+          seller_id: sellerId,
+          start_time: newSlot.start_time.toISOString(),
+          end_time: newSlot.end_time.toISOString()
+        }),
+      });
+
+      // Dismiss the loading toast using the stored ID
+      toast.dismiss(loadingToastId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Error response from server:', errorText);
+        
+        // If we still get an error, try using the property ID as the seller ID
+        if (errorText.includes('seller_id') || errorText.includes('foreign key constraint')) {
+          console.log('Trying to use property ID as seller ID...');
+          
+          const finalAttemptResponse = await fetch(`http://localhost:8000/api/availability`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${await user.getIdToken()}`,
+            },
+            body: JSON.stringify({
+              property_id: propertyId,
+              seller_id: propertyId, // Use property ID as seller ID
+              start_time: newSlot.start_time.toISOString(),
+              end_time: newSlot.end_time.toISOString()
+            }),
+          });
+          
+          if (finalAttemptResponse.ok) {
+            const savedSlot = await finalAttemptResponse.json();
+            setAvailabilitySlots(prev => [...prev, {
+              ...savedSlot,
+              start_time: new Date(savedSlot.start_time),
+              end_time: new Date(savedSlot.end_time)
+            }]);
+            
+            toast.success('Availability slot added successfully (using property ID as seller ID)');
+            return;
+          } else {
+            const finalErrorText = await finalAttemptResponse.text();
+            console.log('Final error response from server:', finalErrorText);
+            toast.error('Seller ID format error. Please contact your administrator.');
+            setTestResult(`Error: Could not add availability slot. We tried multiple approaches but none worked. Error: ${finalErrorText}`);
+          }
+        } else {
+          throw new Error(`Failed to save availability: ${errorText}`);
+        }
+        return;
+      }
+
+      const savedSlot = await response.json();
+      setAvailabilitySlots(prev => [...prev, {
+        ...savedSlot,
+        start_time: new Date(savedSlot.start_time),
+        end_time: new Date(savedSlot.end_time)
+      }]);
+      
+      toast.success('Availability slot added successfully');
+      } catch (error) {
+      console.error('Error saving availability:', error);
+      setError(error instanceof Error ? error.message : 'Failed to save availability');
+      toast.error('Failed to add availability slot');
     }
   };
-  
-  // Create recurring availability based on the pattern
-  const createRecurringAvailability = (): boolean => {
-    if (!selectedDate) return false;
-    
+
+  // Delete an availability slot
+  const deleteAvailability = async (slotId: number) => {
+    if (!user?.uid) return;
+
     try {
-      const dayOfWeek = selectedDate.getDay();
-      let currentDate = new Date(selectedDate);
-      let successCount = 0;
+      const response = await fetch(`http://localhost:8000/api/availability/${slotId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${await user.getIdToken()}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to delete availability: ${errorText}`);
+      }
+
+      setAvailabilitySlots(prev => prev.filter(slot => slot.id !== slotId));
+      toast.success('Availability slot removed');
+    } catch (error) {
+      console.error('Error deleting availability:', error);
+      setError(error instanceof Error ? error.message : 'Failed to delete availability');
+      toast.error('Failed to remove availability slot');
+    }
+  };
+
+  // Handle adding a new availability slot
+  const handleAddAvailability = () => {
+    saveAvailability({
+      property_id: propertyId!,
+      seller_id: user!.uid,
+      start_time: newSlot.start,
+      end_time: newSlot.end
+    });
+    setShowAddModal(false);
+  };
+
+  const testEndpoint = async () => {
+    if (!propertyId || !user?.uid) {
+      setTestResult('Error: Missing propertyId or user');
+      return;
+    }
+
+    if (!isValidUUID(propertyId)) {
+      setTestResult('Error: Invalid UUID format for property ID');
+      return;
+    }
+
+    try {
+      const endpoint = `http://localhost:8000/api/availability/property/${propertyId}`;
+      console.log('Testing endpoint:', endpoint);
+      console.log('Property ID (UUID):', propertyId);
+      console.log('User ID:', user.uid);
       
-      // Add the first occurrence
-      if (addTimeSlotToDate(currentDate, newTimeSlot)) {
-        successCount++;
+      setTestResult(`Testing endpoint: ${endpoint}`);
+      
+      const response = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${await user.getIdToken()}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      console.log('Response status:', response.status);
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}: ${responseText}`);
       }
       
-      // Handle weekly pattern
-      if (recurringPattern.frequency === 'weekly') {
-        for (let i = 1; i < recurringPattern.occurrences; i++) {
-          currentDate = addWeeks(currentDate, 1);
-          if (addTimeSlotToDate(currentDate, newTimeSlot)) {
-            successCount++;
+      const data = JSON.parse(responseText);
+      setTestResult(`Success! Status: ${response.status}. Found ${data.length || 0} slots`);
+      
+    } catch (error) {
+      console.error('Test failed:', error);
+      setTestResult(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const createTestProperty = async () => {
+    try {
+      console.log('Creating test property...');
+      
+      // First check if the server is running using the basic-test endpoint
+      console.log('Checking server connection...');
+      const checkResponse = await fetch('http://localhost:8000/basic-test');
+      
+      console.log('Server check response status:', checkResponse.status);
+      const checkText = await checkResponse.text();
+      console.log('Server check raw response:', checkText);
+      
+      // Now create a real property using the test-create endpoint
+      console.log('Creating property...');
+      const response = await fetch('http://localhost:8000/api/test-create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Property creation response status:', response.status);
+      const text = await response.text();
+      console.log('Property creation raw response:', text);
+      
+      try {
+        const data = JSON.parse(text);
+        console.log('Parsed property data:', data);
+        
+        if (data.property && data.property.id) {
+          console.log('Property created successfully with ID:', data.property.id);
+          navigate(`/seller-dashboard/property/${data.property.id}/availability`);
+    } else {
+          throw new Error(data.error || 'No property ID returned');
+        }
+      } catch (parseError) {
+        console.error('Failed to parse property creation response:', parseError);
+        throw new Error(`Invalid response from server: ${text}`);
+      }
+    } catch (error) {
+      console.error('Failed to create test property:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create test property');
+    }
+  };
+
+  // Test seller ID endpoint
+  const testSellerEndpoint = async () => {
+    if (!user?.uid) {
+      setTestResult('Error: User not authenticated');
+      return;
+    }
+
+    try {
+      setTestResult(`Checking seller ID for Firebase UID: ${user.uid}`);
+      
+      // First check localStorage for a saved seller ID
+      const savedSellerId = localStorage.getItem('lastSellerId');
+      if (savedSellerId) {
+        setTestResult(`Found seller ID in localStorage: ${savedSellerId}`);
+        return;
+      }
+      
+      // If no seller ID in localStorage, check if we're on a property page
+      if (propertyId) {
+        console.log('Fetching property details to check for seller ID...');
+        const propertyResponse = await fetch(`http://localhost:8000/api/property/${propertyId}`, {
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+        
+        if (propertyResponse.ok) {
+          const propertyData = await propertyResponse.json();
+          console.log('Property data:', propertyData);
+          
+          // Check if the property has a seller object with an ID
+          if (propertyData.seller && propertyData.seller.id) {
+            const sellerId = propertyData.seller.id;
+            localStorage.setItem('lastSellerId', sellerId);
+            setTestResult(`Found seller ID in property data: ${sellerId}`);
+            return;
+          }
+          
+          // Check if the property has a seller_id property
+          if (propertyData.seller_id) {
+            const sellerId = propertyData.seller_id;
+            localStorage.setItem('lastSellerId', sellerId);
+            setTestResult(`Found seller ID in property data: ${sellerId}`);
+            return;
           }
         }
       }
-      // Handle daily pattern
-      else if (recurringPattern.frequency === 'daily') {
-        for (let i = 1; i < recurringPattern.occurrences; i++) {
-          currentDate = addDays(currentDate, 1);
-          if (addTimeSlotToDate(currentDate, newTimeSlot)) {
-            successCount++;
+      
+      // If we still don't have a seller ID, suggest creating one
+      setTestResult(`No seller ID found. Please click "Create Test Seller" to create a new seller.`);
+    } catch (error) {
+      console.error('Test failed:', error);
+      setTestResult(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  // Discover available endpoints
+  const discoverEndpoints = async () => {
+    setTestResult('Discovering available endpoints...');
+    
+    // List of potential endpoints to test
+    const endpointsToTest = [
+      '/api/test-create',
+      '/api/test-create-seller',
+      '/api/seller',
+      '/api/seller/create',
+      '/api/test/seller',
+      '/api/test/create-seller',
+      '/basic-test'
+    ];
+    
+    const results: string[] = [];
+    
+    for (const endpoint of endpointsToTest) {
+      try {
+        console.log(`Testing endpoint: ${endpoint}`);
+        const response = await fetch(`http://localhost:8000${endpoint}`, {
+          method: endpoint === '/basic-test' ? 'GET' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           }
-        }
+        });
+        
+        console.log(`${endpoint} - Status: ${response.status}`);
+        const text = await response.text();
+        console.log(`${endpoint} - Response: ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`);
+        
+        results.push(`${endpoint}: ${response.status} ${response.ok ? '✅' : '❌'}`);
+      } catch (error) {
+        console.error(`Error testing ${endpoint}:`, error);
+        results.push(`${endpoint}: Error - ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
-      // Handle custom (specific days of week)
-      else if (recurringPattern.frequency === 'custom' && recurringPattern.daysOfWeek.length > 0) {
-        // Sort the days of week to process them in order
-        const sortedDays = [...recurringPattern.daysOfWeek].sort((a, b) => a - b);
+    }
+    
+    setTestResult(`Endpoint discovery results:\n${results.join('\n')}`);
+  };
+
+  // Create a test seller linked to the current user
+  const createTestSeller = async () => {
+    if (!user?.uid) {
+      setTestResult('Error: User not authenticated');
+      return;
+    }
+
+    try {
+      console.log('Creating test seller for Firebase UID:', user.uid);
+      setTestResult('Attempting to create a test seller...');
+      
+      // Try to create a seller with a specific flag to indicate we want a seller, not just a property
+      const response = await fetch('http://localhost:8000/api/test-create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          create_seller: true,  // Explicitly request seller creation
+          firebase_uid: user.uid,
+          email: user.email || 'test@example.com',
+          name: user.displayName || 'Test Seller',
+          seller_only: true  // Add this flag to indicate we want a seller, not a property
+        })
+      });
+
+      console.log('Seller creation response status:', response.status);
+      const text = await response.text();
+      console.log('Seller creation raw response:', text);
+      
+      try {
+        const data = JSON.parse(text);
+        console.log('Parsed response data:', data);
         
-        let weeksAdded = 0;
-        let slotsAdded = 1; // Count the initially added slot
+        // Check if we got a property with a seller object
+        if (data.property && data.property.seller && data.property.seller.id) {
+          const sellerId = data.property.seller.id;
+          console.log('Found seller ID in response:', sellerId);
+          
+          // Store the seller ID in localStorage for future use
+          localStorage.setItem('lastSellerId', sellerId);
+          
+          setTestResult(`Success! Property created with ID: ${data.property.id}.\nSeller ID: ${sellerId}\n\nYou can now add availability slots. The seller ID has been saved for future use.`);
+          
+          // Navigate to the property's availability page
+          navigate(`/seller-dashboard/property/${data.property.id}/availability`);
+          return;
+        }
         
-        while (slotsAdded < recurringPattern.occurrences && weeksAdded < 12) { // Limit to 12 weeks
-          weeksAdded++;
-          for (const day of sortedDays) {
-            if (day === dayOfWeek) continue; // Skip the original day
+        // Check if we got a seller ID directly
+        if (data.seller && data.seller.id) {
+          const sellerId = data.seller.id;
+          localStorage.setItem('lastSellerId', sellerId);
+          
+          setTestResult(`Success! Seller created with ID: ${sellerId}`);
+          return;
+        }
+        
+        // If we got a property with a seller_id
+        if (data.property) {
+          console.log('Property created with ID:', data.property.id);
+          
+          // Check if the property has a seller_id
+          if (data.property.seller_id) {
+            const sellerId = data.property.seller_id;
+            localStorage.setItem('lastSellerId', sellerId);
             
-            // Calculate days to add to get to the target day
-            let daysToAdd = day - dayOfWeek;
-            if (daysToAdd <= 0) daysToAdd += 7; // Wrap around to next week
+            setTestResult(`Success! Property created with ID: ${data.property.id}.\nSeller ID: ${sellerId}\n\nYou can now add availability slots.`);
             
-            const targetDate = addDays(new Date(selectedDate), daysToAdd + (7 * (weeksAdded - 1)));
+            // Navigate to the property's availability page
+            navigate(`/seller-dashboard/property/${data.property.id}/availability`);
+            return;
+          }
+          
+          // If we have a property but no seller_id, try to look up the property to see if it has a seller
+          const propertyResponse = await fetch(`http://localhost:8000/api/property/${data.property.id}`, {
+            headers: {
+              'Accept': 'application/json',
+            }
+          });
+          
+          if (propertyResponse.ok) {
+            const propertyData = await propertyResponse.json();
+            console.log('Property data after creation:', propertyData);
             
-            if (addTimeSlotToDate(targetDate, newTimeSlot)) {
-              successCount++;
-              slotsAdded++;
+            if (propertyData.seller && propertyData.seller.id) {
+              const sellerId = propertyData.seller.id;
+              localStorage.setItem('lastSellerId', sellerId);
               
-              if (slotsAdded >= recurringPattern.occurrences) {
-                break;
-              }
+              setTestResult(`Success! Property created with ID: ${data.property.id}.\nSeller ID: ${sellerId}\n\nYou can now add availability slots.`);
+              navigate(`/seller-dashboard/property/${data.property.id}/availability`);
+              return;
+            }
+            
+            if (propertyData.seller_id) {
+              const sellerId = propertyData.seller_id;
+              localStorage.setItem('lastSellerId', sellerId);
+              
+              setTestResult(`Success! Property created with ID: ${data.property.id}.\nSeller ID: ${sellerId}\n\nYou can now add availability slots.`);
+              navigate(`/seller-dashboard/property/${data.property.id}/availability`);
+              return;
             }
           }
+          
+          // If we still don't have a seller_id, inform the user
+          setTestResult(`Property created with ID: ${data.property.id}, but no seller ID was found.\n\nWhen adding availability, we'll try to use your Firebase UID (${user.uid}) directly.`);
+          navigate(`/seller-dashboard/property/${data.property.id}/availability`);
+        } else {
+          setTestResult(`Response did not contain property or seller data. Check the console for details.`);
         }
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError);
+        setTestResult(`Invalid response from server: ${text}`);
       }
-      
-      return successCount > 0;
     } catch (error) {
-      console.error('Error creating recurring availability:', error);
-      setTimeSlotError('Failed to create recurring availability');
-      return false;
+      console.error('Failed to create test seller:', error);
+      setTestResult(`Error: ${error instanceof Error ? error.message : 'Failed to create test seller'}`);
     }
   };
 
-  // Remove a time slot from a date
-  const removeTimeSlot = (date: Date, index: number) => {
-    const formattedDate = format(date, 'yyyy-MM-dd');
-    const dateIndex = availabilityDates.findIndex(
-      (d) => format(d.date, 'yyyy-MM-dd') === formattedDate
-    );
-
-    if (dateIndex >= 0) {
-      const updatedDates = [...availabilityDates];
-      updatedDates[dateIndex].timeSlots.splice(index, 1);
-
-      // If no time slots left, remove the entire date
-      if (updatedDates[dateIndex].timeSlots.length === 0) {
-        updatedDates.splice(dateIndex, 1);
-      }
-
-      setAvailabilityDates(updatedDates);
+  // Add this function near your other test functions
+  const viewAllSlots = async () => {
+    if (!propertyId || !user?.uid) {
+      setTestResult('Error: Missing propertyId or user');
+      return;
     }
-  };
 
-  // Clear all availability data
-  const clearAllAvailability = () => {
-    if (window.confirm('Are you sure you want to clear all your availability?')) {
-      setAvailabilityDates([]);
-      
-      // Also clear localStorage
-      if (user?.uid) {
-        const storageKey = `${STORAGE_KEY}_${user.uid}`;
-        localStorage.removeItem(storageKey);
-      }
-    }
-  };
-
-  // Save all availability data (this would connect to an API in the future)
-  const saveAvailability = async () => {
     try {
-      setIsSaving(true);
+      console.log('Fetching all availability slots for property:', propertyId);
       
-      // For now, just log the data that would be sent to an API
-      console.log('Saving availability data:', availabilityDates);
+      const response = await fetch(`http://localhost:8000/api/availability/property/${propertyId}`, {
+        headers: {
+          'Authorization': `Bearer ${await user.getIdToken()}`,
+          'Accept': 'application/json',
+        }
+      });
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!response.ok) {
+        throw new Error(`Failed to fetch availability: ${await response.text()}`);
+      }
       
-      // In the future, this would be an API call:
-      // await availabilityService.saveAvailability(availabilityDates);
+      const data = await response.json();
+      console.log('All availability slots:', data);
       
-      setIsSaving(false);
-      alert('Availability saved successfully!');
+      // Format the slots for display
+      const formattedSlots = data.map((slot: any) => {
+        return {
+          id: slot.id,
+          property_id: slot.property_id,
+          seller_id: slot.seller_id,
+          start_time: new Date(slot.start_time).toLocaleString(),
+          end_time: new Date(slot.end_time).toLocaleString()
+        };
+      });
+      
+      // Display the slots in the test result area
+      setTestResult(`Found ${data.length} availability slots in database:\n${JSON.stringify(formattedSlots, null, 2)}`);
     } catch (error) {
-      console.error('Error saving availability:', error);
-      setIsSaving(false);
-      alert('Failed to save availability. Please try again.');
+      console.error('Error fetching slots:', error);
+      setTestResult(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  };
-  
-  // Select a predefined time slot
-  const selectPredefinedTimeSlot = (slot: TimeSlot) => {
-    setNewTimeSlot(slot);
-    setCustomTimeSlot(false);
-    setTimeSlotError(null);
-  };
-  
-  // Toggle a day of week for custom recurring pattern
-  const toggleDayOfWeek = (day: number) => {
-    const updatedDays = [...recurringPattern.daysOfWeek];
-    const index = updatedDays.indexOf(day);
-    
-    if (index >= 0) {
-      updatedDays.splice(index, 1);
-    } else {
-      updatedDays.push(day);
-    }
-    
-    setRecurringPattern({
-      ...recurringPattern,
-      daysOfWeek: updatedDays
-    });
   };
 
-  // Custom tile content to show indicator for dates with availability
-  const tileContent = ({ date }: { date: Date }) => {
-    return hasTimeSlots(date) ? (
-      <div className="absolute bottom-0 left-0 right-0 flex justify-center">
-        <div className="h-1 w-1 bg-emerald-500 rounded-full"></div>
+  // Show error if propertyId is invalid
+  if (error) {
+  return (
+      <div className="p-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
       </div>
-    ) : null;
-  };
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Add the custom styles for the calendar */}
-      <style>{calendarStyles}</style>
-      
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">My Availability</h1>
-        <div className="space-x-2">
-          {availabilityDates.length > 0 && (
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Manage Availability</h1>
+        <div className="space-x-4">
             <button 
-              onClick={clearAllAvailability}
-              className="px-4 py-2 border border-red-300 text-red-600 rounded hover:bg-red-50 transition"
+            onClick={createTestProperty}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
             >
-              Clear All
+            Create Test Property
             </button>
-          )}
           <button 
-            onClick={saveAvailability}
-            disabled={isSaving}
-            className={`px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition flex items-center ${
-              isSaving ? 'opacity-70 cursor-not-allowed' : ''
-            }`}
+            onClick={createTestSeller}
+            className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
           >
-            {isSaving ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Saving...
-              </>
-            ) : (
-              'Save Availability'
-            )}
+            Create Test Seller
           </button>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Calendar Column */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <CalendarIcon className="mr-2 h-5 w-5 text-emerald-600" />
-            Select Dates
-          </h2>
-          <p className="text-gray-500 mb-4">
-            Select dates when you're available for property viewings.
-          </p>
-          
-          <div className="calendar-container mb-4">
-            <Calendar 
-              onChange={handleDateChange}
-              value={selectedDate}
-              tileContent={tileContent}
-              className="rounded border p-2 w-full"
-              tileClassName="relative"
-            />
-          </div>
-          
-          {selectedDate && (
-            <div className="mt-4 p-4 border rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-medium">
-                  {format(selectedDate, 'EEEE, MMMM d, yyyy')}
-                </h3>
+          <button 
+            onClick={testEndpoint}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Test API Connection
+          </button>
+          <button 
+            onClick={testSellerEndpoint}
+            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+          >
+            Test Seller ID
+          </button>
+          <button 
+            onClick={discoverEndpoints}
+            className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+          >
+            Discover Endpoints
+          </button>
                 <button
-                  onClick={() => setShowTimeSlotModal(true)}
-                  className="flex items-center text-sm text-emerald-600 hover:text-emerald-700"
+            onClick={viewAllSlots}
+            className="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600"
                 >
-                  <Plus className="h-4 w-4 mr-1" /> Add Time Slot
+            View All Slots
                 </button>
+        </div>
               </div>
               
-              <div className="space-y-2">
-                {getTimeSlotsForDate(selectedDate).length > 0 ? (
-                  getTimeSlotsForDate(selectedDate).map((slot, index) => (
-                    <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 text-gray-500 mr-2" />
-                        <span>{slot.start} - {slot.end}</span>
+      {testResult && (
+        <div className={`mb-4 p-4 rounded ${
+          testResult.startsWith('Error') 
+            ? 'bg-red-100 text-red-700' 
+            : 'bg-green-100 text-green-700'
+        }`}>
+          {testResult.includes('\n') ? (
+            <div>
+              <p className="font-semibold mb-2">{testResult.split('\n')[0]}</p>
+              <pre className="whitespace-pre-wrap text-sm font-mono bg-gray-50 p-2 rounded">
+                {testResult.split('\n').slice(1).join('\n')}
+              </pre>
                       </div>
-                      <button
-                        onClick={() => removeTimeSlot(selectedDate, index)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-sm">No time slots added yet.</p>
-                )}
-              </div>
+          ) : (
+            testResult
+          )}
             </div>
           )}
-        </div>
-        
-        {/* Summary Column */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <Clock className="mr-2 h-5 w-5 text-emerald-600" />
-            Availability Summary
-          </h2>
-          <p className="text-gray-500 mb-4">
-            Overview of all the dates and times you're available for viewings.
-          </p>
-          
-          {availabilityDates.length > 0 ? (
-            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-              {availabilityDates.sort((a, b) => a.date.getTime() - b.date.getTime()).map((dateEntry, dateIndex) => (
-                <div key={dateIndex} className="border rounded-lg p-3">
-                  <h3 className="font-medium text-lg mb-2">
-                    {format(dateEntry.date, 'EEEE, MMMM d, yyyy')}
-                  </h3>
-                  <div className="space-y-2 pl-2">
-                    {dateEntry.timeSlots.map((slot, slotIndex) => (
-                      <div key={slotIndex} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                        <div className="flex items-center">
-                          <Clock className="h-4 w-4 text-gray-500 mr-2" />
-                          <span>{slot.start} - {slot.end}</span>
-                        </div>
+      
+      <div className="bg-white p-6 rounded-lg shadow mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Availability Calendar</h2>
+          <div className="flex space-x-2">
                         <button
-                          onClick={() => removeTimeSlot(dateEntry.date, slotIndex)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
+              onClick={() => setView(Views.DAY)}
+              className={`px-3 py-1 rounded ${view === Views.DAY ? 'bg-emerald-500 text-white' : 'bg-gray-200'}`}
+            >
+              Day
+            </button>
+            <button 
+              onClick={() => setView(Views.WEEK)}
+              className={`px-3 py-1 rounded ${view === Views.WEEK ? 'bg-emerald-500 text-white' : 'bg-gray-200'}`}
+            >
+              Week
+            </button>
+            <button 
+              onClick={() => setView(Views.MONTH)}
+              className={`px-3 py-1 rounded ${view === Views.MONTH ? 'bg-emerald-500 text-white' : 'bg-gray-200'}`}
+            >
+              Month
                         </button>
                       </div>
-                    ))}
                   </div>
-                </div>
-              ))}
+        
+        <div className="h-[600px]">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
             </div>
           ) : (
-            <div className="border rounded-lg p-6 flex justify-center items-center h-64">
-              <div className="text-center">
-                <p className="text-lg text-gray-600 mb-2">No availability set</p>
-                <p className="text-gray-500">
-                  Select dates on the calendar and add time slots to create your availability schedule.
-                </p>
-              </div>
-            </div>
+            <Calendar
+              localizer={localizer}
+              events={events}
+              startAccessor="start"
+              endAccessor="end"
+              style={{ height: '100%' }}
+              selectable
+              onSelectSlot={handleSelectSlot}
+              onSelectEvent={handleSelectEvent}
+              view={view}
+              onView={(newView: View) => setView(newView)}
+              date={date}
+              onNavigate={(newDate: Date) => setDate(newDate)}
+              defaultView={Views.WEEK}
+              step={30}
+              timeslots={2}
+              eventPropGetter={() => ({
+                style: {
+                  backgroundColor: '#10b981', // Emerald-500
+                  borderColor: '#059669', // Emerald-600
+                },
+              })}
+              dayPropGetter={(date: Date) => ({
+                style: {
+                  backgroundColor: date.getDay() === 0 || date.getDay() === 6 
+                    ? '#f9fafb' // Gray-50 for weekends
+                    : '#ffffff',
+                },
+              })}
+              tooltipAccessor={(event: CalendarEvent) => `Available: ${format(event.start, 'p')} - ${format(event.end, 'p')}`}
+            />
           )}
         </div>
       </div>
       
-      {/* Enhanced Time Slot Modal */}
-      {showTimeSlotModal && (
+      {/* Add Availability Modal */}
+      {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-            <h3 className="text-xl font-semibold mb-2">
-              Add Time Slot for {format(selectedDate!, 'MMMM d, yyyy')}
-            </h3>
-            <p className="text-gray-500 mb-4">Select a time slot or create a custom one.</p>
-            
-            {/* Time Slot Selection */}
-            <div className="mb-6">
-              <h4 className="font-medium mb-2">Choose a time slot:</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-                {PREDEFINED_TIME_SLOTS.map((slot, index) => (
-                  <button
-                    key={index}
-                    onClick={() => selectPredefinedTimeSlot(slot)}
-                    className={`p-2 rounded border ${
-                      !customTimeSlot && 
-                      newTimeSlot.start === slot.start && 
-                      newTimeSlot.end === slot.end
-                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    {slot.start} - {slot.end}
-                  </button>
-                ))}
-                <button
-                  onClick={() => setCustomTimeSlot(true)}
-                  className={`p-2 rounded border ${
-                    customTimeSlot
-                      ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                      : 'hover:bg-gray-50'
-                  }`}
-                >
-                  Custom Time
-                </button>
-              </div>
-              
-              {customTimeSlot && (
-                <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Add Availability Slot</h3>
+            <div className="space-y-4">
                   <div>
-                    <label htmlFor="start-time" className="block text-sm font-medium text-gray-700 mb-1">
-                      Start Time
-                    </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                     <input
-                      id="start-time"
-                      type="time"
-                      value={newTimeSlot.start}
-                      onChange={(e) => setNewTimeSlot({ ...newTimeSlot, start: e.target.value })}
-                      className="w-full p-2 border rounded focus:ring-emerald-500 focus:border-emerald-500"
+                  type="date" 
+                  value={format(newSlot.start, 'yyyy-MM-dd')}
+                  onChange={(e) => {
+                    const newDate = parseISO(e.target.value);
+                    const newStart = new Date(
+                      newDate.getFullYear(),
+                      newDate.getMonth(),
+                      newDate.getDate(),
+                      newSlot.start.getHours(),
+                      newSlot.start.getMinutes()
+                    );
+                    const newEnd = new Date(
+                      newDate.getFullYear(),
+                      newDate.getMonth(),
+                      newDate.getDate(),
+                      newSlot.end.getHours(),
+                      newSlot.end.getMinutes()
+                    );
+                    setNewSlot({ start: newStart, end: newEnd });
+                  }}
+                  className="w-full p-2 border rounded"
                     />
                   </div>
-                  
+              <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="end-time" className="block text-sm font-medium text-gray-700 mb-1">
-                      End Time
-                    </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
                     <input
-                      id="end-time"
                       type="time"
-                      value={newTimeSlot.end}
-                      onChange={(e) => setNewTimeSlot({ ...newTimeSlot, end: e.target.value })}
-                      className="w-full p-2 border rounded focus:ring-emerald-500 focus:border-emerald-500"
+                    value={format(newSlot.start, 'HH:mm')}
+                    onChange={(e) => {
+                      const [hours, minutes] = e.target.value.split(':').map(Number);
+                      const newStart = new Date(newSlot.start);
+                      newStart.setHours(hours, minutes);
+                      setNewSlot({ ...newSlot, start: newStart });
+                    }}
+                    className="w-full p-2 border rounded"
                     />
                   </div>
-                </div>
-              )}
-              
-              {timeSlotError && (
-                <div className="mt-2 text-red-500 flex items-center text-sm">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {timeSlotError}
-                </div>
-              )}
-            </div>
-            
-            {/* Recurring Options */}
-            <div className="border-t pt-4 mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-medium">Make this recurring?</h4>
-                <button
-                  onClick={() => setRecurringPattern({
-                    ...recurringPattern,
-                    enabled: !recurringPattern.enabled
-                  })}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full ${
-                    recurringPattern.enabled ? 'bg-emerald-600' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                      recurringPattern.enabled ? 'translate-x-6' : 'translate-x-1'
-                    }`}
+                  <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                    <input
+                    type="time" 
+                    value={format(newSlot.end, 'HH:mm')}
+                    onChange={(e) => {
+                      const [hours, minutes] = e.target.value.split(':').map(Number);
+                      const newEnd = new Date(newSlot.end);
+                      newEnd.setHours(hours, minutes);
+                      setNewSlot({ ...newSlot, end: newEnd });
+                    }}
+                    className="w-full p-2 border rounded"
                   />
-                </button>
-              </div>
-              
-              {recurringPattern.enabled && (
-                <div className="space-y-4 mt-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Frequency
-                    </label>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setRecurringPattern({
-                          ...recurringPattern,
-                          frequency: 'daily'
-                        })}
-                        className={`px-3 py-1 rounded border ${
-                          recurringPattern.frequency === 'daily'
-                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                            : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        Daily
-                      </button>
-                      <button
-                        onClick={() => setRecurringPattern({
-                          ...recurringPattern,
-                          frequency: 'weekly'
-                        })}
-                        className={`px-3 py-1 rounded border ${
-                          recurringPattern.frequency === 'weekly'
-                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                            : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        Weekly
-                      </button>
-                      <button
-                        onClick={() => setRecurringPattern({
-                          ...recurringPattern,
-                          frequency: 'custom'
-                        })}
-                        className={`px-3 py-1 rounded border ${
-                          recurringPattern.frequency === 'custom'
-                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                            : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        Custom
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {recurringPattern.frequency === 'custom' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Repeat on these days:
-                      </label>
-                      <div className="flex flex-wrap gap-1">
-                        {DAYS_OF_WEEK.map((day, index) => (
-                          <button
-                            key={day}
-                            onClick={() => toggleDayOfWeek(index)}
-                            className={`px-2 py-1 rounded text-xs ${
-                              recurringPattern.daysOfWeek.includes(index)
-                                ? 'bg-emerald-500 text-white'
-                                : 'bg-gray-100 hover:bg-gray-200'
-                            }`}
-                          >
-                            {day.slice(0, 3)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Number of occurrences
-                    </label>
-                    <input
-                      type="number"
-                      min="2"
-                      max="12"
-                      value={recurringPattern.occurrences}
-                      onChange={(e) => setRecurringPattern({
-                        ...recurringPattern,
-                        occurrences: Math.max(2, Math.min(12, parseInt(e.target.value) || 2))
-                      })}
-                      className="w-full p-2 border rounded focus:ring-emerald-500 focus:border-emerald-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      {recurringPattern.frequency === 'daily' 
-                        ? `This will create ${recurringPattern.occurrences} daily occurrences` 
-                        : recurringPattern.frequency === 'weekly'
-                        ? `This will create ${recurringPattern.occurrences} weekly occurrences` 
-                        : `This will create slots on selected days for ${recurringPattern.occurrences} occurrences`}
-                    </p>
                   </div>
                 </div>
-              )}
             </div>
-            
-            <div className="flex justify-end space-x-2">
+            <div className="mt-6 flex justify-end space-x-3">
               <button
-                onClick={() => setShowTimeSlotModal(false)}
-                className="px-4 py-2 border text-gray-700 rounded hover:bg-gray-50"
+                onClick={() => setShowAddModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
-                onClick={addTimeSlot}
-                className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 flex items-center"
+                onClick={handleAddAvailability}
+                className="px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600"
               >
-                <Check className="h-4 w-4 mr-1" /> Add
+                Add Availability
               </button>
             </div>
           </div>

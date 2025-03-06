@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import ChatService from '../services/ChatService';
 import Navigation from '../components/layout/Navigation';
 import ReactMarkdown from 'react-markdown';
-import ValuationForm from '../components/property/ValuationForm';
 
 const MaisonLanding = () => {
   const [message, setMessage] = useState('');
@@ -13,7 +12,6 @@ const MaisonLanding = () => {
     type: 'user' | 'bot';
     message: string;
   }>>([]);
-  const [isValuationModalOpen, setIsValuationModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -40,18 +38,6 @@ const MaisonLanding = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const openValuationModal = () => {
-    setIsValuationModalOpen(true);
-  };
-
-  const closeValuationModal = () => {
-    setIsValuationModalOpen(false);
-  };
-
-  const navigateToListings = () => {
-    navigate('/listings');
   };
 
   return (
@@ -123,10 +109,7 @@ const MaisonLanding = () => {
 
           {/* Quick Actions */}
           <div className="flex flex-wrap justify-center gap-4 mb-4">
-            <button 
-              onClick={navigateToListings}
-              className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            >
+            <button className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50">
               <span className="text-emerald-600">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -134,10 +117,7 @@ const MaisonLanding = () => {
               </span>
               <span>Find property</span>
             </button>
-            <button 
-              onClick={openValuationModal}
-              className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            >
+            <button className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50">
               <span className="text-emerald-600">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -187,13 +167,9 @@ const MaisonLanding = () => {
         <p className="text-gray-500 text-sm mt-8">
           Mia can make mistakes. Check important info.
         </p>
-      </main>
 
-      {/* Valuation Modal */}
-      <ValuationForm 
-        isOpen={isValuationModalOpen} 
-        onClose={closeValuationModal} 
-      />
+
+      </main>
     </div>
   );
 };

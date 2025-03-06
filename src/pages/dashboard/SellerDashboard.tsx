@@ -45,6 +45,12 @@ import AvailabilitySection from './seller-sections/AvailabilitySection';
 import { PropertyDetail } from '../../types/property';
 import { toast } from 'react-hot-toast';
 
+// Helper function to validate UUID
+const isValidUUID = (uuid: string) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+};
+
 // Add interfaces for the components
 interface NavItemProps {
   icon: React.ReactElement;
@@ -91,6 +97,8 @@ interface ChatMessageDisplay {
 
 // Add a custom interface that extends PropertyDetail with status
 interface PropertyDetailWithStatus extends PropertyDetail {
+  id: string;
+  name?: string;
   status?: 'active' | 'pending' | 'sold' | 'withdrawn';
 }
 
@@ -120,22 +128,15 @@ const SellerDashboard = () => {
   // Fetch property details when propertyId changes
   useEffect(() => {
     const fetchPropertyDetails = async () => {
-      if (!propertyId) return;
-      
-      setIsLoadingProperty(true);
-      setPropertyError(null);
+      if (!propertyId || !isValidUUID(propertyId)) return;
       
       try {
+        setIsLoadingProperty(true);
         const propertyData = await PropertyService.getPropertyById(propertyId);
-        // Add a default status of 'active' to the property
-        setProperty({
-          ...propertyData,
-          status: 'active', // Default status
-          id: propertyData.id || propertyData.property_id || propertyId // Ensure we have the id regardless of API field name
-        });
+        setProperty(propertyData);
       } catch (error) {
         console.error('Error fetching property details:', error);
-        setPropertyError('Failed to load property details. Please try again later.');
+        setPropertyError(error instanceof Error ? error.message : 'Failed to fetch property details');
       } finally {
         setIsLoadingProperty(false);
       }
@@ -303,7 +304,8 @@ const SellerDashboard = () => {
   };
 
   // Format price to GBP
-  const formatPrice = (price: number): string => {
+  const formatPrice = (price: number | undefined): string => {
+    if (price === undefined) return 'N/A';
     return new Intl.NumberFormat('en-GB', {
       style: 'currency',
       currency: 'GBP',
@@ -403,10 +405,10 @@ const SellerDashboard = () => {
               <span className="text-sm">Back to Properties</span>
             </button>
             <h2 className="font-semibold text-gray-900 truncate">
-              {property.address.street}
+              {property.name || 'Test Property'}
             </h2>
             <p className="text-sm text-gray-500">
-              {property.address.city}, {property.address.postcode}
+              {property.address ? `${property.address.city}, ${property.address.postcode}` : `ID: ${property.id}`}
             </p>
             <div className="mt-2 flex items-center">
               <span className={`px-2 py-1 rounded-full text-xs font-medium
@@ -417,9 +419,11 @@ const SellerDashboard = () => {
               >
                 {property.status || 'Active'}
               </span>
-              <span className="ml-2 text-sm font-medium text-gray-900">
-                {formatPrice(property.price)}
-              </span>
+              {property.price && (
+                <span className="ml-2 text-sm font-medium text-gray-900">
+                  {formatPrice(property.price)}
+                </span>
+              )}
             </div>
           </div>
         )}

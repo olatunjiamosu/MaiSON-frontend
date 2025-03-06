@@ -1,0 +1,18 @@
+import React from 'react';
+import { useAuth } from '../../../context/AuthContext';
+import { useParams } from 'react-router-dom';
+
+const AvailabilitySection = () => {
+  const { propertyId } = useParams<{ propertyId: string }>();
+  const { user } = useAuth();
+
+  return (
+    <div>
+      <h2>Availability Section</h2>
+      <p>Property ID: {propertyId}</p>
+      <p>User: {user?.email}</p>
+    </div>
+  );
+};
+
+export default AvailabilitySection; 
