@@ -41,6 +41,23 @@ jest.mock('firebase/auth', () => ({
   }))
 }));
 
+// Mock AuthContext
+const mockAuthContext = {
+  user: mockCurrentUser,
+  userRole: 'buyer',
+  loading: false,
+  login: jest.fn(),
+  logout: jest.fn(),
+  resetPassword: jest.fn(),
+  signInWithGoogle: jest.fn(),
+  signup: jest.fn()
+};
+
+jest.mock('../../context/AuthContext', () => ({
+  useAuth: () => mockAuthContext,
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children
+}));
+
 const mockToastSuccess = jest.fn();
 const mockToastError = jest.fn();
 
@@ -65,7 +82,9 @@ jest.mock('react-router-dom', () => ({
 // Mock Heart icon
 jest.mock('lucide-react', () => ({
   Heart: () => <div data-testid="mock-heart-icon">Heart</div>,
-  MessageCircle: () => <div data-testid="mock-message-icon">Message</div>
+  MessageCircle: () => <div data-testid="mock-message-icon">Message</div>,
+  FileText: () => <div data-testid="mock-file-text-icon">FileText</div>,
+  X: () => <div data-testid="mock-x-icon">X</div>
 }));
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -73,6 +92,25 @@ import { MemoryRouter } from 'react-router-dom';
 import PropertyCard from './PropertyCard';
 import { PropertySummary } from '../../types/property';
 import PropertyService from '../../services/PropertyService';
+
+// Mock negotiations array
+const mockNegotiations = [
+  {
+    negotiation_id: '1',
+    property_id: '1',
+    buyer_id: 'test-user-id',
+    seller_id: 'seller123',
+    current_offer: 450000,
+    status: 'pending',
+    last_offer_by: 'test-user-id',
+    awaiting_response_from: 'seller123',
+    created_at: '2024-03-20T12:00:00Z',
+    updated_at: '2024-03-20T12:00:00Z',
+    last_updated: '2024-03-20T12:00:00Z',
+    transactions: [],
+    transaction_history: []
+  }
+];
 
 const mockProperty: PropertySummary = {
   id: '1',
@@ -110,7 +148,7 @@ describe('PropertyCard', () => {
   });
 
   test('renders property details correctly', () => {
-    renderWithRouter(<PropertyCard {...mockProperty} />);
+    renderWithRouter(<PropertyCard {...mockProperty} negotiations={mockNegotiations} />);
 
     expect(screen.getByText('£500,000')).toBeInTheDocument();
     expect(screen.getByText(mockProperty.address.street)).toBeInTheDocument();
@@ -126,6 +164,7 @@ describe('PropertyCard', () => {
         {...mockProperty} 
         onToggleSave={handleToggleSave} 
         isSaved={false} 
+        negotiations={mockNegotiations}
       />
     );
 
@@ -139,7 +178,7 @@ describe('PropertyCard', () => {
   });
 
   test('uses PropertyService when no custom handler is provided', async () => {
-    renderWithRouter(<PropertyCard {...mockProperty} isSaved={false} />);
+    renderWithRouter(<PropertyCard {...mockProperty} isSaved={false} negotiations={mockNegotiations} />);
     
     const saveButton = screen.getByRole('button', { name: /save property/i });
     fireEvent.click(saveButton);
@@ -155,6 +194,7 @@ describe('PropertyCard', () => {
       <PropertyCard 
         {...mockProperty} 
         main_image_url={undefined} 
+        negotiations={mockNegotiations}
       />
     );
     
@@ -164,7 +204,7 @@ describe('PropertyCard', () => {
 
   test('displays correct UI for saved and unsaved states', () => {
     const { rerender } = renderWithRouter(
-      <PropertyCard {...mockProperty} isSaved={false} />
+      <PropertyCard {...mockProperty} isSaved={false} negotiations={mockNegotiations} />
     );
     
     expect(screen.getByRole('button', { name: /save property/i }))
@@ -172,7 +212,7 @@ describe('PropertyCard', () => {
     
     rerender(
       <MemoryRouter>
-        <PropertyCard {...mockProperty} isSaved={true} />
+        <PropertyCard {...mockProperty} isSaved={true} negotiations={mockNegotiations} />
       </MemoryRouter>
     );
     
@@ -181,29 +221,30 @@ describe('PropertyCard', () => {
   });
 
   test('navigates to property details page when clicked', () => {
-    renderWithRouter(<PropertyCard {...mockProperty} />);
+    renderWithRouter(<PropertyCard {...mockProperty} negotiations={mockNegotiations} />);
     
-    const viewPropertyButton = screen.getByText('View Property');
-    fireEvent.click(viewPropertyButton);
+    // Click on the property card itself to navigate
+    const propertyCard = screen.getByRole('img', { name: /test road, test city/i });
+    fireEvent.click(propertyCard);
     
     expect(mockNavigate).toHaveBeenCalledWith(`/property/${mockProperty.id}`, expect.anything());
   });
 
   test('displays chat button when seller_id is provided', () => {
-    renderWithRouter(<PropertyCard {...mockProperty} />);
+    renderWithRouter(<PropertyCard {...mockProperty} negotiations={mockNegotiations} />);
     
     expect(screen.getByText('Chat with Mia about this property')).toBeInTheDocument();
   });
 
   test('does not display chat button when seller_id is not provided', () => {
     const propertyWithoutSeller = { ...mockProperty, seller_id: undefined };
-    renderWithRouter(<PropertyCard {...propertyWithoutSeller} />);
+    renderWithRouter(<PropertyCard {...propertyWithoutSeller} negotiations={mockNegotiations} />);
     
     expect(screen.queryByText('Chat with Mia about this property')).not.toBeInTheDocument();
   });
 
   test('initiates property chat when chat button is clicked', async () => {
-    renderWithRouter(<PropertyCard {...mockProperty} />);
+    renderWithRouter(<PropertyCard {...mockProperty} negotiations={mockNegotiations} />);
     
     const chatButton = screen.getByText('Chat with Mia about this property');
     fireEvent.click(chatButton);
@@ -223,7 +264,7 @@ describe('PropertyCard', () => {
     localStorage.setItem(`property_chat_conversation_${mockProperty.id}`, '456');
     mockVerifyConversationExists.mockResolvedValueOnce(true);
     
-    renderWithRouter(<PropertyCard {...mockProperty} />);
+    renderWithRouter(<PropertyCard {...mockProperty} negotiations={mockNegotiations} />);
     
     const chatButton = screen.getByText('Chat with Mia about this property');
     fireEvent.click(chatButton);
@@ -244,7 +285,7 @@ describe('PropertyCard', () => {
     localStorage.setItem(`property_chat_conversation_${mockProperty.id}`, '456');
     mockVerifyConversationExists.mockResolvedValueOnce(false);
     
-    renderWithRouter(<PropertyCard {...mockProperty} />);
+    renderWithRouter(<PropertyCard {...mockProperty} negotiations={mockNegotiations} />);
     
     const chatButton = screen.getByText('Chat with Mia about this property');
     fireEvent.click(chatButton);
