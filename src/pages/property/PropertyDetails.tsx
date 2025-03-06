@@ -36,7 +36,7 @@ interface PropertyDetailsProps {
     propertyType: string;
     epcRating: string;
     description: string;
-    floorPlan: string;
+    //floorPlan: string;
     lat: number;
     lng: number;
     seller_id: string;
@@ -101,7 +101,7 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
           propertyType: propertyData.specs.property_type,
           epcRating: propertyData.specs.epc_rating || 'N/A',
           description: propertyData.details?.description || 'No description available',
-          floorPlan: propertyData.floorplan_url || 'https://images.unsplash.com/photo-1536483229849-91bbb16321cd',
+          //floorPlan: propertyData.floorplan_url || 'https://images.unsplash.com/photo-1536483229849-91bbb16321cd',
           lat: propertyData.address.latitude || 51.5074,
           lng: propertyData.address.longitude || -0.1278,
           createdAt: propertyData.created_at ? formatDate(propertyData.created_at) : 'N/A',
@@ -630,14 +630,14 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
             </div>
 
             {/* Floor Plan */}
-            <div className="bg-white p-6 rounded-lg border">
+            {/* <div className="bg-white p-6 rounded-lg border">
               <h2 className="text-xl font-semibold mb-4">Floor Plan</h2>
               <img
                 src={property.floorPlan}
                 alt="Floor Plan"
                 className="w-full"
-              />
-            </div>
+              /> */}
+            {/* </div> */}
 
             {/* Location */}
             <div className="bg-white p-6 rounded-lg border">

@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
-import { Send } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Send, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import ChatService from '../services/ChatService';
 import Navigation from '../components/layout/Navigation';
 import ReactMarkdown from 'react-markdown';
 import ValuationForm from '../components/property/ValuationForm';
+
+// Interface for the notification
+interface ComingSoonNotification {
+  title: string;
+  message: string;
+  visible: boolean;
+}
 
 const MaisonLanding = () => {
   const [message, setMessage] = useState('');
@@ -14,7 +21,20 @@ const MaisonLanding = () => {
     message: string;
   }>>([]);
   const [isValuationModalOpen, setIsValuationModalOpen] = useState(false);
+  // Add state for the coming soon notification
+  const [notification, setNotification] = useState<ComingSoonNotification | null>(null);
   const navigate = useNavigate();
+
+  // Effect to handle the notification timeout
+  useEffect(() => {
+    if (notification?.visible) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 5000); // 5 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,12 +74,63 @@ const MaisonLanding = () => {
     navigate('/listings');
   };
 
+  const handlePropertyGuideClick = () => {
+    setNotification({
+      title: "Property Guide",
+      message: "Our comprehensive property guide is coming soon! Check back later for updates.",
+      visible: true
+    });
+  };
+
+  const handleMoreOptionsClick = () => {
+    setNotification({
+      title: "More Options",
+      message: "Additional features are coming soon! We're working on making your experience even better.",
+      visible: true
+    });
+  };
+
+  // Function to close the notification manually
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 bg-white">
+        {/* Coming Soon Notification */}
+        {notification && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+            onClick={closeNotification}
+          >
+            <div 
+              className="bg-white rounded-lg p-6 w-full max-w-md relative mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={closeNotification}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              {/* Modal content */}
+              <div className="space-y-4 text-center">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                  <span className="text-emerald-600 text-xl">⏳</span>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">{notification.title}</h3>
+                <p className="text-gray-600">{notification.message}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {chatHistory.length === 0 && (
           <h1 className="text-4xl font-bold text-gray-900 mb-16 text-center">
             Property Done The Intelligent Way
@@ -145,7 +216,10 @@ const MaisonLanding = () => {
               </span>
               <span>Get valuation</span>
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50">
+            <button 
+              onClick={handlePropertyGuideClick}
+              className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            >
               <span className="text-emerald-600">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -154,7 +228,10 @@ const MaisonLanding = () => {
               </span>
               <span>Property guide</span>
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50">
+            <button 
+              onClick={handleMoreOptionsClick}
+              className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            >
               <span className="text-emerald-600">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
