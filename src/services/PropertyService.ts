@@ -11,7 +11,7 @@ import {
 import { getAuth } from 'firebase/auth';
 
 // Update the API base URL to point to the Flask backend
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8000';  // Use localhost for browser access
 
 class PropertyService {
   private async getAuthToken(): Promise<string | null> {
@@ -493,6 +493,77 @@ class PropertyService {
       return dashboardData.saved_properties || [];
     } catch (error) {
       console.error('Error fetching saved properties:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get availability slots for a property
+   * @param propertyId - The ID of the property
+   */
+  async getPropertyAvailability(propertyId: string): Promise<any> {
+    try {
+      const url = `${API_BASE_URL}/api/availability/property/${propertyId}`;
+      const response = await fetch(url, {
+        headers: await this.getHeaders(true)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch property availability');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching property availability:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create availability slots for a property
+   * @param propertyId - The ID of the property
+   * @param availabilitySlots - Array of availability time slots
+   */
+  async createAvailability(propertyId: string, availabilitySlots: Array<{ start_time: Date; end_time: Date }>): Promise<any> {
+    try {
+      const url = `${API_BASE_URL}/api/availability`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: await this.getHeaders(true),
+        body: JSON.stringify({
+          propertyId,
+          availabilitySlots
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create availability slots');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating availability slots:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete availability slots for a property
+   * @param propertyId - The ID of the property
+   */
+  async deletePropertyAvailability(propertyId: string): Promise<void> {
+    try {
+      const url = `${API_BASE_URL}/api/availability/property/${propertyId}`;
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: await this.getHeaders(true)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete property availability');
+      }
+    } catch (error) {
+      console.error('Error deleting property availability:', error);
       throw error;
     }
   }

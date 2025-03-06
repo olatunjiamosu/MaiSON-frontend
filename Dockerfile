@@ -2,17 +2,24 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Force use of pure JS implementations
+ENV ROLLUP_SKIP_NATIVE=true
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
-# Copy the rest of the application
-COPY . .
+# Create .npmrc for cross-platform builds
+RUN echo "node-linker=hoisted\nignore-scripts=true\nlegacy-peer-deps=true" > .npmrc
 
-# Expose port 3000
+# Install dependencies with specific flags
+RUN npm install \
+    --no-optional \
+    --legacy-peer-deps \
+    --platform=linux \
+    --no-package-lock
+
 EXPOSE 3000
 
-# Start the development server
-CMD ["npm", "run", "dev"] 
+# Development mode command
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

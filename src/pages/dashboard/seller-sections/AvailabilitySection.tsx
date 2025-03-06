@@ -7,6 +7,7 @@ import { Calendar, momentLocalizer, Views, View } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { toast } from 'react-hot-toast';
+import PropertyService from '../../../services/PropertyService';
 
 // Setup the localizer for react-big-calendar
 const localizer = momentLocalizer(moment);
@@ -63,64 +64,24 @@ const AvailabilitySection = () => {
   }, [propertyId]);
 
   // Fetch availability slots from Azure PostgreSQL
-  useEffect(() => {
-    const fetchAvailability = async () => {
-      if (!propertyId || !user?.uid || !isValidUUID(propertyId)) return;
-      
-      try {
-        // First fetch property details to verify it exists
-        console.log(`Fetching property details for ${propertyId}`);
-        const propertyResponse = await fetch(`http://localhost:8000/api/property/${propertyId}`, {
-          headers: {
-            'Accept': 'application/json',
-          }
-        });
-        
-        console.log('Property details response status:', propertyResponse.status);
-        const propertyText = await propertyResponse.text();
-        console.log('Property details raw response:', propertyText);
-        
-        if (!propertyResponse.ok) {
-          throw new Error(`Failed to fetch property details: ${propertyText}`);
-        }
-        
-        try {
-          const propertyData = JSON.parse(propertyText);
-          console.log('Property data:', propertyData);
-          
-          // Now fetch availability slots
-          const response = await fetch(`http://localhost:8000/api/availability/property/${propertyId}`, {
-            headers: {
-              'Authorization': `Bearer ${await user.getIdToken()}`,
-              'Accept': 'application/json',
-            }
-          });
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch availability: ${errorText}`);
-          }
-          
-    const data = await response.json();
-          setAvailabilitySlots(data.map((slot: any) => ({
-            ...slot,
-            start_time: new Date(slot.start_time),
-            end_time: new Date(slot.end_time)
-          })));
-        } catch (parseError) {
-          console.error('Error parsing property data:', parseError);
-          throw new Error(`Invalid property data: ${propertyText}`);
-        }
-  } catch (error) {
-    console.error('Error fetching availability:', error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch availability');
-      } finally {
-        setIsLoading(false);
+  const fetchAvailability = async () => {
+    try {
+      if (!propertyId || !isValidUUID(propertyId)) {
+        throw new Error('Invalid property ID');
       }
-    };
 
-    fetchAvailability();
-  }, [propertyId, user]);
+      setIsLoading(true);
+      const slots = await PropertyService.getPropertyAvailability(propertyId);
+      setAvailabilitySlots(slots);
+      setError('');
+    } catch (err) {
+      console.error('Error fetching availability:', err);
+      setError('Failed to fetch availability slots');
+      toast.error('Failed to fetch availability slots');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Convert availability slots to calendar events
   const events = useMemo(() => {
@@ -158,162 +119,42 @@ const AvailabilitySection = () => {
 
   // Save a new availability slot
   const saveAvailability = async (newSlot: Omit<DbAvailability, 'id'>) => {
-    if (!propertyId || !user?.uid || !isValidUUID(propertyId)) {
-      setError('Invalid property ID or user not authenticated');
-      return;
-    }
-
     try {
-      console.log('Saving availability with the following data:');
-      console.log('Property ID:', propertyId);
-      console.log('User ID:', user.uid);
-      console.log('Start time:', newSlot.start_time.toISOString());
-      console.log('End time:', newSlot.end_time.toISOString());
-      
-      // First fetch property details to get the seller ID
-      console.log('Fetching property details to get seller ID...');
-      const propertyResponse = await fetch(`http://localhost:8000/api/property/${propertyId}`, {
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-      
-      if (!propertyResponse.ok) {
-        throw new Error(`Failed to fetch property details: ${await propertyResponse.text()}`);
-      }
-      
-      const propertyData = await propertyResponse.json();
-      console.log('Property data:', propertyData);
-      
-      // Check for seller ID in various places
-      let sellerId = null;
-      
-      // 1. Check if the property has a seller object with an ID
-      if (propertyData.seller && propertyData.seller.id) {
-        sellerId = propertyData.seller.id;
-        console.log('Using seller ID from property.seller.id:', sellerId);
-      } 
-      // 2. Check if the property has a seller_id property
-      else if (propertyData.seller_id) {
-        sellerId = propertyData.seller_id;
-        console.log('Using seller ID from property.seller_id:', sellerId);
-      } 
-      // 3. Check localStorage for a previously saved seller ID
-      else {
-        const savedSellerId = localStorage.getItem('lastSellerId');
-        if (savedSellerId) {
-          sellerId = savedSellerId;
-          console.log('Using seller ID from localStorage:', sellerId);
-        } else {
-          // 4. Use the hardcoded ID as a last resort
-          sellerId = "b0dc906d-1238-46a2-b7a3-d20a2b529543"; // Update with the seller ID from the response
-          console.log('No seller ID found, using hardcoded fallback:', sellerId);
-        }
-      }
-      
-      // Set a loading toast - store the ID returned by toast.loading()
-      const loadingToastId = toast.loading('Saving availability slot...') as unknown as string;
-
-      console.log('Sending availability request with seller ID:', sellerId);
-      const response = await fetch(`http://localhost:8000/api/availability`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await user.getIdToken()}`,
-        },
-        body: JSON.stringify({
-          property_id: propertyId,
-          seller_id: sellerId,
-          start_time: newSlot.start_time.toISOString(),
-          end_time: newSlot.end_time.toISOString()
-        }),
-      });
-
-      // Dismiss the loading toast using the stored ID
-      toast.dismiss(loadingToastId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log('Error response from server:', errorText);
-        
-        // If we still get an error, try using the property ID as the seller ID
-        if (errorText.includes('seller_id') || errorText.includes('foreign key constraint')) {
-          console.log('Trying to use property ID as seller ID...');
-          
-          const finalAttemptResponse = await fetch(`http://localhost:8000/api/availability`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${await user.getIdToken()}`,
-            },
-            body: JSON.stringify({
-              property_id: propertyId,
-              seller_id: propertyId, // Use property ID as seller ID
-              start_time: newSlot.start_time.toISOString(),
-              end_time: newSlot.end_time.toISOString()
-            }),
-          });
-          
-          if (finalAttemptResponse.ok) {
-            const savedSlot = await finalAttemptResponse.json();
-            setAvailabilitySlots(prev => [...prev, {
-              ...savedSlot,
-              start_time: new Date(savedSlot.start_time),
-              end_time: new Date(savedSlot.end_time)
-            }]);
-            
-            toast.success('Availability slot added successfully (using property ID as seller ID)');
-            return;
-          } else {
-            const finalErrorText = await finalAttemptResponse.text();
-            console.log('Final error response from server:', finalErrorText);
-            toast.error('Seller ID format error. Please contact your administrator.');
-            setTestResult(`Error: Could not add availability slot. We tried multiple approaches but none worked. Error: ${finalErrorText}`);
-          }
-        } else {
-          throw new Error(`Failed to save availability: ${errorText}`);
-        }
-        return;
+      if (!propertyId || !isValidUUID(propertyId)) {
+        throw new Error('Invalid property ID');
       }
 
-      const savedSlot = await response.json();
-      setAvailabilitySlots(prev => [...prev, {
-        ...savedSlot,
-        start_time: new Date(savedSlot.start_time),
-        end_time: new Date(savedSlot.end_time)
+      await PropertyService.createAvailability(propertyId, [{
+        start_time: newSlot.start_time,
+        end_time: newSlot.end_time
       }]);
-      
+
+      // Refresh the availability slots
+      await fetchAvailability();
       toast.success('Availability slot added successfully');
-      } catch (error) {
-      console.error('Error saving availability:', error);
-      setError(error instanceof Error ? error.message : 'Failed to save availability');
-      toast.error('Failed to add availability slot');
+    } catch (err) {
+      console.error('Error saving availability:', err);
+      toast.error('Failed to save availability slot');
+      throw err;
     }
   };
 
   // Delete an availability slot
   const deleteAvailability = async (slotId: number) => {
-    if (!user?.uid) return;
-
     try {
-      const response = await fetch(`http://localhost:8000/api/availability/${slotId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${await user.getIdToken()}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to delete availability: ${errorText}`);
+      if (!propertyId || !isValidUUID(propertyId)) {
+        throw new Error('Invalid property ID');
       }
 
-      setAvailabilitySlots(prev => prev.filter(slot => slot.id !== slotId));
-      toast.success('Availability slot removed');
-    } catch (error) {
-      console.error('Error deleting availability:', error);
-      setError(error instanceof Error ? error.message : 'Failed to delete availability');
-      toast.error('Failed to remove availability slot');
+      await PropertyService.deletePropertyAvailability(propertyId);
+      
+      // Refresh the availability slots
+      await fetchAvailability();
+      toast.success('Availability slot deleted successfully');
+    } catch (err) {
+      console.error('Error deleting availability:', err);
+      toast.error('Failed to delete availability slot');
+      throw err;
     }
   };
 

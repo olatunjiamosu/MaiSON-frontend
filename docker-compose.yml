@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Frontend Service (Next.js)
+  # Frontend Service (Vite/React)
   frontend:
     build:
       context: .
@@ -11,29 +11,26 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      - VITE_API_URL=http://calendar-backend:8000
     volumes:
       - ./:/app
       - /app/node_modules
     restart: unless-stopped
 
-  # Calendar Backend Service (Python-based)
+  # Calendar Backend Service (from separate repo)
   calendar-backend:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
+      context: ../MaiSON-backend/MaiSON-cal
+      dockerfile: Dockerfile
     container_name: maison-calendar-backend
     ports:
       - "8000:8000"
     environment:
-      - DB_HOST=property-db-server-123.postgres.database.azure.com
-      - DB_NAME=property_viewings
-      - DB_USER=dbadmin
-      - DB_PASSWORD=xxx!
-      - DB_PORT=5432
       - PYTHONUNBUFFERED=1
-    volumes:
-      - ./:/app
+      - PORT=8000
     restart: unless-stopped
+    env_file:
+      - .env
 
 volumes:
   postgres_data:
