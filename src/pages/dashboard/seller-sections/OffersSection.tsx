@@ -323,7 +323,11 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
         }
 
         const data = await response.json();
-        setNegotiations(data.negotiations_as_seller || []);
+        // Filter negotiations to only show those for the current property
+        const propertyNegotiations = (data.negotiations_as_seller || []).filter(
+          (neg: SellerNegotiation) => neg.property_id === property.id
+        );
+        setNegotiations(propertyNegotiations);
       } catch (err) {
         console.error('Error fetching negotiations:', err);
         setError('Failed to load offers. Please try again later.');
