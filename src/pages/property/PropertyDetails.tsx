@@ -9,7 +9,7 @@ import {
   X,
   Maximize2,
   Minimize2,
-  FileText
+  FileText,
   MessageCircle,
 } from 'lucide-react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';

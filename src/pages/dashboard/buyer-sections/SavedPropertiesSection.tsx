@@ -22,12 +22,12 @@ export default function SavedPropertiesSection() {
       try {
         setLoading(true);
         const dashboardData = await PropertyService.getUserDashboard();
-        setSavedProperties(dashboardData.saved_properties);
+        setSavedProperties(dashboardData.saved_properties || []);
         setNegotiations(dashboardData.negotiations_as_buyer);
         setError(null);
         
         // Fetch full property details for each saved property to get seller_id
-        const detailsPromises = properties.map(property => 
+        const detailsPromises = dashboardData.saved_properties.map(property => 
           PropertyService.getPropertyById(property.property_id)
             .catch(err => {
               console.error(`Error fetching details for property ${property.property_id}:`, err);
