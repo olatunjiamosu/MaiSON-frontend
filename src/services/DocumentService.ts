@@ -196,7 +196,7 @@ class DocumentService {
         
         xhr.onload = function() {
           console.log('XHR response status:', xhr.status);
-          console.log('XHR response text (first 200 chars):', xhr.responseText.substring(0, 200));
+          console.log('XHR response text (first 500 chars):', xhr.responseText.substring(0, 500));
           
           if (xhr.status >= 200 && xhr.status < 300) {
             try {
@@ -204,19 +204,33 @@ class DocumentService {
               resolve(response);
             } catch (e) {
               console.error('Error parsing JSON response:', e);
-              reject(new Error(`Failed to parse server response as JSON. Received: ${xhr.responseText.substring(0, 100)}`));
+              
+              // Log the full response for debugging
+              console.error('Full response text:', xhr.responseText);
+              
+              // Check if response is HTML instead of JSON
+              if (xhr.responseText.trim().startsWith('<!DOCTYPE') || xhr.responseText.trim().startsWith('<html')) {
+                console.error('Received HTML response instead of JSON. This usually indicates a server error or incorrect endpoint.');
+                console.error('HTML response (first 1000 chars):', xhr.responseText.substring(0, 1000));
+                reject(new Error(`Server returned HTML instead of JSON. Status: ${xhr.status}. Check the API endpoint.`));
+              } else {
+                reject(new Error(`Failed to parse server response as JSON. Received: ${xhr.responseText.substring(0, 200)}`));
+              }
             }
           } else {
             // Check if the response is HTML
             if (xhr.responseText.trim().startsWith('<!DOCTYPE') || xhr.responseText.trim().startsWith('<html')) {
               console.error('Received HTML response instead of JSON. This usually indicates a server error or incorrect endpoint.');
+              console.error('HTML response (first 1000 chars):', xhr.responseText.substring(0, 1000));
               reject(new Error(`Server returned HTML instead of JSON. Status: ${xhr.status}. Check the API endpoint.`));
             } else {
               try {
                 const errorData = JSON.parse(xhr.responseText);
                 reject(new Error(errorData.error || `Failed to upload document: ${xhr.status}`));
               } catch (e) {
-                reject(new Error(`Failed to upload document: ${xhr.status} - ${xhr.responseText.substring(0, 100)}`));
+                console.error('Could not parse error response:', e);
+                console.error('Error response text:', xhr.responseText);
+                reject(new Error(`Failed to upload document: ${xhr.status} - ${xhr.responseText.substring(0, 200)}`));
               }
             }
           }
@@ -287,7 +301,7 @@ class DocumentService {
           
           xhr.onload = () => {
             console.log('Query response status:', xhr.status);
-            console.log('Query response text (first 100 chars):', xhr.responseText.substring(0, 100));
+            console.log('Query response text (first 500 chars):', xhr.responseText.substring(0, 500));
             
             if (xhr.status >= 200 && xhr.status < 300) {
               try {
@@ -304,6 +318,7 @@ class DocumentService {
                 if (xhr.responseText.includes('<!DOCTYPE html>') || 
                     xhr.responseText.includes('<html>')) {
                   console.error('Received HTML response instead of JSON. Server might be returning an error page.');
+                  console.error('HTML response (first 1000 chars):', xhr.responseText.substring(0, 1000));
                   reject(new Error('Received HTML response instead of JSON. API endpoint might be incorrect or server error occurred.'));
                 } else {
                   reject(error);
@@ -517,6 +532,97 @@ class DocumentService {
     } catch (error) {
       console.error('Error in queryBuyerDocuments:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Run a diagnostic test on the API connection
+   * This can help identify CORS issues, authentication problems, etc.
+   */
+  async runDiagnostics(): Promise<{ success: boolean; details: any }> {
+    try {
+      console.log('Running API diagnostics...');
+      
+      // Test 1: Basic fetch to the API root
+      console.log('Test 1: Basic fetch to API root');
+      const rootResponse = await fetch(DOCUMENT_API_URL);
+      console.log('Root response status:', rootResponse.status);
+      
+      let rootText = '';
+      try {
+        rootText = await rootResponse.text();
+        console.log('Root response text (first 500 chars):', rootText.substring(0, 500));
+      } catch (e) {
+        console.error('Could not read root response text:', e);
+      }
+      
+      // Test 2: Query with no parameters
+      console.log('Test 2: Query with no parameters');
+      const queryUrl = `${DOCUMENT_API_URL}/documents/query`;
+      console.log('Query URL:', queryUrl);
+      
+      const queryResponse = await fetch(queryUrl);
+      console.log('Query response status:', queryResponse.status);
+      
+      let queryText = '';
+      try {
+        queryText = await queryResponse.text();
+        console.log('Query response text (first 500 chars):', queryText.substring(0, 500));
+      } catch (e) {
+        console.error('Could not read query response text:', e);
+      }
+      
+      // Test 3: Check request headers
+      console.log('Test 3: Check request headers');
+      const headers = await this.getHeaders();
+      console.log('Auth headers:', headers.Authorization ? 'Present (token hidden)' : 'Not present');
+      
+      // Test 4: Check CORS with preflight
+      console.log('Test 4: Check CORS with preflight');
+      try {
+        const corsResponse = await fetch(queryUrl, {
+          method: 'OPTIONS',
+          headers: {
+            'Access-Control-Request-Method': 'GET',
+            'Access-Control-Request-Headers': 'Authorization',
+            'Origin': window.location.origin
+          }
+        });
+        console.log('CORS preflight response status:', corsResponse.status);
+        console.log('CORS headers:', {
+          'Access-Control-Allow-Origin': corsResponse.headers.get('Access-Control-Allow-Origin'),
+          'Access-Control-Allow-Methods': corsResponse.headers.get('Access-Control-Allow-Methods'),
+          'Access-Control-Allow-Headers': corsResponse.headers.get('Access-Control-Allow-Headers')
+        });
+      } catch (e) {
+        console.error('CORS preflight error:', e);
+      }
+      
+      // Test 5: Check browser info
+      console.log('Test 5: Browser and environment info');
+      console.log('User Agent:', navigator.userAgent);
+      console.log('Origin:', window.location.origin);
+      console.log('API URL:', DOCUMENT_API_URL);
+      
+      return {
+        success: true,
+        details: {
+          rootStatus: rootResponse.status,
+          queryStatus: queryResponse.status,
+          hasAuthToken: !!headers.Authorization,
+          origin: window.location.origin,
+          userAgent: navigator.userAgent
+        }
+      };
+    } catch (error) {
+      console.error('Diagnostics error:', error);
+      return {
+        success: false,
+        details: {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        }
+      };
     }
   }
 }

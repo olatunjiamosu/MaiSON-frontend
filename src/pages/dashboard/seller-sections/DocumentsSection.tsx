@@ -143,6 +143,7 @@ export default function DocumentsSection() {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [testingApi, setTestingApi] = useState(false);
+  const [runningDiagnostics, setRunningDiagnostics] = useState(false);
   
   // Try to get property ID from URL params or location state
   const params = useParams<{ propertyId?: string }>();
@@ -405,10 +406,56 @@ export default function DocumentsSection() {
     { id: 'other', label: 'Other', icon: FileText },
   ];
 
+  const runApiDiagnostics = async () => {
+    try {
+      setRunningDiagnostics(true);
+      setError(null);
+      
+      console.log('Running API diagnostics...');
+      const results = await DocumentService.runDiagnostics();
+      
+      console.log('Diagnostics results:', results);
+      
+      if (results.success) {
+        toast.success('Diagnostics completed. Check console for details.');
+      } else {
+        toast.error('Diagnostics failed. Check console for details.');
+        setError(`Diagnostics error: ${results.details.error}`);
+      }
+    } catch (error) {
+      console.error('Error running diagnostics:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(`Failed to run diagnostics: ${errorMessage}`);
+      toast.error(`Failed to run diagnostics: ${errorMessage}`);
+    } finally {
+      setRunningDiagnostics(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Documents</h2>
+        
+        <div className="flex space-x-2">
+          <button
+            onClick={runApiDiagnostics}
+            disabled={runningDiagnostics}
+            className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200"
+          >
+            {runningDiagnostics ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Running Diagnostics...</span>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="h-4 w-4" />
+                <span>Run API Diagnostics</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {error && (
