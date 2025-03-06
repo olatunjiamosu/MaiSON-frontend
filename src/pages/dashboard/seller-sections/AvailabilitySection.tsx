@@ -462,48 +462,17 @@ const AvailabilitySection = () => {
   };
 
   const createTestProperty = async () => {
-    try {
-      console.log('Creating test property...');
-      
-      // First check if the server is running using the basic-test endpoint
-      console.log('Checking server connection...');
-      const checkResponse = await fetch('http://localhost:8000/basic-test');
-      
-      console.log('Server check response status:', checkResponse.status);
-      const checkText = await checkResponse.text();
-      console.log('Server check raw response:', checkText);
-      
-      // Now create a real property using the test-create endpoint
-      console.log('Creating property...');
-      const response = await fetch('http://localhost:8000/api/test-create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log('Property creation response status:', response.status);
-      const text = await response.text();
-      console.log('Property creation raw response:', text);
-      
-      try {
-        const data = JSON.parse(text);
-        console.log('Parsed property data:', data);
-        
-        if (data.property && data.property.id) {
-          console.log('Property created successfully with ID:', data.property.id);
-          navigate(`/seller-dashboard/property/${data.property.id}/availability`);
-    } else {
-          throw new Error(data.error || 'No property ID returned');
-        }
-      } catch (parseError) {
-        console.error('Failed to parse property creation response:', parseError);
-        throw new Error(`Invalid response from server: ${text}`);
+    const response = await fetch('http://localhost:8000/api/availability/test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       }
-    } catch (error) {
-      console.error('Failed to create test property:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create test property');
-    }
+    });
+    const data = await response.json();
+    // Store the IDs for later use
+    localStorage.setItem('propertyId', data.property.id);
+    localStorage.setItem('sellerId', data.seller.id);
+    return data;
   };
 
   // Test seller ID endpoint
@@ -841,6 +810,37 @@ const AvailabilitySection = () => {
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Test API Connection
+          </button>
+          <button 
+            onClick={async () => {
+              try {
+                // Step 1: Create test property and seller
+                const testData = await createTestProperty();
+                setError('Step 1: Created test property and seller\n' + JSON.stringify(testData, null, 2));
+
+                // Step 2: Create an availability slot
+                const startTime = new Date();
+                startTime.setHours(10, 0, 0, 0);
+                const endTime = new Date(startTime);
+                endTime.setHours(11, 0, 0, 0);
+
+                await saveAvailability({
+                  property_id: testData.property.id,
+                  seller_id: testData.seller.id,
+                  start_time: startTime.toISOString(),
+                  end_time: endTime.toISOString()
+                });
+                setError(prev => prev + '\n\nStep 2: Created availability slot');
+
+                // Step 3: View all slots
+                await viewAllSlots();
+              } catch (error) {
+                setError(`Error during test: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              }
+            }}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          >
+            Test Full Integration
           </button>
           <button 
             onClick={viewAllSlots}
