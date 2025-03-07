@@ -49,15 +49,40 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         conversations = await ChatService.getAllConversations(false);
       }
       
+      // Get existing chat history from localStorage to preserve question/taglines
+      const storedHistory = localStorage.getItem('chat_history');
+      let existingChats: Record<string, ChatHistory> = {};
+      
+      if (storedHistory) {
+        try {
+          const parsedHistory = JSON.parse(storedHistory);
+          // Create a map of conversation_id to chat history item
+          existingChats = parsedHistory.reduce((acc: Record<string, ChatHistory>, chat: ChatHistory) => {
+            if (chat.conversation_id) {
+              acc[chat.conversation_id.toString()] = chat;
+            }
+            return acc;
+          }, {});
+        } catch (e) {
+          console.error('Failed to parse stored chat history:', e);
+        }
+      }
+      
       if (conversations && conversations.length > 0) {
-        const formattedChats = conversations.map((conv: any) => ({
-          id: conv.id?.toString() || conv.conversation_id?.toString() || Date.now().toString(),
-          conversation_id: conv.id || conv.conversation_id || Date.now(),
-          question: conv.title || conv.last_message?.content || 'Chat with Mia',
-          timestamp: conv.updated_at 
-            ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }) 
-            : 'Recently'
-        }));
+        const formattedChats = conversations.map((conv: any) => {
+          const convId = conv.id || conv.conversation_id;
+          const existingChat = convId ? existingChats[convId.toString()] : null;
+          
+          return {
+            id: conv.id?.toString() || conv.conversation_id?.toString() || Date.now().toString(),
+            conversation_id: conv.id || conv.conversation_id || Date.now(),
+            // Preserve the existing question/tagline if available
+            question: existingChat?.question || conv.title || conv.last_message?.content || 'Chat with Mia',
+            timestamp: conv.updated_at 
+              ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true }) 
+              : 'Recently'
+          };
+        });
         
         setChatHistory(formattedChats);
         
@@ -150,5 +175,5 @@ export const useChat = (): ChatContextType => {
   if (context === undefined) {
     throw new Error('useChat must be used within a ChatProvider');
   }
-  return context;
-}; 
+  return context;
+};

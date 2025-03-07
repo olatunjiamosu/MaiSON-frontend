@@ -44,6 +44,11 @@ import DocumentsSection from './seller-sections/DocumentsSection';
 import AvailabilitySection from './seller-sections/AvailabilitySection';
 import { PropertyDetail } from '../../types/property';
 import { toast } from 'react-hot-toast';
+import { MdHome, MdDescription, MdOutlineAttachMoney } from 'react-icons/md';
+import { BsChatLeftText } from 'react-icons/bs';
+import { FaMapMarkerAlt } from 'react-icons/fa';
+import { formatLargeNumber } from '../../utils/numberUtils';
+import PreviousChats from '../../components/chat/PreviousChats';
 
 // Add interfaces for the components
 interface NavItemProps {
@@ -106,10 +111,27 @@ const SellerDashboard = () => {
   const [isLoadingProperty, setIsLoadingProperty] = useState(true);
   const [propertyError, setPropertyError] = useState<string | null>(null);
   
-  const isMessagesSection = location.pathname.includes('/seller-dashboard/messages');
+  // Compute if we're in the messages section to hide the persistent chat
+  const isMessagesSection = activeSection === 'messages' || 
+                           location.pathname.includes('/seller-dashboard/messages');
 
   // Get chat history from context
-  const { chatHistory, isLoadingChats, addConversation } = useChat();
+  const { chatHistory, isLoadingChats, addConversation, refreshChatHistory } = useChat();
+
+  // Update active section based on location
+  useEffect(() => {
+    if (location.pathname.includes('/offers')) {
+      setActiveSection('offers');
+    } else if (location.pathname.includes('/viewings')) {
+      setActiveSection('viewings');
+    } else if (location.pathname.includes('/messages')) {
+      setActiveSection('messages');
+      // Clear selected chat when navigating to messages
+      setSelectedChat(null);
+    } else if (location.pathname === '/seller-dashboard') {
+      setActiveSection('properties');
+    }
+  }, [location.pathname]);
 
   // Mock user data
   const userData = {
@@ -225,6 +247,17 @@ const SellerDashboard = () => {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
   }, [selectedChatMessages]);
+
+  // Set activeSection based on selectedChat state
+  useEffect(() => {
+    if (selectedChat) {
+      // When a chat is selected, set to 'messages' to ensure proper padding
+      setActiveSection('messages');
+    } else if (location.pathname.includes('/seller-dashboard/property/')) {
+      // When no chat is selected, but we're on a property page, reset to appropriate section
+      setActiveSection('offers');
+    }
+  }, [selectedChat, location.pathname]);
 
   // Add a function to handle sending a message in the modal
   const handleSendModalMessage = async () => {
@@ -356,76 +389,79 @@ const SellerDashboard = () => {
       <aside
         className={`fixed md:static inset-y-0 left-0 w-64 bg-white shadow-sm border-r transform transition-transform duration-200 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0 z-30 flex flex-col`}
+        } md:translate-x-0 z-30 flex flex-col h-screen`}
       >
-        {/* Logo & Menu Toggle */}
-        <div className="p-4 border-b flex items-center justify-between">
-          <div
-            className="flex items-center space-x-2 cursor-pointer"
-            onClick={handleLogoClick}
-          >
-            <Home className="h-6 w-6 text-emerald-600" />
-            <span className="text-xl font-bold tracking-tight">
-              <span>M</span>
-              <span className="text-emerald-600">ai</span>
-              <span>SON</span>
-            </span>
-          </div>
-          <button
-            className="md:hidden text-gray-500 hover:text-gray-600"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-
-        {/* Switch Dashboard Button - Only visible to 'both' role users */}
-        {userRole === 'both' && (
-          <div className="px-4 py-3 border-b">
-            <button
-              onClick={handleSwitchDashboard}
-              className="flex items-center justify-center w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md transition-colors"
+        {/* Top fixed section */}
+        <div className="flex-shrink-0">
+          {/* Logo & Menu Toggle */}
+          <div className="p-4 border-b flex items-center justify-between">
+            <div
+              className="flex items-center space-x-2 cursor-pointer"
+              onClick={handleLogoClick}
             >
-              <SwitchCamera className="h-4 w-4 mr-2" />
-              <span>Switch Dashboard</span>
-            </button>
-          </div>
-        )}
-
-        {/* Property Info (if property is loaded) */}
-        {propertyId && property && (
-          <div className="p-4 border-b">
-            <button 
-              onClick={handleBackToProperties}
-              className="flex items-center text-emerald-600 hover:text-emerald-700 mb-2"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              <span className="text-sm">Back to Properties</span>
-            </button>
-            <h2 className="font-semibold text-gray-900 truncate">
-              {property.address.street}
-            </h2>
-            <p className="text-sm text-gray-500">
-              {property.address.city}, {property.address.postcode}
-            </p>
-            <div className="mt-2 flex items-center">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium
-                ${property.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
-                  property.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                  property.status === 'sold' ? 'bg-blue-100 text-blue-700' :
-                  'bg-gray-100 text-gray-700'}`}
-              >
-                {property.status || 'Active'}
-              </span>
-              <span className="ml-2 text-sm font-medium text-gray-900">
-                {formatPrice(property.price)}
+              <Home className="h-6 w-6 text-emerald-600" />
+              <span className="text-xl font-bold tracking-tight">
+                <span>M</span>
+                <span className="text-emerald-600">ai</span>
+                <span>SON</span>
               </span>
             </div>
+            <button
+              className="md:hidden text-gray-500 hover:text-gray-600"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <X className="h-6 w-6" />
+            </button>
           </div>
-        )}
 
-        {/* Navigation Links */}
-        <nav className="p-4 space-y-1">
+          {/* Switch Dashboard Button - Only visible to 'both' role users */}
+          {userRole === 'both' && (
+            <div className="px-4 py-3 border-b">
+              <button
+                onClick={handleSwitchDashboard}
+                className="flex items-center justify-center w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md transition-colors"
+              >
+                <SwitchCamera className="h-4 w-4 mr-2" />
+                <span>Switch Dashboard</span>
+              </button>
+            </div>
+          )}
+
+          {/* Property Info (if property is loaded) */}
+          {propertyId && property && (
+            <div className="p-4 border-b">
+              <button 
+                onClick={handleBackToProperties}
+                className="flex items-center text-emerald-600 hover:text-emerald-700 mb-2"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                <span className="text-sm">Back to Properties</span>
+              </button>
+              <h2 className="font-semibold text-gray-900 truncate">
+                {property.address.street}
+              </h2>
+              <p className="text-sm text-gray-500">
+                {property.address.city}, {property.address.postcode}
+              </p>
+              <div className="mt-2 flex items-center">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium
+                  ${property.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
+                    property.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                    property.status === 'sold' ? 'bg-blue-100 text-blue-700' :
+                    'bg-gray-100 text-gray-700'}`}
+                >
+                  {property.status || 'Active'}
+                </span>
+                <span className="ml-2 text-sm font-medium text-gray-900">
+                  {formatPrice(property.price)}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Navigation Links - Not scrollable */}
+        <nav className="p-4 space-y-1 flex-shrink-0">
           <NavItem
             icon={<Building />}
             label="My Properties"
@@ -467,20 +503,6 @@ const SellerDashboard = () => {
                 }}
                 path={`/property/${propertyId}?from=seller-dashboard`}
               />
-              {/* <NavItem
-                icon={<BarChart4 />}
-                label="Analytics"
-                active={activeSection === 'analytics'}
-                onClick={() => setActiveSection('analytics')}
-                path={`/seller-dashboard/property/${propertyId}/analytics`}
-              /> */}
-              {/* <NavItem
-                icon={<TrendingUp />}
-                label="Market Insights"
-                active={activeSection === 'market-insights'}
-                onClick={() => setActiveSection('market-insights')}
-                path={`/seller-dashboard/property/${propertyId}/market-insights`}
-              /> */}
               <NavItem
                 icon={<FileText />}
                 label="Documents"
@@ -488,13 +510,6 @@ const SellerDashboard = () => {
                 onClick={() => setActiveSection('documents')}
                 path={`/seller-dashboard/property/${propertyId}/documents`}
               />
-              {/* <NavItem
-                icon={<Bell />}
-                label="Notifications"
-                active={activeSection === 'notifications'}
-                onClick={() => setActiveSection('notifications')}
-                path={`/seller-dashboard/property/${propertyId}/notifications`}
-              /> */}
             </>
           ) : (
             // General navigation when no property is selected
@@ -520,43 +535,16 @@ const SellerDashboard = () => {
           )}
         </nav>
 
-        {/* Previous Chats */}
-        <div className="px-4 py-3 border-t flex-grow flex flex-col overflow-hidden">
-          <h3 className="text-sm font-medium text-gray-600 mb-2">Previous Chats</h3>
-          {isLoadingChats ? (
-            <div className="flex justify-center py-4">
-              <div className="animate-pulse h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="animate-pulse h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
-            </div>
-          ) : chatHistory.length > 0 ? (
-            <div className="space-y-2 overflow-y-auto flex-grow pr-1">
-              {chatHistory.map((chat: ChatHistory) => (
-                <button
-                  key={chat.id}
-                  onClick={() => setSelectedChat(chat)}
-                  className="w-full text-left p-2 rounded-lg hover:bg-gray-50 group"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-5 h-5 mt-1 rounded-full bg-emerald-100 flex items-center justify-center">
-                      <span className="text-xs font-medium text-emerald-700">M</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900 truncate">{chat.question}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{chat.timestamp}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="text-sm text-gray-500 py-2">
-              No previous chats found. Start a conversation with Mia!
-            </div>
-          )}
+        {/* Previous Chats - Only this section is scrollable */}
+        <div className="border-t flex-1 overflow-hidden">
+          <PreviousChats 
+            onSelectChat={setSelectedChat} 
+            selectedChatId={selectedChat?.id} 
+          />
         </div>
 
-        {/* Profile Section */}
-        <div className="mt-auto border-t border-gray-200 p-4">
+        {/* Fixed bottom section with profile/logout button */}
+        <div className="flex-shrink-0 border-t border-gray-200 p-4 bg-white">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
               <span className="text-emerald-600 font-medium">
@@ -630,12 +618,12 @@ const SellerDashboard = () => {
             </button>
           </div>
         )}
-
+        
         <main className={`flex-1 overflow-y-auto ${
-          activeSection === 'messages' ? 'p-0' : 'p-4 sm:p-8'
+          activeSection === 'messages' ? 'p-0' : 'p-8'
         }`}>
           <div className={`${
-            activeSection === 'messages' ? 'w-full h-full' : 'max-w-[95%] mx-auto'
+            activeSection === 'messages' ? 'w-full h-full' : 'max-w-7xl mx-auto'
           }`}>
             {propertyId ? (
               // Property-specific routes
@@ -660,6 +648,114 @@ const SellerDashboard = () => {
         </main>
         <PersistentChat hide={isMessagesSection} isDashboard={true} />
       </div>
+
+      {/* Selected Chat Modal */}
+      {selectedChat && (
+        <div 
+          className="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center pb-20"
+          onClick={() => setSelectedChat(null)}
+        >
+          <div 
+            className="bg-white rounded-xl w-full max-w-[800px] max-h-[70vh] flex flex-col mx-auto" 
+            style={{ marginLeft: 'calc(256px + 2rem)', marginRight: '2rem' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header with title and close button */}
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-xl font-semibold">{selectedChat.question}</h2>
+              <button 
+                onClick={() => setSelectedChat(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Mia Profile Header */}
+            <div className="p-4 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                <span className="text-emerald-700 font-semibold">M</span>
+              </div>
+              <div>
+                <h3 className="font-semibold">Mia</h3>
+                <p className="text-sm text-gray-500">AI Assistant</p>
+              </div>
+            </div>
+
+            {/* Chat Content */}
+            <div 
+              ref={chatMessagesRef}
+              className="flex-1 overflow-y-auto p-4 space-y-4"
+            >
+              {isLoadingChatMessages ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-pulse space-y-4 w-full">
+                    <div className="h-10 bg-gray-200 rounded w-3/4 ml-auto"></div>
+                    <div className="h-20 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-16 bg-gray-200 rounded w-1/2 ml-auto"></div>
+                    <div className="h-24 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                </div>
+              ) : (
+                selectedChatMessages.map((msg) => (
+                  <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'items-start gap-3'}`}>
+                    {msg.role === 'assistant' && (
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <span className="text-emerald-700 font-semibold">M</span>
+                      </div>
+                    )}
+                    <div 
+                      className={`${
+                        msg.role === 'user' 
+                          ? 'bg-emerald-600 text-white prose-invert' 
+                          : 'bg-gray-100 text-gray-800'
+                      } rounded-lg p-3 max-w-[80%] prose`}
+                    >
+                      <ReactMarkdown
+                        components={{
+                          li: ({node, ...props}) => <li className="list-disc ml-4" {...props} />,
+                          strong: ({node, ...props}) => <span className="font-bold" {...props} />,
+                          p: ({node, ...props}) => <p className="m-0" {...props} />
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Input area */}
+            <div className="p-4 border-t">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="Type your message..."
+                  value={modalInputMessage}
+                  onChange={(e) => setModalInputMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendModalMessage();
+                    }
+                  }}
+                />
+                <button
+                  className={`px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors ${
+                    isSendingMessage ? 'opacity-70 cursor-not-allowed' : ''
+                  }`}
+                  onClick={handleSendModalMessage}
+                  disabled={isSendingMessage}
+                >
+                  {isSendingMessage ? 'Sending...' : 'Send'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

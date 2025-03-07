@@ -141,12 +141,20 @@ const AddPropertySection = () => {
     // Validate required fields
     if (!formData.propertyType) newErrors.propertyType = 'Property type is required';
     if (!formData.price) newErrors.price = 'Price is required';
+    if (!formData.houseNumber) newErrors.houseNumber = 'House number is required';
     if (!formData.road) newErrors.road = 'Street address is required';
     if (!formData.city) newErrors.city = 'City is required';
     if (!formData.postcode) newErrors.postcode = 'Postcode is required';
     if (!formData.beds) newErrors.beds = 'Number of bedrooms is required';
     if (!formData.baths) newErrors.baths = 'Number of bathrooms is required';
+    if (!formData.reception) newErrors.reception = 'Number of reception rooms is required';
     if (!formData.sqft) newErrors.sqft = 'Square footage is required';
+    if (!formData.epcRating) newErrors.epcRating = 'EPC rating is required';
+    if (!formData.constructionYear) newErrors.constructionYear = 'Construction year is required';
+    if (!formData.heatingType) newErrors.heatingType = 'Heating type is required';
+    if (!formData.parkingSpaces) newErrors.parkingSpaces = 'Number of parking spaces is required';
+    if (formData.hasGarden && !formData.gardenSize) newErrors.gardenSize = 'Garden size is required if property has a garden';
+    if (!formData.description) newErrors.description = 'Property description is required';
 
     // Validate numeric fields
     if (formData.price && isNaN(Number(formData.price))) {
@@ -158,12 +166,26 @@ const AddPropertySection = () => {
     if (formData.baths && isNaN(Number(formData.baths))) {
       newErrors.baths = 'Bathrooms must be a number';
     }
+    if (formData.reception && isNaN(Number(formData.reception))) {
+      newErrors.reception = 'Reception rooms must be a number';
+    }
     if (formData.sqft && isNaN(Number(formData.sqft))) {
       newErrors.sqft = 'Square footage must be a number';
     }
+    if (formData.constructionYear && isNaN(Number(formData.constructionYear))) {
+      newErrors.constructionYear = 'Construction year must be a number';
+    }
+    if (formData.parkingSpaces && isNaN(Number(formData.parkingSpaces))) {
+      newErrors.parkingSpaces = 'Parking spaces must be a number';
+    }
+    if (formData.gardenSize && isNaN(Number(formData.gardenSize))) {
+      newErrors.gardenSize = 'Garden size must be a number';
+    }
 
-    // Validate images only if they are provided
-    if (formData.images.length > 0) {
+    // Validate images only if not in edit mode or if new images provided
+    if (!isEditMode && formData.images.length === 0) {
+      newErrors.images = 'At least one property image is required';
+    } else if (formData.images.length > 0) {
       const mainImage = formData.images[0];
       
       // Validate main image
@@ -579,6 +601,16 @@ const AddPropertySection = () => {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-0">
       <div className="mb-6">
+        <button
+          type="button"
+          onClick={() => window.location.href = '/seller-dashboard'}
+          className="flex items-center text-emerald-600 hover:text-emerald-800 mb-4"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+          </svg>
+          Back to Properties
+        </button>
         <h2 className="text-2xl font-bold text-gray-900">
           {isEditMode ? 'Edit Property' : 'Add New Property'}
         </h2>
@@ -616,14 +648,21 @@ const AddPropertySection = () => {
           <h3 className="text-lg font-medium text-gray-900">Address</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">House Number</label>
+              <label className="block text-sm font-medium text-gray-700">
+                House Number <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 value={formData.houseNumber}
                 onChange={(e) => setFormData(prev => ({ ...prev, houseNumber: e.target.value }))}
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
+                  errors.houseNumber ? 'border-red-500' : ''
+                }`}
                 placeholder="House number"
               />
+              {errors.houseNumber && (
+                <p className="text-red-500 text-sm">{errors.houseNumber}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -716,13 +755,20 @@ const AddPropertySection = () => {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Reception</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Reception <span className="text-red-500">*</span>
+              </label>
               <input
                 type="number"
                 value={formData.reception}
                 onChange={(e) => setFormData(prev => ({ ...prev, reception: e.target.value }))}
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
+                  errors.reception ? 'border-red-500' : ''
+                }`}
               />
+              {errors.reception && (
+                <p className="text-red-500 text-sm">{errors.reception}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -748,11 +794,15 @@ const AddPropertySection = () => {
           <h3 className="text-lg font-medium text-gray-900">Additional Details</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">EPC Rating</label>
+              <label className="block text-sm font-medium text-gray-700">
+                EPC Rating <span className="text-red-500">*</span>
+              </label>
               <select
                 value={formData.epcRating}
                 onChange={(e) => setFormData(prev => ({ ...prev, epcRating: e.target.value }))}
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
+                  errors.epcRating ? 'border-red-500' : ''
+                }`}
               >
                 <option value="">Select rating</option>
                 <option value="A">A</option>
@@ -763,23 +813,37 @@ const AddPropertySection = () => {
                 <option value="F">F</option>
                 <option value="G">G</option>
               </select>
+              {errors.epcRating && (
+                <p className="text-red-500 text-sm">{errors.epcRating}</p>
+              )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Construction Year</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Construction Year <span className="text-red-500">*</span>
+              </label>
               <input
                 type="number"
                 value={formData.constructionYear}
                 onChange={(e) => setFormData(prev => ({ ...prev, constructionYear: e.target.value }))}
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
+                  errors.constructionYear ? 'border-red-500' : ''
+                }`}
                 placeholder="e.g. 1990"
               />
+              {errors.constructionYear && (
+                <p className="text-red-500 text-sm">{errors.constructionYear}</p>
+              )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Heating Type</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Heating Type <span className="text-red-500">*</span>
+              </label>
               <select
                 value={formData.heatingType}
                 onChange={(e) => setFormData(prev => ({ ...prev, heatingType: e.target.value }))}
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
+                  errors.heatingType ? 'border-red-500' : ''
+                }`}
               >
                 <option value="">Select type</option>
                 <option value="gas central">Gas Central</option>
@@ -789,6 +853,9 @@ const AddPropertySection = () => {
                 <option value="air source heat pump">Air Source Heat Pump</option>
                 <option value="ground source heat pump">Ground Source Heat Pump</option>
               </select>
+              {errors.heatingType && (
+                <p className="text-red-500 text-sm">{errors.heatingType}</p>
+              )}
             </div>
           </div>
         </div>
@@ -812,13 +879,20 @@ const AddPropertySection = () => {
               </div>
               {formData.hasGarden && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Garden Size (sq ft)</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Garden Size (sq ft)
+                  </label>
                   <input
                     type="number"
                     value={formData.gardenSize}
                     onChange={(e) => setFormData(prev => ({ ...prev, gardenSize: e.target.value }))}
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
+                      errors.gardenSize ? 'border-red-500' : ''
+                    }`}
                   />
+                  {errors.gardenSize && (
+                    <p className="text-red-500 text-sm">{errors.gardenSize}</p>
+                  )}
                 </div>
               )}
             </div>
@@ -836,13 +910,20 @@ const AddPropertySection = () => {
                 </label>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Parking Spaces</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Parking Spaces <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="number"
                   value={formData.parkingSpaces}
                   onChange={(e) => setFormData(prev => ({ ...prev, parkingSpaces: e.target.value }))}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
+                    errors.parkingSpaces ? 'border-red-500' : ''
+                  }`}
                 />
+                {errors.parkingSpaces && (
+                  <p className="text-red-500 text-sm">{errors.parkingSpaces}</p>
+                )}
               </div>
             </div>
           </div>
@@ -946,16 +1027,21 @@ const AddPropertySection = () => {
         {/* Description with AI assistance - MOVED BELOW IMAGES */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            Description
+            Description <span className="text-red-500">*</span>
           </label>
           <div className="space-y-2">
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={4}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+              className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
+                errors.description ? 'border-red-500' : ''
+              }`}
               placeholder="Describe your property..."
             />
+            {errors.description && (
+              <p className="text-red-500 text-sm">{errors.description}</p>
+            )}
             <button
               type="button"
               onClick={getAIDescription}

@@ -49,7 +49,7 @@ const PreviousChats: React.FC<PreviousChatsProps> = ({ onSelectChat, selectedCha
           <div className="animate-pulse h-4 bg-gray-200 rounded w-5/6"></div>
         </div>
       ) : chatHistory.length > 0 ? (
-        <div className="space-y-2 overflow-y-auto flex-grow pr-1">
+        <div className="space-y-2 overflow-y-auto flex-grow pr-1 max-h-[250px]">
           {chatHistory.map((chat: ChatHistory) => (
             <button
               key={chat.id}

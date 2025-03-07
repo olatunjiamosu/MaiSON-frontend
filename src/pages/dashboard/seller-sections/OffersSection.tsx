@@ -940,10 +940,16 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
                 </div>
                 <div>
                   <h4 className="font-medium text-blue-900">Offer Analysis</h4>
-                  <p className="text-sm text-blue-700">
-                    Your highest offer is {((mockStats.highestOffer / mockStats.averageLocalPrice) * 100).toFixed(1)}% 
-                    of the local average price. Recent properties in your area have sold for {formatPrice(mockStats.recentSoldPrice)}.
-                  </p>
+                  {marketStats.highestOffer > 0 && localAverage ? (
+                    <p className="text-sm text-blue-700">
+                      Your highest offer is {((marketStats.highestOffer / localAverage) * 100).toFixed(1)}% 
+                      of the local average price.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-blue-700">
+                      No offers received yet. When offers are made, you'll see analysis here.
+                    </p>
+                  )}
                 </div>
               </div>
               

@@ -101,8 +101,7 @@ const BuyerDashboard: React.FC = () => {
   // Fetch chat messages when a chat is selected
   useEffect(() => {
     if (selectedChat && selectedChat.conversation_id) {
-      // Store the selected chat in localStorage
-      localStorage.setItem('selected_chat', JSON.stringify(selectedChat));
+      // Don't store selected chat in localStorage anymore
       
       const fetchChatMessages = async () => {
         setIsLoadingChatMessages(true);
@@ -189,20 +188,6 @@ const BuyerDashboard: React.FC = () => {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
   }, [selectedChatMessages]);
-
-  // Load selected chat from localStorage on mount
-  useEffect(() => {
-    // Try to load the selected chat
-    const storedSelectedChat = localStorage.getItem('selected_chat');
-    if (storedSelectedChat && !selectedChat) {
-      try {
-        const parsedChat = JSON.parse(storedSelectedChat);
-        setSelectedChat(parsedChat);
-      } catch (e) {
-        console.error('Failed to parse stored selected chat:', e);
-      }
-    }
-  }, []);
 
   // Add function to handle dashboard switch
   const handleSwitchDashboard = () => {
@@ -298,12 +283,11 @@ const BuyerDashboard: React.FC = () => {
             id: response.conversation_id.toString(),
             conversation_id: response.conversation_id,
             question: tempMessage.content,
-            timestamp: 'Just now'
+            timestamp: formatDistanceToNow(new Date(), { addSuffix: true })
           };
           setSelectedChat(newChat);
           
-          // Store the selected chat in localStorage for persistence
-          localStorage.setItem('selected_chat', JSON.stringify(newChat));
+          // Don't store the selected chat in localStorage anymore
         }
       }
 
@@ -466,14 +450,16 @@ const BuyerDashboard: React.FC = () => {
             <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
               <span className="text-emerald-600 font-medium">{userData.name[0].toUpperCase()}</span>
             </div>
-            <div className="flex-1">
-              <p className="text-sm text-gray-700">{userData.email}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-gray-700 truncate">{userData.email}</p>
             </div>
-            <div className="text-gray-400">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
+            <button
+              onClick={handleLogout}
+              className="text-gray-400 hover:text-gray-500"
+              aria-label="Log out"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </aside>
@@ -523,13 +509,114 @@ const BuyerDashboard: React.FC = () => {
 
       {/* Selected Chat Modal */}
       {selectedChat && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          {/* Modal content */}
+        <div 
+          className="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center pb-20"
+          onClick={() => setSelectedChat(null)}
+        >
+          <div 
+            className="bg-white rounded-xl w-full max-w-[800px] max-h-[70vh] flex flex-col mx-auto" 
+            style={{ marginLeft: 'calc(256px + 2rem)', marginRight: '2rem' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header with title and close button */}
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-xl font-semibold">{selectedChat.question}</h2>
+              <button 
+                onClick={() => setSelectedChat(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Mia Profile Header */}
+            <div className="p-4 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                <span className="text-emerald-700 font-semibold">M</span>
+              </div>
+              <div>
+                <h3 className="font-semibold">Mia</h3>
+                <p className="text-sm text-gray-500">AI Assistant</p>
+              </div>
+            </div>
+
+            {/* Chat Content */}
+            <div 
+              ref={chatMessagesRef}
+              className="flex-1 overflow-y-auto p-4 space-y-4"
+            >
+              {isLoadingChatMessages ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-pulse space-y-4 w-full">
+                    <div className="h-10 bg-gray-200 rounded w-3/4 ml-auto"></div>
+                    <div className="h-20 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-16 bg-gray-200 rounded w-1/2 ml-auto"></div>
+                    <div className="h-24 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                </div>
+              ) : (
+                selectedChatMessages.map((msg) => (
+                  <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'items-start gap-3'}`}>
+                    {msg.role === 'assistant' && (
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <span className="text-emerald-700 font-semibold">M</span>
+                      </div>
+                    )}
+                    <div 
+                      className={`${
+                        msg.role === 'user' 
+                          ? 'bg-emerald-600 text-white prose-invert' 
+                          : 'bg-gray-100 text-gray-800'
+                      } rounded-lg p-3 max-w-[80%] prose`}
+                    >
+                      <ReactMarkdown
+                        components={{
+                          li: ({node, ...props}) => <li className="list-disc ml-4" {...props} />,
+                          strong: ({node, ...props}) => <span className="font-bold" {...props} />,
+                          p: ({node, ...props}) => <p className="m-0" {...props} />
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Input area - Now active */}
+            <div className="p-4 border-t">
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={modalInputMessage}
+                  onChange={(e) => setModalInputMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendModalMessage()}
+                  placeholder="Continue your conversation with Mia..."
+                  className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  disabled={isSendingMessage}
+                />
+                <button 
+                  onClick={handleSendModalMessage}
+                  className={`px-4 py-2 rounded-lg ${
+                    isSendingMessage 
+                      ? 'bg-emerald-400 text-white cursor-not-allowed' 
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                  disabled={isSendingMessage}
+                >
+                  {isSendingMessage ? 'Sending...' : 'Send'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 };
+      
+
 
 // Add this interface before the NavItem component
 interface NavItemProps {
