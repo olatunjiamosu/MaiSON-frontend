@@ -20,7 +20,7 @@ class ChatService {
   constructor() {
     this.baseUrl = getEnvVar(
       'VITE_API_BASE_URL',
-      'https://maisonbot-api.xyz'
+      'https://maison-apim.azure-api.net/api'
     );
     
     // Load session ID from localStorage if available
