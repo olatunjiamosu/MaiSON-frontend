@@ -9,7 +9,7 @@ const FeaturesPage = () => {
   const features = [
     {
       title: 'AI-Powered Property Matching',
-      description: 'Our intelligent algorithms match properties with the right buyers, optimizing your selling potential.',
+      description: 'Our intelligent algorithms match properties with the right buyers, optimising your selling potential.',
       icon: <Brain className="h-8 w-8 text-emerald-600" />,
     },
     {
@@ -19,12 +19,12 @@ const FeaturesPage = () => {
     },
     {
       title: 'Smart Document Management',
-      description: 'Securely manage all property documents, from listings to offers, in one centralized place.',
+      description: 'Securely manage all property documents, from listings to offers, in one centralised place.',
       icon: <FileText className="h-8 w-8 text-emerald-600" />,
     },
     {
       title: 'Real-Time Analytics',
-      description: 'Track property views, interested buyers, and market trends to optimize your listing strategy.',
+      description: 'Track property views, interested buyers, and market trends to optimise your listing strategy.',
       icon: <BarChart className="h-8 w-8 text-emerald-600" />,
     },
     {
@@ -34,7 +34,7 @@ const FeaturesPage = () => {
     },
     {
       title: 'Offer Management',
-      description: 'Compare and analyze multiple offers with AI-powered insights to make informed decisions.',
+      description: 'Compare and analyse multiple offers with AI-powered insights to make informed decisions.',
       icon: <Scale className="h-8 w-8 text-emerald-600" />,
     },
     {
