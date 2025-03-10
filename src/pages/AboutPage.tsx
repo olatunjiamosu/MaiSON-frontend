@@ -16,7 +16,7 @@ const AboutPage = () => {
     {
       icon: <Building2 className="h-8 w-8 text-emerald-600" />,
       title: 'Innovation in Property',
-      description: 'Revolutionizing real estate through cutting-edge AI technology and user-centric design.'
+      description: 'Revolutionising real estate through cutting-edge AI technology and user-centric design.'
     },
     {
       icon: <Users2 className="h-8 w-8 text-emerald-600" />,
