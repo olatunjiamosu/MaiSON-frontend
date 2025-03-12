@@ -115,8 +115,6 @@ const mockNegotiations = [
 const mockProperty: PropertySummary = {
   id: '1',
   price: 500000,
-  bedrooms: 3,
-  bathrooms: 2,
   main_image_url: 'test-image.jpg',
   created_at: '2024-03-20T12:00:00Z',
   owner_id: 1,
@@ -128,7 +126,9 @@ const mockProperty: PropertySummary = {
   },
   specs: {
     property_type: 'Semi-Detached',
-    square_footage: 1200
+    square_footage: 1200,
+    bedrooms: 3,
+    bathrooms: 2
   }
 };
 
@@ -152,7 +152,7 @@ describe('PropertyCard', () => {
 
     expect(screen.getByText('£500,000')).toBeInTheDocument();
     expect(screen.getByText(mockProperty.address.street)).toBeInTheDocument();
-    expect(screen.getByText(`${mockProperty.bedrooms} Bed`)).toBeInTheDocument();
+    expect(screen.getByText(`${mockProperty.specs.bedrooms} Bed`)).toBeInTheDocument();
     expect(screen.getByText('1,200 sq ft')).toBeInTheDocument();
   });
 
