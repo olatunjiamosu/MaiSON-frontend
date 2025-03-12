@@ -409,8 +409,8 @@ const SellerPropertyGrid = () => {
                       </div>
 
                       <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
-                        <span>{property.bedrooms} beds</span>
-                        <span>{property.bathrooms} baths</span>
+                        <span>{property.specs.bedrooms} beds</span>
+                        <span>{property.specs.bathrooms} baths</span>
                         <span>{property.specs.square_footage} sq ft</span>
                       </div>
 

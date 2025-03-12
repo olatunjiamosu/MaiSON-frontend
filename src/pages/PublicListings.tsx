@@ -171,8 +171,8 @@ const PublicListings = () => {
           price: formatPrice(property.price),
           address: property.address.street,
           postcode: property.address.postcode,
-          beds: property.bedrooms,
-          baths: property.bathrooms,
+          beds: property.specs.bedrooms,
+          baths: property.specs.bathrooms,
           reception: specs.reception_rooms || 1,
           sqft: property.specs.square_footage,
           propertyType: property.specs.property_type

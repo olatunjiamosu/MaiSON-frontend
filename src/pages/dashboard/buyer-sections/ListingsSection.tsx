@@ -220,9 +220,9 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
         case 'price-desc':
           return b.price - a.price;
         case 'beds-asc':
-          return a.bedrooms - b.bedrooms;
+          return a.specs.bedrooms - b.specs.bedrooms;
         case 'beds-desc':
-          return b.bedrooms - a.bedrooms;
+          return b.specs.bedrooms - a.specs.bedrooms;
         case 'newest':
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         default:
@@ -291,7 +291,7 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
       lng: p.address.longitude || -0.1278 + (Math.random() - 0.5) * 0.1,
       price: formatPrice(p.price),
       image: p.main_image_url || '/placeholder-property.jpg',
-      beds: p.bedrooms,
+      beds: p.specs.bedrooms,
       propertyType: p.specs.property_type
     }));
   };

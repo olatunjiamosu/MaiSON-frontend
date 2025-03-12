@@ -24,8 +24,6 @@ const PropertyCard = ({
   main_image_url,
   price,
   address,
-  bedrooms,
-  bathrooms,
   specs,
   seller_id,
   className = '',
@@ -336,8 +334,8 @@ const PropertyCard = ({
 
           {/* Property Details */}
           <div className="flex items-center gap-4 mb-3 text-gray-600">
-            <span>{bedrooms} Bed</span>
-            <span>{bathrooms} Bath</span>
+            <span>{specs.bedrooms} Bed</span>
+            <span>{specs.bathrooms} Bath</span>
           </div>
 
           <div className="flex justify-between items-center text-sm text-gray-600">

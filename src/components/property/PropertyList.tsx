@@ -30,13 +30,13 @@ interface TestProperty {
     postal_code?: string;
     postcode?: string;
   };
-  bedrooms: number;
-  bathrooms: number;
   specs?: {
     square_feet?: number;
     has_garden?: boolean;
     has_parking?: boolean;
     property_type?: string;
+    bedrooms: number;
+    bathrooms: number;
   };
   property_type?: string;
   has_garden?: boolean;

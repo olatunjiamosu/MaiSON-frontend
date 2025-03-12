@@ -41,8 +41,6 @@ export interface PropertySummary {
   id: string;
   property_id?: string;
   price: number;
-  bedrooms: number;
-  bathrooms: number;
   main_image_url?: string;
   created_at: string;
   owner_id: number;
@@ -61,6 +59,8 @@ export interface PropertySummary {
   specs: {
     property_type: string;
     square_footage: number;
+    bedrooms: number;
+    bathrooms: number;
   };
 }
 
@@ -68,8 +68,6 @@ export interface PropertyDetail {
   id: string;
   property_id?: string;
   price: number;
-  bedrooms: number;
-  bathrooms: number;
   main_image_url?: string;
   image_urls?: string[];
   floorplan_url?: string;
@@ -126,8 +124,6 @@ export interface SavedProperty {
   price: number;
   main_image_url: string;
   status: string;
-  bedrooms: number;
-  bathrooms: number;
   created_at: string;
   seller_id: string;
   address: {
@@ -139,6 +135,8 @@ export interface SavedProperty {
   specs: {
     property_type: string;
     square_footage?: number;
+    bedrooms: number;
+    bathrooms: number;
   };
 }
 

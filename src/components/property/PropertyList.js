@@ -103,7 +103,7 @@ const PropertyList = (props) => {
 
   // Mock PropertyCard component for testing
   const PropertyCard = (props) => {
-    const { id, price, address, bedrooms, bathrooms } = props;
+    const { id, price, address, specs } = props;
     
     const formatPrice = (price) => {
       return `£${price.toLocaleString('en-GB')}`;
@@ -113,8 +113,8 @@ const PropertyList = (props) => {
       React.createElement('div', { className: 'property-price' }, formatPrice(price)),
       React.createElement('div', { className: 'property-address' }, address.street),
       React.createElement('div', { className: 'property-specs' },
-        React.createElement('span', null, `${bedrooms} bed`),
-        React.createElement('span', null, `${bathrooms} bath`)
+        React.createElement('span', null, `${specs.bedrooms} bed`),
+        React.createElement('span', null, `${specs.bathrooms} bath`)
       )
     );
   };
@@ -153,8 +153,7 @@ const PropertyList = (props) => {
               id: property.id,
               price: property.price,
               address: property.address,
-              bedrooms: property.bedrooms,
-              bathrooms: property.bathrooms
+              specs: property.specs
             })
           )
         ) : 

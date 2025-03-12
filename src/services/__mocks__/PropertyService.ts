@@ -10,8 +10,6 @@ import {
 const mockPropertySummary = {
   id: '123e4567-e89b-12d3-a456-426614174000',
   price: 350000,
-  bedrooms: 3,
-  bathrooms: 2,
   main_image_url: 'https://example.com/image.jpg',
   created_at: '2024-02-22T12:00:00Z',
   owner_id: 1,
@@ -22,21 +20,22 @@ const mockPropertySummary = {
   },
   specs: {
     property_type: 'semi-detached',
-    square_footage: 1200.0
+    square_footage: 1200.0,
+    bedrooms: 3,
+    bathrooms: 2
   }
 };
 
 const mockPropertyDetail = {
   id: '123e4567-e89b-12d3-a456-426614174000',
   price: 350000,
-  bedrooms: 3,
-  bathrooms: 2,
   main_image_url: 'https://example.com/main.jpg',
   image_urls: ['https://example.com/img1.jpg', 'https://example.com/img2.jpg'],
   floorplan_url: 'https://example.com/floorplan.jpg',
   created_at: '2024-02-22T12:00:00Z',
   last_updated: '2024-02-22T12:00:00Z',
   owner_id: 1,
+  seller_id: 'user-123',
   address: {
     house_number: '123',
     street: 'Sample Street',
