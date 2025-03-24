@@ -290,111 +290,227 @@ const PropertyCard = ({
         onClick={handleViewProperty}
         className={`bg-white rounded-lg shadow-md overflow-hidden transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl cursor-pointer ${className}`}
       >
-        {/* Image */}
-        <div className="relative h-48">
-          <img
-            src={main_image_url || '/placeholder-property.jpg'}
-            alt={`${address.street}, ${address.city}`}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = '/placeholder-property.jpg';
-            }}
-            loading="lazy"
-          />
-          {showSaveButton && (
-            <button
-              onClick={handleSaveClick}
-              disabled={saving}
-              className={`absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 ${
-                saving ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              aria-label={localSaved ? "Unsave property" : "Save property"}
-            >
-              <Heart
-                className={`h-5 w-5 ${
-                  localSaved ? 'fill-emerald-600 text-emerald-600' : 'text-gray-400'
-                }`}
+        {/* Grid View Layout */}
+        {!className.includes('flex') && (
+          <>
+            {/* Image */}
+            <div className="relative h-48">
+              <img
+                src={main_image_url || '/placeholder-property.jpg'}
+                alt={`${address.street}, ${address.city}`}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/placeholder-property.jpg';
+                }}
+                loading="lazy"
               />
-            </button>
-          )}
-        </div>
+              {showSaveButton && (
+                <button
+                  onClick={handleSaveClick}
+                  disabled={saving}
+                  className={`absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 ${
+                    saving ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  aria-label={localSaved ? "Unsave property" : "Save property"}
+                >
+                  <Heart
+                    className={`h-5 w-5 ${
+                      localSaved ? 'fill-emerald-600 text-emerald-600' : 'text-gray-400'
+                    }`}
+                  />
+                </button>
+              )}
+            </div>
 
-        {/* Content */}
-        <div className="p-4">
-          <div className="space-y-1 mb-3">
-            <h3 className="text-xl font-bold text-gray-900">{formattedPrice}</h3>
-            <div className="text-sm text-gray-600">
-              <p className="font-medium">{address.street}</p>
-              <p>
-                {address.city}, {address.postcode}
-              </p>
+            {/* Content */}
+            <div className="p-4">
+              <div className="space-y-1 mb-3">
+                <h3 className="text-xl font-bold text-gray-900">{formattedPrice}</h3>
+                <div className="text-sm text-gray-600">
+                  <p className="font-medium">{address.street}</p>
+                  <p>
+                    {address.city}, {address.postcode}
+                  </p>
+                </div>
+              </div>
+
+              {/* Property Details */}
+              <div className="flex items-center gap-4 mb-3 text-gray-600">
+                <span>{specs.bedrooms} Bed</span>
+                <span>{specs.bathrooms} Bath</span>
+              </div>
+
+              <div className="flex justify-between items-center text-sm text-gray-600">
+                <span>{specs.square_footage.toLocaleString()} sq ft</span>
+                <span>{specs.property_type}</span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-4 space-y-2">
+                <button
+                  onClick={handleScheduleViewing}
+                  className="w-full border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
+                >
+                  Schedule Viewing
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (hasActiveNegotiation) {
+                      navigate('/buyer-dashboard/applications', { 
+                        replace: true,
+                        state: { from: location.pathname }
+                      });
+                    } else {
+                      handleMakeOffer(e);
+                    }
+                  }}
+                  className={`w-full ${
+                    hasActiveNegotiation 
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  } py-2 rounded-lg transition-colors flex items-center justify-center gap-2`}
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>{hasActiveNegotiation ? 'Offer Submitted' : 'Make an Offer'}</span>
+                </button>
+                {showChatButton && seller_id && (
+                  <button
+                    onClick={handleChatWithMia}
+                    disabled={initiatingChat}
+                    className={`w-full flex justify-center items-center gap-2 border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors ${
+                      initiatingChat ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {initiatingChat ? (
+                      <>
+                        <div className="h-4 w-4 border-t-2 border-emerald-500 border-solid rounded-full animate-spin"></div>
+                        Starting chat...
+                      </>
+                    ) : (
+                      <>
+                        <MessageCircle className="h-4 w-4" />
+                        Chat with Mia about this property
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* List View Layout */}
+        {className.includes('flex') && (
+          <div className="flex w-full">
+            {/* Image - Fixed size on the left - increased width */}
+            <div className="relative flex-shrink-0 w-72 h-56">
+              <img
+                src={main_image_url || '/placeholder-property.jpg'}
+                alt={`${address.street}, ${address.city}`}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/placeholder-property.jpg';
+                }}
+                loading="lazy"
+              />
+              {showSaveButton && (
+                <button
+                  onClick={handleSaveClick}
+                  disabled={saving}
+                  className={`absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 ${
+                    saving ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  aria-label={localSaved ? "Unsave property" : "Save property"}
+                >
+                  <Heart
+                    className={`h-5 w-5 ${
+                      localSaved ? 'fill-emerald-600 text-emerald-600' : 'text-gray-400'
+                    }`}
+                  />
+                </button>
+              )}
+            </div>
+
+            {/* Content - Middle section */}
+            <div className="flex-grow p-4 pr-6">
+              <div className="space-y-1 mb-3">
+                <h3 className="text-xl font-bold text-gray-900">{formattedPrice}</h3>
+                <div className="text-sm text-gray-600">
+                  <p className="font-medium">{address.street}</p>
+                  <p>
+                    {address.city}, {address.postcode}
+                  </p>
+                </div>
+              </div>
+
+              {/* Property Details */}
+              <div className="flex items-center gap-4 mb-3 text-gray-600">
+                <span>{specs.bedrooms} Bed</span>
+                <span>{specs.bathrooms} Bath</span>
+              </div>
+
+              <div className="flex items-center gap-8 text-sm text-gray-600">
+                <span>{specs.square_footage.toLocaleString()} sq ft</span>
+                <span>{specs.property_type}</span>
+              </div>
+            </div>
+
+            {/* Action Buttons - Right column with stacked buttons */}
+            <div className="flex-shrink-0 w-52 p-4 flex flex-col justify-center space-y-2 border-l border-gray-100">
+              <button
+                onClick={handleScheduleViewing}
+                className="w-full border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
+              >
+                Schedule Viewing
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (hasActiveNegotiation) {
+                    navigate('/buyer-dashboard/applications', { 
+                      replace: true,
+                      state: { from: location.pathname }
+                    });
+                  } else {
+                    handleMakeOffer(e);
+                  }
+                }}
+                className={`w-full ${
+                  hasActiveNegotiation 
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                } py-2 rounded-lg transition-colors flex items-center justify-center gap-2`}
+              >
+                <FileText className="h-4 w-4" />
+                <span>{hasActiveNegotiation ? 'Offer' : 'Make Offer'}</span>
+              </button>
+              {showChatButton && seller_id && (
+                <button
+                  onClick={handleChatWithMia}
+                  disabled={initiatingChat}
+                  className={`w-full flex justify-center items-center gap-2 border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors ${
+                    initiatingChat ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {initiatingChat ? (
+                    <>
+                      <div className="h-4 w-4 border-t-2 border-emerald-500 border-solid rounded-full animate-spin"></div>
+                      <span className="truncate">Starting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <MessageCircle className="h-4 w-4" />
+                      <span className="truncate">Chat with Mia</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
-
-          {/* Property Details */}
-          <div className="flex items-center gap-4 mb-3 text-gray-600">
-            <span>{specs.bedrooms} Bed</span>
-            <span>{specs.bathrooms} Bath</span>
-          </div>
-
-          <div className="flex justify-between items-center text-sm text-gray-600">
-            <span>{specs.square_footage.toLocaleString()} sq ft</span>
-            <span>{specs.property_type}</span>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="mt-4 space-y-2">
-            <button
-              onClick={handleScheduleViewing}
-              className="w-full border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
-            >
-              Schedule Viewing
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (hasActiveNegotiation) {
-                  navigate('/buyer-dashboard/applications', { 
-                    replace: true,
-                    state: { from: location.pathname }
-                  });
-                } else {
-                  handleMakeOffer(e);
-                }
-              }}
-              className={`w-full ${
-                hasActiveNegotiation 
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-              } py-2 rounded-lg transition-colors flex items-center justify-center gap-2`}
-            >
-              <FileText className="h-4 w-4" />
-              <span>{hasActiveNegotiation ? 'Offer Submitted' : 'Make an Offer'}</span>
-            </button>
-            {showChatButton && seller_id && (
-              <button
-                onClick={handleChatWithMia}
-                disabled={initiatingChat}
-                className={`w-full flex justify-center items-center gap-2 border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors ${
-                  initiatingChat ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {initiatingChat ? (
-                  <>
-                    <div className="h-4 w-4 border-t-2 border-emerald-500 border-solid rounded-full animate-spin"></div>
-                    Starting chat...
-                  </>
-                ) : (
-                  <>
-                    <MessageCircle className="h-4 w-4" />
-                    Chat with Mia about this property
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Offer Modal */}

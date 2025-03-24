@@ -11,10 +11,19 @@ export default function SavedPropertiesSection() {
   const [propertyDetails, setPropertyDetails] = useState<Record<string, PropertyDetail>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    // Load view mode from localStorage, default to grid if not found
+    const savedViewMode = localStorage.getItem('savedPropertiesViewMode');
+    return (savedViewMode === 'list' || savedViewMode === 'grid') ? savedViewMode : 'grid';
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
+
+  // Save view mode to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('savedPropertiesViewMode', viewMode);
+  }, [viewMode]);
 
   // Get dashboard data from API
   useEffect(() => {
@@ -179,7 +188,7 @@ export default function SavedPropertiesSection() {
         </div>
       ) : (
         <div
-          className={`${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}`}
+          className={`${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-6'}`}
         >
           {filteredProperties.map((property) => {
             // Get the full property details if available
@@ -188,32 +197,104 @@ export default function SavedPropertiesSection() {
             
             return (
               <div key={property.property_id} className="relative">
-                <div className="space-y-2">
-                  <PropertyCard
-                    id={property.property_id}
-                    main_image_url={property.main_image_url}
-                    price={property.price}
-                    address={property.address}
-                    specs={{
-                      property_type: property.specs.property_type,
-                      square_footage: property.specs.square_footage || 0,
-                      bedrooms: property.specs.bedrooms,
-                      bathrooms: property.specs.bathrooms
-                    }}
-                    created_at={property.saved_at}
-                    owner_id={0}
-                    seller_id={seller_id} // Add the seller_id from the full property details
-                    isSaved={true}
-                    onToggleSave={() => handleUnsaveProperty(property.property_id)}
-                    className={viewMode === 'list' ? 'flex' : ''}
-                    showSaveButton
-                    negotiations={negotiations}
-                    showChatButton={!!seller_id} // Only show chat button if seller_id is available
-                  />
-                  
-                  <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">
-                    {/* Notes section */}
-                    <div className="mt-2">
+                {viewMode === 'grid' ? (
+                  <div className="space-y-2">
+                    <PropertyCard
+                      id={property.property_id}
+                      main_image_url={property.main_image_url}
+                      price={property.price}
+                      address={property.address}
+                      specs={{
+                        property_type: property.specs.property_type,
+                        square_footage: property.specs.square_footage || 0,
+                        bedrooms: property.specs.bedrooms,
+                        bathrooms: property.specs.bathrooms
+                      }}
+                      created_at={property.saved_at}
+                      owner_id={0}
+                      seller_id={seller_id}
+                      isSaved={true}
+                      onToggleSave={() => handleUnsaveProperty(property.property_id)}
+                      showSaveButton
+                      negotiations={negotiations}
+                      showChatButton={!!seller_id}
+                    />
+                    
+                    <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+                      {/* Notes section */}
+                      <div className="mt-2">
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="text-sm font-medium text-gray-700">Notes</h3>
+                          <button
+                            onClick={() => {
+                              setEditingNotes(property.property_id);
+                              setNoteText(property.notes || '');
+                            }}
+                            className="text-xs text-emerald-600 hover:text-emerald-700"
+                          >
+                            {property.notes ? 'Edit' : 'Add notes'}
+                          </button>
+                        </div>
+                        
+                        {/* Display notes or placeholder */}
+                        {editingNotes === property.property_id ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={noteText}
+                              onChange={(e) => setNoteText(e.target.value)}
+                              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                              rows={3}
+                              placeholder="Add your notes about this property..."
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => setEditingNotes(null)}
+                                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={handleNotesUpdate}
+                                className="px-3 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                              >
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-600 mt-1 italic">
+                            {property.notes || 'No notes added yet'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col">
+                    <PropertyCard
+                      id={property.property_id}
+                      main_image_url={property.main_image_url}
+                      price={property.price}
+                      address={property.address}
+                      specs={{
+                        property_type: property.specs.property_type,
+                        square_footage: property.specs.square_footage || 0,
+                        bedrooms: property.specs.bedrooms,
+                        bathrooms: property.specs.bathrooms
+                      }}
+                      created_at={property.saved_at}
+                      owner_id={0}
+                      seller_id={seller_id}
+                      isSaved={true}
+                      onToggleSave={() => handleUnsaveProperty(property.property_id)}
+                      className="flex"
+                      showSaveButton
+                      negotiations={negotiations}
+                      showChatButton={!!seller_id}
+                    />
+                    
+                    <div className="-mt-2 mb-4 p-4 bg-white rounded-b-lg shadow-sm border border-gray-100 border-t-0">
+                      {/* Notes section */}
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="text-sm font-medium text-gray-700">Notes</h3>
                         <button
@@ -234,7 +315,7 @@ export default function SavedPropertiesSection() {
                             value={noteText}
                             onChange={(e) => setNoteText(e.target.value)}
                             className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                            rows={3}
+                            rows={2}
                             placeholder="Add your notes about this property..."
                           />
                           <div className="flex justify-end gap-2">
@@ -259,7 +340,7 @@ export default function SavedPropertiesSection() {
                       )}
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             );
           })}

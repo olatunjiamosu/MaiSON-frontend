@@ -93,7 +93,13 @@ interface MapProperty {
 const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) => {
   const [properties, setProperties] = useState<PropertySummary[]>(initialProperties || []);
   const [negotiations, setNegotiations] = useState<Negotiation[]>([]);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    // Load view mode from localStorage, default to grid if not found
+    const savedViewMode = localStorage.getItem('propertyViewMode');
+    return (savedViewMode === 'list' || savedViewMode === 'grid' || savedViewMode === 'map') 
+      ? savedViewMode as ViewMode 
+      : 'grid';
+  });
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,11 +151,6 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
     const savedSort = localStorage.getItem('propertySortBy');
     if (savedSort) {
       setSortOption(savedSort as string);
-    }
-    
-    const savedViewMode = localStorage.getItem('propertyViewMode');
-    if (savedViewMode) {
-      setViewMode(savedViewMode as ViewMode);
     }
   }, []);
   
@@ -736,26 +737,37 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
           </div>
         )}
 
-        {/* Properties Grid - Display Loading Skeletons */}
-        {isLoading && viewMode !== 'map' && (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-6'}>
-            {[...Array(6)].map((_, index) => (
-              <div key={index} className={`animate-pulse ${viewMode === 'list' ? 'flex gap-6' : ''}`}>
-                <div className={`bg-gray-200 rounded-md ${viewMode === 'list' ? 'w-64 h-36 flex-shrink-0' : 'aspect-video mb-3'}`}></div>
-                <div className={viewMode === 'list' ? 'flex-grow' : ''}>
-                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-5 bg-gray-200 rounded w-1/2 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                  <div className="mt-2 flex gap-2">
-                    <div className="h-4 bg-gray-200 rounded w-12"></div>
-                    <div className="h-4 bg-gray-200 rounded w-12"></div>
-                    <div className="h-4 bg-gray-200 rounded w-12"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Properties Grid/List */}
+        <div
+          className={`mt-6 ${
+            viewMode === 'grid'
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+              : 'space-y-6'
+          }`}
+        >
+          {/* Property Cards */}
+          {viewMode === 'map' ? (
+            <div className="relative h-[70vh] rounded-lg overflow-hidden">
+              <PropertyMap
+                properties={getMapProperties()}
+                selectedProperty={selectedProperty}
+                onPropertySelect={(id) => setSelectedProperty(id)}
+              />
+            </div>
+          ) : (
+            getSortedProperties().map((property) => (
+              <PropertyCard
+                key={property.id}
+                {...property}
+                className={viewMode === 'list' ? 'flex' : ''}
+                showSaveButton={true}
+                isSaved={savedPropertyIds.has(property.id)}
+                onToggleSave={handleToggleSave}
+                negotiations={negotiations}
+              />
+            ))
+          )}
+        </div>
 
         {/* Properties Display */}
         {!isLoading && (
@@ -780,51 +792,6 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
                     Clear All Filters
                   </button>
                 )}
-              </div>
-            )}
-
-            {/* Grid View */}
-            {properties.length > 0 && viewMode === 'grid' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {getSortedProperties().map((property) => (
-                  <PropertyCard
-                    key={property.id}
-                    {...property}
-                    className="grid"
-                    showSaveButton={true}
-                    isSaved={savedPropertyIds.has(property.id)}
-                    onToggleSave={handleToggleSave}
-                    negotiations={negotiations}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* List View */}
-            {properties.length > 0 && viewMode === 'list' && (
-              <div className="space-y-6">
-                {getSortedProperties().map((property) => (
-                  <PropertyCard
-                    key={property.id}
-                    {...property}
-                    className="flex"
-                    showSaveButton={true}
-                    isSaved={savedPropertyIds.has(property.id)}
-                    onToggleSave={handleToggleSave}
-                    negotiations={negotiations}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Map View */}
-            {properties.length > 0 && viewMode === 'map' && (
-              <div className="h-[600px] relative rounded-lg overflow-hidden">
-                <PropertyMap
-                  properties={getMapProperties()}
-                  selectedProperty={selectedProperty}
-                  onPropertySelect={(id) => setSelectedProperty(id)}
-                />
               </div>
             )}
           </>
