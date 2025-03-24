@@ -8,36 +8,39 @@ import SelectUserType from './pages/auth/SelectUserType';
 import AppRoutes from './routes/Routes';
 import Home from './pages/LandingPage';
 import { ChatProvider } from './context/ChatContext';
+import { MenuProvider } from './context/MenuContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const App = () => {
   return (
     <Router>
-      <ChatProvider>
-        <div>
-          <ToastContainer position="top-right" autoClose={5000} />
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/login" element={<Login />} />
-            
-            {/* Protected routes */}
-            <Route 
-              path="/select-user-type" 
-              element={
-                <ProtectedRoute>
-                  <SelectUserType />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* App routes */}
-            <Route path="/*" element={<AppRoutes />} />
-          </Routes>
-        </div>
-      </ChatProvider>
+      <MenuProvider>
+        <ChatProvider>
+          <div>
+            <ToastContainer position="top-right" autoClose={5000} />
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/login" element={<Login />} />
+              
+              {/* Protected routes */}
+              <Route 
+                path="/select-user-type" 
+                element={
+                  <ProtectedRoute>
+                    <SelectUserType />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* App routes */}
+              <Route path="/*" element={<AppRoutes />} />
+            </Routes>
+          </div>
+        </ChatProvider>
+      </MenuProvider>
     </Router>
   );
 };
