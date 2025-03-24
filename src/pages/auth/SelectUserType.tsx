@@ -9,9 +9,10 @@ import UserService from '../../services/UserService';
 
 const SelectUserType = () => {
   const navigate = useNavigate();
-  const { user, userRole, roleLoading } = useAuth();
+  const { user, userRole, roleLoading, refreshUserRole } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [roleUpdateCompleted, setRoleUpdateCompleted] = useState(false);
 
   useEffect(() => {
     // Redirect if user already has a role
@@ -26,6 +27,25 @@ const SelectUserType = () => {
       }
     }
   }, [userRole, roleLoading, navigate]);
+
+  // We'll keep this effect for cases where the role might be refreshed by other means
+  useEffect(() => {
+    // Only navigate if we've completed the role update process
+    if (roleUpdateCompleted && !roleLoading && userRole) {
+      console.log('Role update completed, navigating with role:', userRole);
+      
+      if (userRole === 'buyer') {
+        navigate('/buyer-dashboard');
+      } else if (userRole === 'seller') {
+        navigate('/seller-dashboard');
+      } else if (userRole === 'both') {
+        navigate('/select-dashboard');
+      }
+      
+      // Reset the flag after navigation
+      setRoleUpdateCompleted(false);
+    }
+  }, [roleUpdateCompleted, userRole, roleLoading, navigate]);
 
   const handleUserTypeSelection = async (userType: 'buyer' | 'seller' | 'both') => {
     if (!user) return;
@@ -45,17 +65,33 @@ const SelectUserType = () => {
       // Create user in listings API
       await createUserInListingsAPI(userType);
 
-      // Navigate based on role
-      if (userType === 'buyer') {
-        navigate('/buyer-dashboard');
-      } else if (userType === 'seller') {
-        navigate('/seller-dashboard');
-      } else {
-        // For 'both' type users, redirect to dashboard selection page
-        navigate('/select-dashboard');
-      }
-
+      // Show success toast
       toast.success(`You are now registered as a ${userType}!`);
+      
+      // Explicitly refresh the user role and navigate based on the updated role
+      console.log('Refreshing user role after API and Firestore updates');
+      const updatedRole = await refreshUserRole();
+      console.log('User role refreshed:', updatedRole);
+      
+      // Navigate based on the refreshed role
+      if (updatedRole === 'buyer') {
+        navigate('/buyer-dashboard');
+      } else if (updatedRole === 'seller') {
+        navigate('/seller-dashboard');
+      } else if (updatedRole === 'both') {
+        navigate('/select-dashboard');
+      } else {
+        // This should rarely happen, but just in case the role refresh fails
+        console.warn('Failed to get updated role, using selected type for navigation');
+        // Fall back to the type that was selected
+        if (userType === 'buyer') {
+          navigate('/buyer-dashboard');
+        } else if (userType === 'seller') {
+          navigate('/seller-dashboard');
+        } else {
+          navigate('/select-dashboard');
+        }
+      }
     } catch (error) {
       console.error('Error setting user role:', error);
       setError('Failed to set user role. Please try again.');
@@ -129,6 +165,37 @@ const SelectUserType = () => {
       // Create the user in the listings API
       await UserService.createUser(userData);
       console.log('User successfully created in listings API');
+
+      // After creating the user in the API, try to fetch the updated user data
+      try {
+        console.log('Fetching updated user data from API to ensure role is set');
+        // Force a new API request to get the user's updated roles
+        const token = await user.getIdToken(true); // Force token refresh
+        
+        const apiUrl = `${import.meta.env.VITE_PROPERTY_API_URL}/api/users/${user.uid}`;
+        const response = await fetch(apiUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const apiData = await response.json();
+          console.log('Updated API user data:', apiData);
+          
+          if (apiData && apiData.roles) {
+            console.log('Roles confirmed in API:', apiData.roles);
+          } else {
+            console.warn('No roles found in API response after creation');
+          }
+        } else {
+          console.warn('Could not verify user roles in API after creation:', response.status);
+        }
+      } catch (verifyError) {
+        console.warn('Error verifying user roles in API:', verifyError);
+        // Non-blocking - we'll continue even if verification fails
+      }
       
     } catch (error: any) {
       console.error('Error creating user in listings API:', error);
