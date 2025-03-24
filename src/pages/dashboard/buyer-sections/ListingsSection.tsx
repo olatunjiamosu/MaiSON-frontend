@@ -88,6 +88,10 @@ interface MapProperty {
   image: string;
   beds: number;
   propertyType: string;
+  address: {
+    street: string;
+    postcode: string;
+  };
 }
 
 const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) => {
@@ -286,15 +290,30 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
 
   // Transform properties for map view
   const getMapProperties = (): MapProperty[] => {
-    return getSortedProperties().map(p => ({
-      id: p.id,
-      lat: p.address.latitude || 51.5074 + (Math.random() - 0.5) * 0.1, // Default to London with slight randomization if no coords
-      lng: p.address.longitude || -0.1278 + (Math.random() - 0.5) * 0.1,
-      price: formatPrice(p.price),
-      image: p.main_image_url || '/placeholder-property.jpg',
-      beds: p.specs.bedrooms,
-      propertyType: p.specs.property_type
-    }));
+    console.log('Original properties:', properties);
+    const mapProps = getSortedProperties()
+      .filter(p => 
+        typeof p.address.latitude === 'number' && 
+        typeof p.address.longitude === 'number'
+      ) // Only include properties with valid coordinates
+      .map(p => {
+        console.log('Property address for map:', p.id, p.address);
+        return {
+          id: p.id,
+          lat: p.address.latitude as number,
+          lng: p.address.longitude as number,
+          price: formatPrice(p.price),
+          image: p.main_image_url || '/placeholder-property.jpg',
+          beds: p.specs.bedrooms,
+          propertyType: p.specs.property_type,
+          address: {
+            street: p.address.street,
+            postcode: p.address.postcode
+          }
+        };
+      });
+    console.log('Map properties:', mapProps);
+    return mapProps;
   };
 
   // Function to handle toggling save status

@@ -1,10 +1,5 @@
-import React from 'react';
-import {
-  GoogleMap,
-  useLoadScript,
-  Marker,
-  InfoWindow,
-} from '@react-google-maps/api';
+import React, { useState } from 'react';
+import { GoogleMap, useLoadScript, Marker, InfoWindow } from '@react-google-maps/api';
 
 interface Property {
   id: string;
@@ -14,6 +9,10 @@ interface Property {
   image: string;
   beds: number;
   propertyType: string;
+  address?: {
+    street?: string;
+    postcode?: string;
+  };
 }
 
 interface PropertyMapProps {
@@ -22,71 +21,100 @@ interface PropertyMapProps {
   onPropertySelect: (propertyId: string) => void;
 }
 
-const PropertyMap = ({
-  properties,
-  selectedProperty,
-  onPropertySelect,
-}: PropertyMapProps) => {
-  const { isLoaded } = useLoadScript({
+const PropertyMap = ({ properties, selectedProperty, onPropertySelect }: PropertyMapProps) => {
+  const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
   });
 
-  const [selectedMarker, setSelectedMarker] = React.useState<Property | null>(null);
+  const [selected, setSelected] = useState<Property | null>(null);
 
-  const mapCenter = {
+  const center = {
     lat: 51.5074, // London center
     lng: -0.1278,
   };
 
+  if (loadError) return <div>Error loading maps</div>;
   if (!isLoaded) return <div>Loading map...</div>;
 
   return (
-    <GoogleMap
-      zoom={10}
-      center={mapCenter}
-      mapContainerClassName="w-full h-full"
-    >
-      {properties.map(property => (
-        <Marker
-          key={property.id}
-          position={{ lat: property.lat, lng: property.lng }}
-          onClick={() => {
-            setSelectedMarker(property);
-            onPropertySelect(property.id);
-          }}
-          icon={{
-            url:
-              selectedProperty === property.id
-                ? '/path-to-selected-marker.svg'
-                : '/path-to-marker.svg',
-            scaledSize: new window.google.maps.Size(40, 40),
-          }}
-          // Use AdvancedMarkerElement
-          options={{
-            // Add any additional options here
-          }}
-        />
-      ))}
+    <div className="w-full h-full">
+      <GoogleMap
+        mapContainerClassName="w-full h-full"
+        center={center}
+        zoom={10}
+      >
+        {properties.map(property => (
+          <Marker
+            key={property.id}
+            position={{ lat: property.lat, lng: property.lng }}
+            onClick={() => {
+              setSelected(property);
+              onPropertySelect(property.id);
+            }}
+          />
+        ))}
 
-      {selectedMarker && (
-        <InfoWindow
-          position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
-          onCloseClick={() => setSelectedMarker(null)}
-        >
-          <div className="p-2">
-            <img
-              src={selectedMarker.image}
-              alt="Property"
-              className="w-48 h-32 object-cover rounded mb-2"
-            />
-            <div className="font-semibold">{selectedMarker.price}</div>
-            <div className="text-sm text-gray-600">
-              {selectedMarker.beds} bed {selectedMarker.propertyType}
+        {selected && (
+          <InfoWindow
+            position={{ lat: selected.lat, lng: selected.lng }}
+            onCloseClick={() => {
+              setSelected(null);
+              onPropertySelect('');
+            }}
+          >
+            <div 
+              onClick={() => window.location.href = `/property/${selected.id}`}
+              style={{ 
+                cursor: 'pointer',
+                width: '220px',
+                overflow: 'hidden'
+              }}
+            >
+              <img 
+                src={selected.image} 
+                alt="Property"
+                style={{ 
+                  width: '100%', 
+                  height: '140px', 
+                  objectFit: 'cover',
+                  display: 'block',
+                  borderRadius: '4px'
+                }}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/placeholder-property.jpg';
+                }}
+              />
+              <h2 style={{ 
+                margin: '8px 0 4px', 
+                fontSize: '18px', 
+                fontWeight: 'bold' 
+              }}>
+                {selected.price}
+              </h2>
+              {selected.address && (
+                <p style={{ 
+                  margin: '0 0 4px', 
+                  fontSize: '14px', 
+                  color: '#666' 
+                }}>
+                  {selected.address.street}
+                  {selected.address.street && selected.address.postcode && ', '}
+                  {selected.address.postcode}
+                </p>
+              )}
+              <p style={{ 
+                margin: '0', 
+                fontSize: '14px', 
+                color: '#666' 
+              }}>
+                {selected.beds} bed {selected.propertyType}
+              </p>
             </div>
-          </div>
-        </InfoWindow>
-      )}
-    </GoogleMap>
+          </InfoWindow>
+        )}
+      </GoogleMap>
+    </div>
   );
 };
 
