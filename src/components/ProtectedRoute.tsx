@@ -15,7 +15,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to="/select-user-type" state={{ from: location }} replace />;
+    console.log('No user in ProtectedRoute, redirecting to login page');
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

@@ -13,6 +13,7 @@ const PrivateRoute = ({ children }: PrivateRouteProps) => {
   }
 
   if (!user) {
+    console.log('No user, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 

@@ -8,13 +8,14 @@ import { Link } from 'react-router-dom';
 import { useChat } from '../../context/ChatContext';
 
 const Login = () => {
-  const { login, resetPassword } = useAuth();
+  const { login, resetPassword, userRole, roleLoading } = useAuth();
   const { refreshChatHistory } = useChat();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -26,25 +27,11 @@ const Login = () => {
     }
   }, [location]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await login(email, password);
-      // Let's add some console logs to debug
-      console.log('Login successful');
-      // Check if we have a user role before navigating
-      const userDoc = await getDoc(doc(db, 'users', auth.currentUser?.uid || ''));
-      const userData = userDoc.data();
-      console.log('User data:', userData);
-      
-      // Refresh chat history after login
-      try {
-        await refreshChatHistory();
-      } catch (chatError) {
-        console.error('Failed to refresh chat history:', chatError);
-      }
-      
-      // Check if we have a returnUrl in the query parameters
+  // Effect to handle navigation after login once role is loaded
+  useEffect(() => {
+    if (isLoggingIn && !roleLoading && userRole) {
+      // We have a user role and we're in the login flow
+      console.log('User role loaded after login:', userRole);
       const searchParams = new URLSearchParams(location.search);
       const returnUrl = searchParams.get('returnUrl');
       
@@ -53,15 +40,39 @@ const Login = () => {
         navigate(returnUrl);
       } else {
         // Navigate based on user role
-        if (userData?.role === 'buyer') {
+        if (userRole === 'buyer') {
           navigate('/buyer-dashboard');
-        } else if (userData?.role === 'seller') {
+        } else if (userRole === 'seller') {
           navigate('/seller-dashboard');
+        } else if (userRole === 'both') {
+          navigate('/select-dashboard');
         } else {
           navigate('/select-user-type');
         }
       }
+      
+      // Reset the login flow flag
+      setIsLoggingIn(false);
+    }
+  }, [userRole, roleLoading, isLoggingIn, navigate, location.search]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setIsLoggingIn(true);
+      await login(email, password);
+      console.log('Login successful');
+      
+      // Refresh chat history after login
+      try {
+        await refreshChatHistory();
+      } catch (chatError) {
+        console.error('Failed to refresh chat history:', chatError);
+      }
+      
+      // Navigation will be handled by the useEffect above once the role is loaded
     } catch (error: any) {
+      setIsLoggingIn(false);
       // Convert Firebase error codes to user-friendly messages
       const errorCode = error.code;
       switch (errorCode) {

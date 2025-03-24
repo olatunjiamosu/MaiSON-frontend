@@ -9,33 +9,23 @@ import UserService from '../../services/UserService';
 
 const SelectUserType = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, userRole, roleLoading } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Check if user already has a role
-    const checkUserRole = async () => {
-      if (user?.uid) {
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (userDoc.exists() && userDoc.data().role) {
-          // User already has a role, redirect to appropriate dashboard
-          const role = userDoc.data().role;
-          if (role === 'buyer') {
-            navigate('/buyer-dashboard');
-          } else if (role === 'seller') {
-            navigate('/seller-dashboard');
-          } else if (role === 'both') {
-            navigate('/select-dashboard'); // Redirect to dashboard selection for 'both' role
-          }
-        }
+    // Redirect if user already has a role
+    if (!roleLoading && userRole) {
+      console.log('User already has role:', userRole);
+      if (userRole === 'buyer') {
+        navigate('/buyer-dashboard');
+      } else if (userRole === 'seller') {
+        navigate('/seller-dashboard');
+      } else if (userRole === 'both') {
+        navigate('/select-dashboard');
       }
-    };
-    
-    checkUserRole();
-  }, [user, navigate]);
+    }
+  }, [userRole, roleLoading, navigate]);
 
   const handleUserTypeSelection = async (userType: 'buyer' | 'seller' | 'both') => {
     if (!user) return;

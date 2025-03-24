@@ -20,6 +20,7 @@ interface AuthContextType {
   user: User | null;
   userRole: UserRole;
   loading: boolean;
+  roleLoading: boolean;
   login: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -47,32 +48,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(true);
 
   // Fetch user role whenever user changes
   useEffect(() => {
     const fetchUserRole = async () => {
       if (!user) {
         setUserRole(null);
+        setRoleLoading(false);
         return;
       }
+      
       try {
+        console.log('Fetching user role for user:', user.uid);
+        setRoleLoading(true);
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         const userData = userDoc.data();
+        console.log('User data from Firestore:', userData);
         setUserRole(userData?.role || null);
       } catch (error) {
         console.error('Error fetching user role:', error);
         setUserRole(null);
+      } finally {
+        setRoleLoading(false);
       }
     };
 
-    fetchUserRole();
+    if (user) {
+      fetchUserRole();
+    } else {
+      setRoleLoading(false);
+    }
   }, [user]);
 
   useEffect(() => {
+    console.log('Setting up auth state change listener');
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log('Auth state changed:', user);
+      console.log('Auth state changed:', user ? `User ${user.uid}` : 'No user');
       setUser(user);
       setLoading(false);
+      if (!user) {
+        // Clear role when user logs out
+        setUserRole(null);
+        setRoleLoading(false);
+      }
     });
 
     return unsubscribe;
@@ -136,6 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     userRole,
     loading,
+    roleLoading,
     login,
     signup,
     logout,

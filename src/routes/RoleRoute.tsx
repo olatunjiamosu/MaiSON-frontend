@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
-import { getDoc, doc } from 'firebase/firestore';
-import { db } from '../config/firebase';
 
 interface RoleRouteProps {
   children: React.ReactNode;
@@ -10,33 +8,15 @@ interface RoleRouteProps {
 }
 
 const RoleRoute = ({ children, allowedRoles }: RoleRouteProps) => {
-  const { user } = useAuth();
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, userRole, roleLoading } = useAuth();
   const location = useLocation();
 
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!user) return;
-      try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const userData = userDoc.data();
-        setUserRole(userData?.role || null);
-      } catch (error) {
-        console.error('Error fetching user role:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserRole();
-  }, [user]);
-
-  if (loading) {
+  if (roleLoading) {
     return <div>Loading...</div>;
   }
 
   if (!userRole || !allowedRoles.includes(userRole as 'buyer' | 'seller' | 'both')) {
+    console.log(`User role ${userRole} not in allowed roles ${allowedRoles}, redirecting to select-user-type`);
     return <Navigate to="/select-user-type" replace />;
   }
 
@@ -54,6 +34,7 @@ const RoleRoute = ({ children, allowedRoles }: RoleRouteProps) => {
     }
     
     // Otherwise redirect to dashboard selection
+    console.log('User has both role, redirecting to select-dashboard');
     return <Navigate to="/select-dashboard" replace />;
   }
 
