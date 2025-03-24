@@ -28,6 +28,7 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
   const [sessionId, setSessionId] = useState<string | null>(null);
   const { user } = useAuth();
   const { addConversation } = useChat();
+  const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
 
   // Add click outside handler
   useEffect(() => {
@@ -77,12 +78,34 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: inputMessage,
+      timestamp: new Date().toISOString()
+    };
+
+    // Add a loading message for the assistant's response
+    const loadingMessage: ChatMessage = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: 'Generating response...',
+      timestamp: new Date().toISOString(),
+      isLoading: true
+    };
+
+    // Immediately update UI with user message and loading state
+    setMessages(prev => [...prev, userMessage, loadingMessage]);
+    setInputMessage('');
+    setIsExpanded(true);
+    setIsGeneratingResponse(true);
+
     try {
       // Always use general chat endpoint for persistent chat
       const endpoint = `${API_CONFIG.BASE_URL}${API_CONFIG.API_VERSION}${API_CONFIG.CHAT.GENERAL}`;
       
       const basePayload = {
-        message: inputMessage,
+        message: userMessage.content,
         session_id: sessionId,
         user_id: user?.uid
       };
@@ -101,40 +124,42 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
         setSessionId(data.session_id);
       }
 
-      setMessages(prev => [
-        ...prev,
-        { 
-          id: Date.now().toString(), 
-          role: 'user', 
-          content: inputMessage,
-          timestamp: new Date().toISOString()
-        },
-        { 
-          id: (Date.now() + 1).toString(), 
-          role: 'assistant', 
-          content: data.message,
-          timestamp: new Date().toISOString()
-        }
-      ]);
+      // Replace the loading message with the actual response
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.isLoading 
+            ? {
+                id: msg.id,
+                role: 'assistant' as const,
+                content: data.message,
+                timestamp: new Date().toISOString()
+              }
+            : msg
+        )
+      );
 
       if (data.conversation_id) {
-        addConversation(inputMessage, data.conversation_id);
+        addConversation(userMessage.content, data.conversation_id);
       }
-
-      setInputMessage('');
-      setIsExpanded(true);
 
     } catch (error) {
       console.error('Chat error:', error);
-      setMessages(prev => [
-        ...prev,
-        { 
-          id: Date.now().toString(), 
-          role: 'assistant', 
-          content: 'Sorry, I encountered an error. Please try again.',
-          timestamp: new Date().toISOString()
-        }
-      ]);
+      
+      // Replace the loading message with an error message
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.isLoading 
+            ? {
+                id: msg.id,
+                role: 'assistant' as const,
+                content: 'Sorry, I encountered an error. Please try again.',
+                timestamp: new Date().toISOString()
+              }
+            : msg
+        )
+      );
+    } finally {
+      setIsGeneratingResponse(false);
     }
   };
 
@@ -190,15 +215,22 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
                       : 'bg-gray-100 text-gray-800'
                   }`}
                 >
-                  <ReactMarkdown
-                    components={{
-                      li: ({node, ...props}) => <li className="list-disc ml-4" {...props} />,
-                      strong: ({node, ...props}) => <span className="font-bold" {...props} />,
-                      p: ({node, ...props}) => <p className="m-0" {...props} />
-                    }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
+                  {message.isLoading ? (
+                    <div className="flex items-center">
+                      <span className="mr-2">Generating response</span>
+                      <span className="animate-pulse">...</span>
+                    </div>
+                  ) : (
+                    <ReactMarkdown
+                      components={{
+                        li: ({node, ...props}) => <li className="list-disc ml-4" {...props} />,
+                        strong: ({node, ...props}) => <span className="font-bold" {...props} />,
+                        p: ({node, ...props}) => <p className="m-0" {...props} />
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  )}
                 </div>
               </div>
             ))}
@@ -219,12 +251,14 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
           onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
           placeholder="Ask Mia about anything"
           className="flex-1 bg-transparent focus:outline-none text-gray-700 min-w-0"
+          disabled={isGeneratingResponse}
         />
         <button
           onClick={handleSendMessage}
-          className="flex-shrink-0 text-emerald-600 hover:text-emerald-700"
+          className={`flex-shrink-0 ${isGeneratingResponse ? 'text-emerald-400' : 'text-emerald-600 hover:text-emerald-700'}`}
+          disabled={isGeneratingResponse}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-emerald-600">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-current">
             <path d="M22 2L2 9L11 13L22 2ZM22 2L15 22L11 13L22 2Z" stroke="currentColor" strokeWidth="2" />
           </svg>
         </button>

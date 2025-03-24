@@ -576,9 +576,7 @@ const SellerDashboard = () => {
       )}
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col overflow-hidden ${
-        activeSection === 'messages' ? '' : 'pb-24'  // Only add padding when not in messages
-      } relative`}>
+      <div className={`flex-1 flex flex-col overflow-hidden relative`}>
         {/* Mobile Header */}
         <header className="bg-white border-b md:hidden p-4 flex items-center justify-between">
           <button
@@ -645,8 +643,12 @@ const SellerDashboard = () => {
               </Routes>
             )}
           </div>
+          {/* Add padding at the bottom to ensure content isn't hidden behind the chat input */}
+          {!isMessagesSection && <div className="pb-28 md:pb-24"></div>}
         </main>
-        <PersistentChat hide={isMessagesSection} isDashboard={true} />
+        <div className="absolute bottom-0 left-0 right-0 z-20">
+          <PersistentChat hide={isMessagesSection} isDashboard={true} />
+        </div>
       </div>
 
       {/* Selected Chat Modal */}

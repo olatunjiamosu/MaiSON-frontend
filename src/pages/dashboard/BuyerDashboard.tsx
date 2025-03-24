@@ -493,6 +493,8 @@ const BuyerDashboard: React.FC = () => {
               <Route path="documents" element={<DocumentsSection />} />
             </Routes>
           </div>
+          {/* Add padding at the bottom to ensure content isn't hidden behind the chat input */}
+          {!isMessagesSection && <div className="pb-28 md:pb-12"></div>}
         </main>
         <div className="absolute bottom-0 left-0 right-0 z-20">
           <PersistentChat hide={isMessagesSection} isDashboard={true} />
