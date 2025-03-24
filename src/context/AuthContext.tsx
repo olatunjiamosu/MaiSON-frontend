@@ -63,9 +63,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         console.log('Fetching user role for user:', user.uid);
         setRoleLoading(true);
+        
+        // Get the auth token
+        const token = await user.getIdToken();
+        
+        // PRIMARY SOURCE OF TRUTH: Fetch user info from the API
+        try {
+          console.log('Fetching user data from API');
+          const apiUrl = `${import.meta.env.VITE_PROPERTY_API_URL}/api/users/${user.uid}`;
+          console.log('API URL:', apiUrl);
+          
+          const response = await fetch(apiUrl, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const apiData = await response.json();
+            console.log('API user data:', apiData);
+            
+            if (apiData && apiData.roles && apiData.roles.length > 0) {
+              // Convert API roles to Firestore role format
+              let derivedRole: UserRole = null;
+              const hasSellerRole = apiData.roles.some((r: any) => r.role_type === 'seller');
+              const hasBuyerRole = apiData.roles.some((r: any) => r.role_type === 'buyer');
+              
+              if (hasSellerRole && hasBuyerRole) {
+                derivedRole = 'both';
+              } else if (hasSellerRole) {
+                derivedRole = 'seller';
+              } else if (hasBuyerRole) {
+                derivedRole = 'buyer';
+              }
+              
+              console.log('User role from API:', derivedRole);
+              
+              // SECONDARY: Update Firestore with the role from API for future use
+              const userDocRef = doc(db, 'users', user.uid);
+              const userDoc = await getDoc(userDocRef);
+              const firestoreData = userDoc.data();
+              
+              if (!firestoreData || firestoreData.role !== derivedRole) {
+                console.log('Updating Firestore role to match API:', derivedRole);
+                await setDoc(userDocRef, {
+                  role: derivedRole,
+                  updatedAt: new Date().toISOString()
+                }, { merge: true });
+              }
+              
+              // Use API-derived role
+              setUserRole(derivedRole);
+              setRoleLoading(false);
+              return;
+            } else {
+              console.log('No roles found in API response');
+            }
+          } else {
+            console.error('API response not OK:', response.status);
+            console.log('Trying to read from Firestore as fallback');
+          }
+        } catch (apiError) {
+          console.error('Error fetching user from API:', apiError);
+          console.log('Falling back to Firestore for role data');
+        }
+        
+        // FALLBACK: If API fails, try Firestore
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         const userData = userDoc.data();
-        console.log('User data from Firestore:', userData);
+        console.log('User data from Firestore (fallback):', userData);
         setUserRole(userData?.role || null);
       } catch (error) {
         console.error('Error fetching user role:', error);
