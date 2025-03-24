@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Home, Image } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
+import PageTitle from '../../components/PageTitle';
 
 const SelectDashboard = () => {
   const navigate = useNavigate();
@@ -28,7 +29,11 @@ const SelectDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen bg-white">
+      <PageTitle title="Select Dashboard" />
+      {/* Header with gradient only */}
+      <div className="h-16 bg-gradient-to-b from-emerald-50 to-white"></div>
+      
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
         {/* Logo */}
@@ -38,7 +43,7 @@ const SelectDashboard = () => {
           <span>SON</span>
         </div>
         <p className="text-gray-600 text-lg mb-16">
-          Your smart AI-powered property platform.
+          Your smart AI-powered property platform
         </p>
 
         <h1 className="text-4xl font-bold text-gray-900 mb-6">

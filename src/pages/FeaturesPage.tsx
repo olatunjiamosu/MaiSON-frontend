@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import Navigation from '../components/layout/Navigation';
 import PersistentChat from '../components/chat/PersistentChat';
 import Footer from '../components/layout/Footer';
+import PageTitle from '../components/PageTitle';
 
 const FeaturesPage = () => {
   const features = [
@@ -55,61 +56,64 @@ const FeaturesPage = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navigation />
+    <>
+      <PageTitle title="Features" />
+      <div className="min-h-screen flex flex-col">
+        <Navigation />
 
-      <main className="flex-grow bg-white">
-        {/* Hero Section */}
-        <div className="bg-white py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <h1 className="text-4xl font-bold text-center mb-8">
-              Revolutionising Property with AI
-            </h1>
-            <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto">
-              Discover how MaiSON's innovative features make property hunting smarter, faster, and more efficient.
-            </p>
-          </div>
-        </div>
-
-        {/* Features Grid */}
-        <div className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {features.map((feature, index) => (
-                <div 
-                  key={index}
-                  className="p-6 bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow"
-                >
-                  <div className="mb-4">{feature.icon}</div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-gray-600">{feature.description}</p>
-                </div>
-              ))}
+        <main className="flex-grow bg-white">
+          {/* Hero Section */}
+          <div className="bg-white py-16">
+            <div className="max-w-7xl mx-auto px-4">
+              <h1 className="text-4xl font-bold text-center mb-8">
+                Revolutionising Property with AI
+              </h1>
+              <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto">
+                Discover how MaiSON's innovative features make property hunting smarter, faster, and more efficient.
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* CTA Section */}
-        <div className="bg-white py-16">
-          <div className="max-w-7xl mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-            <p className="text-xl text-gray-600 mb-8">
-              Join MaiSON today and experience the future of property transactions.
-            </p>
-            <Link
-              to="/sign-up"
-              className="inline-flex items-center px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-            >
-              Get Started
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
+          {/* Features Grid */}
+          <div className="py-16 bg-white">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {features.map((feature, index) => (
+                  <div 
+                    key={index}
+                    className="p-6 bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow"
+                  >
+                    <div className="mb-4">{feature.icon}</div>
+                    <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                    <p className="text-gray-600">{feature.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </main>
 
-      <PersistentChat />
-      <Footer />
-    </div>
+          {/* CTA Section */}
+          <div className="bg-white py-16">
+            <div className="max-w-7xl mx-auto px-4 text-center">
+              <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+              <p className="text-xl text-gray-600 mb-8">
+                Join MaiSON today and experience the future of property transactions.
+              </p>
+              <Link
+                to="/sign-up"
+                className="inline-flex items-center px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                Get Started
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </div>
+          </div>
+        </main>
+
+        <PersistentChat />
+        <Footer />
+      </div>
+    </>
   );
 };
 

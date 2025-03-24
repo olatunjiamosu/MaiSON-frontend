@@ -22,6 +22,7 @@ import ReactMarkdown from 'react-markdown';
 import PreviousChats from '../../components/chat/PreviousChats';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
+import PageTitle from '../../components/PageTitle';
 
 // Import Sections
 import ListingsSection from './buyer-sections/ListingsSection';
@@ -336,285 +337,288 @@ const BuyerDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Sidebar */}
-      <aside
-        className={`fixed md:static inset-y-0 left-0 w-64 bg-white shadow-sm border-r transform transition-transform duration-200 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0 z-30 flex flex-col`}
-      >
-        {/* Logo & Menu Toggle */}
-        <div className="p-4 border-b flex items-center justify-between">
-          <div 
-            className="flex items-center space-x-2 cursor-pointer"
-            onClick={handleLogoClick}
-          >
-            <Home className="h-6 w-6 text-emerald-600" />
-            <span className="text-xl font-bold tracking-tight">
-              <span>M</span>
-              <span className="text-emerald-600">ai</span>
-              <span>SON</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Switch Dashboard Button - Only visible to 'both' role users */}
-        {userRole === 'both' && (
-          <div className="px-4 py-3 border-b">
-            <button
-              onClick={handleSwitchDashboard}
-              className="flex items-center justify-center w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md transition-colors"
-            >
-              <SwitchCamera className="h-4 w-4 mr-2" />
-              <span>Switch Dashboard</span>
-            </button>
-          </div>
-        )}
-
-        {/* Navigation Links */}
-        <nav className="p-4 space-y-1">
-          <NavItem
-            icon={<List />}
-            label="All Listings"
-            active={activeSection === 'listings'}
-            onClick={() => {
-              setActiveSection('listings');
-              navigate('/buyer-dashboard');
-            }}
-            path="/buyer-dashboard"
-          />
-          {/* <NavItem
-            icon={<Handshake />}
-            label="My Matches"
-            active={activeSection === 'matches'}
-            onClick={() => setActiveSection('matches')}
-            path="/buyer-dashboard/matches"
-          /> */}
-          <NavItem
-            icon={<Heart />}
-            label="Saved Properties"
-            active={activeSection === 'saved'}
-            onClick={() => {
-              setActiveSection('saved');
-              navigate('/buyer-dashboard/saved');
-            }}
-            path="/buyer-dashboard/saved"
-          />
-          <NavItem
-            icon={<MessageCircle />}
-            label="Property Chats"
-            active={activeSection === 'messages'}
-            onClick={() => {
-              setActiveSection('messages');
-              navigate('/buyer-dashboard/property-chats');
-            }}
-            path="/buyer-dashboard/property-chats"
-          />
-          <NavItem
-            icon={<Calendar />}
-            label="Viewings"
-            active={activeSection === 'viewings'}
-            onClick={() => {
-              setActiveSection('viewings');
-              navigate('/buyer-dashboard/viewings');
-            }}
-            path="/buyer-dashboard/viewings"
-          />
-          <NavItem
-            icon={<ClipboardList />}
-            label="Offers"
-            active={activeSection === 'applications'}
-            onClick={() => setActiveSection('applications')}
-            path="/buyer-dashboard/applications"
-          />
-          <NavItem
-            icon={<FileText />}
-            label="Documents"
-            active={activeSection === 'documents'}
-            onClick={() => setActiveSection('documents')}
-            path="/buyer-dashboard/documents"
-          />
-        </nav>
-
-        {/* Mia Chat History - Previous Chats section with enhanced UI */}
-        <div className="px-4 py-3 border-t">
-          <PreviousChats 
-            onSelectChat={setSelectedChat} 
-            selectedChatId={selectedChat?.id} 
-          />
-        </div>
-
-        {/* Profile Section */}
-        <div className="mt-auto border-t p-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-              <span className="text-emerald-600 font-medium">{userData.name[0].toUpperCase()}</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-gray-700 truncate">{userData.email}</p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="text-gray-400 hover:text-gray-500"
-              aria-label="Log out"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Add overlay for closing sidebar on mobile */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-20"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden relative">
-        <main className={`flex-1 overflow-y-auto ${
-          activeSection === 'messages' ? 'p-0' : 'p-8'
-        }`}>
-          <div className={`${
-            activeSection === 'messages' ? 'w-full h-full' : 'max-w-7xl mx-auto'
-          }`}>
-            <Routes>
-              <Route
-                index
-                element={<ListingsSection />}
-              />
-              <Route path="saved" element={<SavedPropertiesSection />} />
-              <Route path="viewings" element={<ViewingsSection />} />
-              <Route path="messages" element={<PropertyChats />} />
-              <Route path="property-chats" element={<PropertyChats />} />
-              <Route path="applications" element={<ApplicationsSection />} />
-              <Route path="documents" element={<DocumentsSection />} />
-            </Routes>
-          </div>
-          {/* Add padding at the bottom to ensure content isn't hidden behind the chat input */}
-          {!isMessagesSection && <div className="pb-28 md:pb-12"></div>}
-        </main>
-        <div className="absolute bottom-0 left-0 right-0 z-20">
-          <PersistentChat hide={isMessagesSection} isDashboard={true} />
-        </div>
-      </div>
-
-      {/* Mobile Menu Trigger Button */}
-      <button
-        className="fixed bottom-20 right-4 md:hidden z-20 p-3 bg-emerald-600 text-white rounded-full shadow-lg"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        <Menu className="h-6 w-6" />
-      </button>
-
-      {/* Selected Chat Modal */}
-      {selectedChat && (
-        <div 
-          className="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center pb-20"
-          onClick={() => setSelectedChat(null)}
+    <React.Fragment>
+      <PageTitle title="Buyer Dashboard" />
+      <div className="flex h-screen bg-gray-50 overflow-hidden">
+        {/* Sidebar */}
+        <aside
+          className={`fixed md:static inset-y-0 left-0 w-64 bg-white shadow-sm border-r transform transition-transform duration-200 ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } md:translate-x-0 z-30 flex flex-col`}
         >
-          <div 
-            className="bg-white rounded-xl w-full max-w-[800px] max-h-[70vh] flex flex-col mx-auto" 
-            style={{ marginLeft: 'calc(256px + 2rem)', marginRight: '2rem' }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header with title and close button */}
-            <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-xl font-semibold">{selectedChat.question}</h2>
-              <button 
-                onClick={() => setSelectedChat(null)}
-                className="text-gray-400 hover:text-gray-600"
+          {/* Logo & Menu Toggle */}
+          <div className="p-4 border-b flex items-center justify-between">
+            <div 
+              className="flex items-center space-x-2 cursor-pointer"
+              onClick={handleLogoClick}
+            >
+              <Home className="h-6 w-6 text-emerald-600" />
+              <span className="text-xl font-bold tracking-tight">
+                <span>M</span>
+                <span className="text-emerald-600">ai</span>
+                <span>SON</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Switch Dashboard Button - Only visible to 'both' role users */}
+          {userRole === 'both' && (
+            <div className="px-4 py-3 border-b">
+              <button
+                onClick={handleSwitchDashboard}
+                className="flex items-center justify-center w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md transition-colors"
               >
-                <X className="h-5 w-5" />
+                <SwitchCamera className="h-4 w-4 mr-2" />
+                <span>Switch Dashboard</span>
               </button>
             </div>
+          )}
 
-            {/* Mia Profile Header */}
-            <div className="p-4 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                <span className="text-emerald-700 font-semibold">M</span>
+          {/* Navigation Links */}
+          <nav className="p-4 space-y-1">
+            <NavItem
+              icon={<List />}
+              label="All Listings"
+              active={activeSection === 'listings'}
+              onClick={() => {
+                setActiveSection('listings');
+                navigate('/buyer-dashboard');
+              }}
+              path="/buyer-dashboard"
+            />
+            {/* <NavItem
+              icon={<Handshake />}
+              label="My Matches"
+              active={activeSection === 'matches'}
+              onClick={() => setActiveSection('matches')}
+              path="/buyer-dashboard/matches"
+            /> */}
+            <NavItem
+              icon={<Heart />}
+              label="Saved Properties"
+              active={activeSection === 'saved'}
+              onClick={() => {
+                setActiveSection('saved');
+                navigate('/buyer-dashboard/saved');
+              }}
+              path="/buyer-dashboard/saved"
+            />
+            <NavItem
+              icon={<MessageCircle />}
+              label="Property Chats"
+              active={activeSection === 'messages'}
+              onClick={() => {
+                setActiveSection('messages');
+                navigate('/buyer-dashboard/property-chats');
+              }}
+              path="/buyer-dashboard/property-chats"
+            />
+            <NavItem
+              icon={<Calendar />}
+              label="Viewings"
+              active={activeSection === 'viewings'}
+              onClick={() => {
+                setActiveSection('viewings');
+                navigate('/buyer-dashboard/viewings');
+              }}
+              path="/buyer-dashboard/viewings"
+            />
+            <NavItem
+              icon={<ClipboardList />}
+              label="Offers"
+              active={activeSection === 'applications'}
+              onClick={() => setActiveSection('applications')}
+              path="/buyer-dashboard/applications"
+            />
+            <NavItem
+              icon={<FileText />}
+              label="Documents"
+              active={activeSection === 'documents'}
+              onClick={() => setActiveSection('documents')}
+              path="/buyer-dashboard/documents"
+            />
+          </nav>
+
+          {/* Mia Chat History - Previous Chats section with enhanced UI */}
+          <div className="px-4 py-3 border-t">
+            <PreviousChats 
+              onSelectChat={setSelectedChat} 
+              selectedChatId={selectedChat?.id} 
+            />
+          </div>
+
+          {/* Profile Section */}
+          <div className="mt-auto border-t p-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                <span className="text-emerald-600 font-medium">{userData.name[0].toUpperCase()}</span>
               </div>
-              <div>
-                <h3 className="font-semibold">Mia</h3>
-                <p className="text-sm text-gray-500">AI Assistant</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-700 truncate">{userData.email}</p>
               </div>
+              <button
+                onClick={handleLogout}
+                className="text-gray-400 hover:text-gray-500"
+                aria-label="Log out"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
             </div>
+          </div>
+        </aside>
 
-            {/* Chat Content */}
+        {/* Add overlay for closing sidebar on mobile */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-20"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          <main className={`flex-1 overflow-y-auto ${
+            activeSection === 'messages' ? 'p-0' : 'p-8'
+          }`}>
+            <div className={`${
+              activeSection === 'messages' ? 'w-full h-full' : 'max-w-7xl mx-auto'
+            }`}>
+              <Routes>
+                <Route
+                  index
+                  element={<ListingsSection />}
+                />
+                <Route path="saved" element={<SavedPropertiesSection />} />
+                <Route path="viewings" element={<ViewingsSection />} />
+                <Route path="messages" element={<PropertyChats />} />
+                <Route path="property-chats" element={<PropertyChats />} />
+                <Route path="applications" element={<ApplicationsSection />} />
+                <Route path="documents" element={<DocumentsSection />} />
+              </Routes>
+            </div>
+            {/* Add padding at the bottom to ensure content isn't hidden behind the chat input */}
+            {!isMessagesSection && <div className="pb-28 md:pb-12"></div>}
+          </main>
+          <div className="absolute bottom-0 left-0 right-0 z-20">
+            <PersistentChat hide={isMessagesSection} isDashboard={true} />
+          </div>
+        </div>
+
+        {/* Mobile Menu Trigger Button */}
+        <button
+          className="fixed bottom-20 right-4 md:hidden z-20 p-3 bg-emerald-600 text-white rounded-full shadow-lg"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+
+        {/* Selected Chat Modal */}
+        {selectedChat && (
+          <div 
+            className="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center pb-20"
+            onClick={() => setSelectedChat(null)}
+          >
             <div 
-              ref={chatMessagesRef}
-              className="flex-1 overflow-y-auto p-4 space-y-4"
+              className="bg-white rounded-xl w-full max-w-[800px] max-h-[70vh] flex flex-col mx-auto" 
+              style={{ marginLeft: 'calc(256px + 2rem)', marginRight: '2rem' }}
+              onClick={e => e.stopPropagation()}
             >
-              {isLoadingChatMessages ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-pulse space-y-4 w-full">
-                    <div className="h-10 bg-gray-200 rounded w-3/4 ml-auto"></div>
-                    <div className="h-20 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-16 bg-gray-200 rounded w-1/2 ml-auto"></div>
-                    <div className="h-24 bg-gray-200 rounded w-3/4"></div>
-                  </div>
+              {/* Header with title and close button */}
+              <div className="p-4 border-b flex justify-between items-center">
+                <h2 className="text-xl font-semibold">{selectedChat.question}</h2>
+                <button 
+                  onClick={() => setSelectedChat(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Mia Profile Header */}
+              <div className="p-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <span className="text-emerald-700 font-semibold">M</span>
                 </div>
-              ) : (
-                selectedChatMessages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'items-start gap-3'}`}>
-                    {msg.role === 'assistant' && (
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <span className="text-emerald-700 font-semibold">M</span>
-                      </div>
-                    )}
-                    <div 
-                      className={`${
-                        msg.role === 'user' 
-                          ? 'bg-emerald-600 text-white prose-invert' 
-                          : 'bg-gray-100 text-gray-800'
-                      } rounded-lg p-3 max-w-[80%] prose`}
-                    >
-                      <ReactMarkdown
-                        components={{
-                          li: ({node, ...props}) => <li className="list-disc ml-4" {...props} />,
-                          strong: ({node, ...props}) => <span className="font-bold" {...props} />,
-                          p: ({node, ...props}) => <p className="m-0" {...props} />
-                        }}
-                      >
-                        {msg.content}
-                      </ReactMarkdown>
+                <div>
+                  <h3 className="font-semibold">Mia</h3>
+                  <p className="text-sm text-gray-500">AI Assistant</p>
+                </div>
+              </div>
+
+              {/* Chat Content */}
+              <div 
+                ref={chatMessagesRef}
+                className="flex-1 overflow-y-auto p-4 space-y-4"
+              >
+                {isLoadingChatMessages ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-pulse space-y-4 w-full">
+                      <div className="h-10 bg-gray-200 rounded w-3/4 ml-auto"></div>
+                      <div className="h-20 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-16 bg-gray-200 rounded w-1/2 ml-auto"></div>
+                      <div className="h-24 bg-gray-200 rounded w-3/4"></div>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                ) : (
+                  selectedChatMessages.map((msg) => (
+                    <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'items-start gap-3'}`}>
+                      {msg.role === 'assistant' && (
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                          <span className="text-emerald-700 font-semibold">M</span>
+                        </div>
+                      )}
+                      <div 
+                        className={`${
+                          msg.role === 'user' 
+                            ? 'bg-emerald-600 text-white prose-invert' 
+                            : 'bg-gray-100 text-gray-800'
+                        } rounded-lg p-3 max-w-[80%] prose`}
+                      >
+                        <ReactMarkdown
+                          components={{
+                            li: ({node, ...props}) => <li className="list-disc ml-4" {...props} />,
+                            strong: ({node, ...props}) => <span className="font-bold" {...props} />,
+                            p: ({node, ...props}) => <p className="m-0" {...props} />
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
 
-            {/* Input area - Now active */}
-            <div className="p-4 border-t">
-              <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  value={modalInputMessage}
-                  onChange={(e) => setModalInputMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendModalMessage()}
-                  placeholder="Continue your conversation with Mia..."
-                  className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  disabled={isSendingMessage}
-                />
-                <button 
-                  onClick={handleSendModalMessage}
-                  className={`px-4 py-2 rounded-lg ${
-                    isSendingMessage 
-                      ? 'bg-emerald-400 text-white cursor-not-allowed' 
-                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  }`}
-                  disabled={isSendingMessage}
-                >
-                  {isSendingMessage ? 'Sending...' : 'Send'}
-                </button>
+              {/* Input area - Now active */}
+              <div className="p-4 border-t">
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={modalInputMessage}
+                    onChange={(e) => setModalInputMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendModalMessage()}
+                    placeholder="Continue your conversation with Mia..."
+                    className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    disabled={isSendingMessage}
+                  />
+                  <button 
+                    onClick={handleSendModalMessage}
+                    className={`px-4 py-2 rounded-lg ${
+                      isSendingMessage 
+                        ? 'bg-emerald-400 text-white cursor-not-allowed' 
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    }`}
+                    disabled={isSendingMessage}
+                  >
+                    {isSendingMessage ? 'Sending...' : 'Send'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </React.Fragment>
   );
 };
       
