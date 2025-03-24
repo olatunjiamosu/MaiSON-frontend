@@ -371,14 +371,14 @@ const SellerDashboard = () => {
       if (auth && auth.logout) {
         auth.logout()
           .then(() => {
-            navigate('/login');
+            navigate('/'); // Navigate to home page instead of login
           })
           .catch((error: Error) => {
             console.error("Logout error:", error);
-            navigate('/login'); // Navigate anyway
+            navigate('/'); // Navigate to home page anyway
           });
       } else {
-        navigate('/login');
+        navigate('/'); // Navigate to home page
       }
     }
   };

@@ -150,6 +150,7 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
           ? 'fixed bottom-0 left-0 right-0 md:absolute md:bottom-6 md:left-1/2 md:-translate-x-1/2' 
           : 'fixed bottom-0 left-0 right-0 md:bottom-6 md:left-1/2 md:-translate-x-1/2'
       } w-full md:w-[800px] max-w-full mx-auto`}
+      style={{ zIndex: 50 }}
     >
       {isExpanded && messages.length > 0 && (
         <div className="bg-white rounded-t-2xl shadow-lg border mb-4 max-h-[500px] overflow-y-auto">
@@ -205,8 +206,8 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-lg border">
-        <div className="flex items-center p-4 gap-2">
+      <div className="rounded-2xl" style={{ background: 'transparent' }}>
+        <div className="flex items-center p-4 gap-2 bg-white rounded-2xl border border-gray-200 shadow-sm">
           <input
             type="text"
             value={inputMessage}

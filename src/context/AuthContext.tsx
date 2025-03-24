@@ -13,6 +13,7 @@ import {
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { UserData } from '../types/user';
+import { useNavigate } from 'react-router-dom';
 
 type UserRole = 'buyer' | 'seller' | 'both' | null;
 
