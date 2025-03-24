@@ -117,6 +117,7 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
   const [activeFilterCount, setActiveFilterCount] = useState(0);
   const [savedPropertyIds, setSavedPropertyIds] = useState<Set<string>>(new Set());
   const [savedPropertiesLoading, setSavedPropertiesLoading] = useState(true);
+  const [mapKey, setMapKey] = useState<number>(0);
 
   // Fetch dashboard data when component mounts
   useEffect(() => {
@@ -214,6 +215,15 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
   // Save view mode to localStorage when it changes
   useEffect(() => {
     localStorage.setItem('propertyViewMode', viewMode);
+  }, [viewMode]);
+
+  // Add this useEffect to detect changes to viewMode
+  useEffect(() => {
+    // When switching to map view, increment the key to force map reinitialization
+    if (viewMode === 'map') {
+      setMapKey(prevKey => prevKey + 1);
+      console.log('Forcing map reinitialize with new key:', mapKey + 1);
+    }
   }, [viewMode]);
 
   // Add sorting function
@@ -416,7 +426,11 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
                     ? 'bg-emerald-50 text-emerald-600'
                     : 'text-gray-400 hover:text-gray-600'
                 }`}
-                onClick={() => setViewMode('map')}
+                onClick={() => {
+                  setViewMode('map');
+                  // We'll increment mapKey here too to ensure it happens immediately
+                  setMapKey(prevKey => prevKey + 1);
+                }}
               >
                 <Map className="h-5 w-5" />
               </button>
@@ -767,11 +781,20 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
           {/* Property Cards */}
           {viewMode === 'map' ? (
             <div className="relative h-[70vh] rounded-lg overflow-hidden">
-              <PropertyMap
-                properties={getMapProperties()}
-                selectedProperty={selectedProperty}
-                onPropertySelect={(id) => setSelectedProperty(id)}
-              />
+              {(() => {
+                // Store the map properties in a variable to avoid recalculating
+                const mapProps = getMapProperties();
+                console.log('Rendering map with', mapProps.length, 'properties', 'using key:', mapKey);
+                
+                return (
+                  <PropertyMap
+                    key={mapKey} // Add the key prop here to force remount when it changes
+                    properties={mapProps}
+                    selectedProperty={selectedProperty}
+                    onPropertySelect={(id) => setSelectedProperty(id)}
+                  />
+                );
+              })()}
             </div>
           ) : (
             getSortedProperties().map((property) => (
