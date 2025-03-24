@@ -150,11 +150,11 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
           ? 'fixed bottom-0 left-0 right-0 md:absolute md:bottom-6 md:left-1/2 md:-translate-x-1/2' 
           : 'fixed bottom-0 left-0 right-0 md:bottom-6 md:left-1/2 md:-translate-x-1/2'
       } w-full md:w-[800px] max-w-full mx-auto`}
-      style={{ zIndex: 50 }}
+      style={{ zIndex: 50, background: 'transparent' }}
     >
       {isExpanded && messages.length > 0 && (
-        <div className="bg-white rounded-t-2xl shadow-lg border mb-4 max-h-[500px] overflow-y-auto">
-          <div className="flex items-center justify-between p-4 border-b">
+        <div className="bg-white rounded-t-2xl shadow-lg border mb-4 flex flex-col max-h-[500px]">
+          <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white z-10">
             <div className="flex items-center gap-3">
               <div className="bg-emerald-100 w-8 h-8 rounded-full flex items-center justify-center">
                 <span className="text-emerald-700 font-semibold">M</span>
@@ -172,7 +172,7 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
             </button>
           </div>
           
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-4 overflow-y-auto">
             {messages.map(message => (
               <div 
                 key={message.id}
@@ -206,25 +206,28 @@ const PersistentChat: React.FC<PersistentChatProps> = ({
         </div>
       )}
 
-      <div className="rounded-2xl" style={{ background: 'transparent' }}>
-        <div className="flex items-center p-4 gap-2 bg-white rounded-2xl border border-gray-200 shadow-sm">
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Ask Mia about anything"
-            className="flex-1 bg-transparent focus:outline-none text-gray-700 min-w-0"
-          />
-          <button
-            onClick={handleSendMessage}
-            className="flex-shrink-0 text-emerald-600 hover:text-emerald-700"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-emerald-600">
-              <path d="M22 2L2 9L11 13L22 2ZM22 2L15 22L11 13L22 2Z" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </button>
-        </div>
+      <div 
+        className="flex items-center p-4 gap-2 bg-white rounded-2xl border border-white/30 mx-4 md:mx-0"
+        style={{ 
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06), 0 0 1px rgba(5, 150, 105, 0.2)' 
+        }}
+      >
+        <input
+          type="text"
+          value={inputMessage}
+          onChange={(e) => setInputMessage(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+          placeholder="Ask Mia about anything"
+          className="flex-1 bg-transparent focus:outline-none text-gray-700 min-w-0"
+        />
+        <button
+          onClick={handleSendMessage}
+          className="flex-shrink-0 text-emerald-600 hover:text-emerald-700"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-emerald-600">
+            <path d="M22 2L2 9L11 13L22 2ZM22 2L15 22L11 13L22 2Z" stroke="currentColor" strokeWidth="2" />
+          </svg>
+        </button>
       </div>
     </div>
   );

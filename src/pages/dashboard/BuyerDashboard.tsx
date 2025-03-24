@@ -473,9 +473,7 @@ const BuyerDashboard: React.FC = () => {
       )}
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col overflow-hidden ${
-        activeSection === 'messages' ? '' : 'pb-24'  // Only add padding when not in messages
-      } relative`}>
+      <div className="flex-1 flex flex-col overflow-hidden relative">
         <main className={`flex-1 overflow-y-auto ${
           activeSection === 'messages' ? 'p-0' : 'p-8'
         }`}>
@@ -496,7 +494,9 @@ const BuyerDashboard: React.FC = () => {
             </Routes>
           </div>
         </main>
-        <PersistentChat hide={isMessagesSection} isDashboard={true} />
+        <div className="absolute bottom-0 left-0 right-0 z-20">
+          <PersistentChat hide={isMessagesSection} isDashboard={true} />
+        </div>
       </div>
 
       {/* Mobile Menu Trigger Button */}
