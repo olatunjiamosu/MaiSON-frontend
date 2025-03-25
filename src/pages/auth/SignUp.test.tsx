@@ -20,6 +20,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../../context/AuthContext';
 import SignUp from './SignUp';
+import { HelmetProvider } from 'react-helmet-async';
 
 // Mock the AuthContext to simulate a logged-out user
 jest.mock('../../context/AuthContext', () => ({
@@ -38,11 +39,13 @@ describe('SignUp Component', () => {
 
   it('renders signup form', async () => {
     render(
-      <AuthProvider>
-        <BrowserRouter>
-          <SignUp />
-        </BrowserRouter>
-      </AuthProvider>
+      <HelmetProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <SignUp />
+          </BrowserRouter>
+        </AuthProvider>
+      </HelmetProvider>
     );
 
     // Wait for the form to render
@@ -52,11 +55,13 @@ describe('SignUp Component', () => {
 
   it('handles successful signup', async () => {
     render(
-      <AuthProvider>
-        <BrowserRouter>
-          <SignUp />
-        </BrowserRouter>
-      </AuthProvider>
+      <HelmetProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <SignUp />
+          </BrowserRouter>
+        </AuthProvider>
+      </HelmetProvider>
     );
 
     // Wait for the inputs to render
@@ -80,11 +85,13 @@ describe('SignUp Component', () => {
 
   it('renders all form fields', async () => {
     render(
-      <AuthProvider>
-        <BrowserRouter>
-          <SignUp />
-        </BrowserRouter>
-      </AuthProvider>
+      <HelmetProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <SignUp />
+          </BrowserRouter>
+        </AuthProvider>
+      </HelmetProvider>
     );
 
     // Wait for the inputs to render
@@ -103,11 +110,13 @@ describe('SignUp Component', () => {
 
   it('toggles password visibility when show/hide is clicked', async () => {
     render(
-      <AuthProvider>
-        <BrowserRouter>
-          <SignUp />
-        </BrowserRouter>
-      </AuthProvider>
+      <HelmetProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <SignUp />
+          </BrowserRouter>
+        </AuthProvider>
+      </HelmetProvider>
     );
 
     const passwordInput = await screen.findByTestId('password-input');
@@ -125,11 +134,13 @@ describe('SignUp Component', () => {
 
   it('navigates correctly when links are clicked', async () => {
     render(
-      <AuthProvider>
-        <BrowserRouter>
-          <SignUp />
-        </BrowserRouter>
-      </AuthProvider>
+      <HelmetProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <SignUp />
+          </BrowserRouter>
+        </AuthProvider>
+      </HelmetProvider>
     );
 
     // Test "Log in" link navigation
@@ -139,11 +150,13 @@ describe('SignUp Component', () => {
 
   it('validates email format', async () => {
     render(
-      <AuthProvider>
-        <BrowserRouter>
-          <SignUp />
-        </BrowserRouter>
-      </AuthProvider>
+      <HelmetProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <SignUp />
+          </BrowserRouter>
+        </AuthProvider>
+      </HelmetProvider>
     );
 
     const emailInput = await screen.findByLabelText(/email address/i);

@@ -338,7 +338,14 @@ const BuyerDashboard: React.FC = () => {
 
   return (
     <React.Fragment>
-      <PageTitle title="Buyer Dashboard" />
+      {/* Dynamic PageTitle based on active section */}
+      {activeSection === 'listings' && <PageTitle title="Property Listings | Buyer Dashboard" />}
+      {activeSection === 'saved' && <PageTitle title="Saved Properties | Buyer Dashboard" />}
+      {activeSection === 'messages' && <PageTitle title="Property Chats | Buyer Dashboard" />}
+      {activeSection === 'viewings' && <PageTitle title="Viewings | Buyer Dashboard" />}
+      {activeSection === 'applications' && <PageTitle title="Offers | Buyer Dashboard" />}
+      {activeSection === 'documents' && <PageTitle title="Documents | Buyer Dashboard" />}
+
       <div className="flex h-screen bg-gray-50 overflow-hidden">
         {/* Sidebar */}
         <aside

@@ -20,6 +20,7 @@ import { formatPrice, formatDate } from '../../lib/formatters';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import ChatService from '../../services/ChatService';
+import PageTitle from '../../components/PageTitle';
 
 interface PropertyDetailsProps {
   property?: {
@@ -63,6 +64,15 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
   const [offerError, setOfferError] = useState<string | null>(null);
   const [hasActiveNegotiation, setHasActiveNegotiation] = useState(false);
   const [initiatingChat, setInitiatingChat] = useState(false);
+
+  // Add PageTitle based on property details
+  useEffect(() => {
+    if (property && !loading) {
+      document.title = `${property.road}, ${property.city} | MaiSON`;
+    } else if (loading) {
+      document.title = "Loading Property | MaiSON";
+    }
+  }, [property, loading]);
 
   useEffect(() => {
     // If property is provided via props, use that
@@ -439,7 +449,13 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
+      {/* Add PageTitle component */}
+      {property && (
+        <PageTitle title={`${property.road}, ${property.city} | MaiSON`} />
+      )}
+      {loading && <PageTitle title="Loading Property | MaiSON" />}
+      
       {/* Navigation Bar */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
