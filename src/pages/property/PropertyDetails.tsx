@@ -65,15 +65,6 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
   const [hasActiveNegotiation, setHasActiveNegotiation] = useState(false);
   const [initiatingChat, setInitiatingChat] = useState(false);
 
-  // Add PageTitle based on property details
-  useEffect(() => {
-    if (property && !loading) {
-      document.title = `${property.road}, ${property.city} | MaiSON`;
-    } else if (loading) {
-      document.title = "Loading Property | MaiSON";
-    }
-  }, [property, loading]);
-
   useEffect(() => {
     // If property is provided via props, use that
     if (propProperty) {
@@ -452,7 +443,7 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
     <div className="min-h-screen bg-white">
       {/* Add PageTitle component */}
       {property && (
-        <PageTitle title={`${property.road}, ${property.city} | MaiSON`} />
+        <PageTitle title={`${property.road}, ${property.city}`} />
       )}
       {loading && <PageTitle title="Loading Property | MaiSON" />}
       
