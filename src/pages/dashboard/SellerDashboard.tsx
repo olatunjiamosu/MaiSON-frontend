@@ -404,7 +404,7 @@ const SellerDashboard = () => {
         // Property-specific titles
         <>
           {location.pathname.includes('/offers') && (
-            <PageTitle title={`Property Offers | ${property.address.street} | Seller Dashboard`} />
+            <PageTitle title={`Offers | ${property.address.street} | Seller Dashboard`} />
           )}
           {location.pathname.includes('/viewings') && (
             <PageTitle title={`Viewing Requests | ${property.address.street} | Seller Dashboard`} />
@@ -423,7 +423,7 @@ const SellerDashboard = () => {
           )}
           {/* Default to Offers when first loading a property */}
           {!location.pathname.includes('/') && (
-            <PageTitle title={`Property Offers | ${property.address.street} | Seller Dashboard`} />
+            <PageTitle title={`Offers | ${property.address.street} | Seller Dashboard`} />
           )}
         </>
       ) : (
