@@ -487,7 +487,7 @@ const PublicListings = () => {
           currentFilters={uiFilters}
         />
         
-        <PersistentChat />
+        {!isMenuOpen && <PersistentChat />}
         <Footer />
       </div>
     </>
