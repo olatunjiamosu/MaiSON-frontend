@@ -4,8 +4,10 @@ import { Building2, Users2, Trophy, Target } from 'lucide-react';
 import PersistentChat from '../components/chat/PersistentChat';
 import Footer from '../components/layout/Footer';
 import PageTitle from '../components/PageTitle';
+import { useMenu } from '../context/MenuContext';
 
 const AboutPage = () => {
+  const { isMenuOpen } = useMenu();
   const stats = [
     { number: '-K+', label: 'Properties Listed' },
     { number: '-K+', label: 'Active Users' },
@@ -177,7 +179,7 @@ const AboutPage = () => {
           </div>
         </main>
 
-        <PersistentChat />
+        {!isMenuOpen && <PersistentChat />}
         <Footer />
       </div>
     </>

@@ -5,8 +5,10 @@ import Navigation from '../components/layout/Navigation';
 import PersistentChat from '../components/chat/PersistentChat';
 import Footer from '../components/layout/Footer';
 import PageTitle from '../components/PageTitle';
+import { useMenu } from '../context/MenuContext';
 
 const FeaturesPage = () => {
+  const { isMenuOpen } = useMenu();
   const features = [
     {
       title: 'AI-Powered Property Matching',
@@ -110,7 +112,7 @@ const FeaturesPage = () => {
           </div>
         </main>
 
-        <PersistentChat />
+        {!isMenuOpen && <PersistentChat />}
         <Footer />
       </div>
     </>

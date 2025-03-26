@@ -46,7 +46,7 @@ const Navigation = () => {
 
         {/* Burger menu button (visible on mobile) */}
         <button 
-          className="md:hidden z-10 p-2 text-gray-600 hover:text-emerald-600 focus:outline-none" 
+          className="md:hidden z-[60] p-2 text-gray-600 hover:text-emerald-600 focus:outline-none fixed top-4 right-4" 
           onClick={toggleMenu}
           aria-label="Toggle menu"
         >
@@ -107,10 +107,13 @@ const Navigation = () => {
         </div>
 
         {/* Mobile menu (overlay) */}
-        <div className={`fixed inset-0 bg-white z-0 transition-opacity duration-300 md:hidden ${
-          isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}>
-          <div className="flex flex-col items-center pt-24 h-full space-y-6 text-xl">
+        <div 
+          className={`fixed inset-0 bg-white z-50 transition-opacity duration-300 md:hidden ${
+            isMenuOpen ? 'opacity-100 pointer-events-auto overflow-hidden' : 'opacity-0 pointer-events-none'
+          }`}
+          style={{ height: isMenuOpen ? '100vh' : 'auto' }}
+        >
+          <div className="flex flex-col items-center pt-24 h-full space-y-6 text-xl overflow-y-auto">
             {/* Dashboard button at the top for logged in users */}
             {user && (
               <Link 
@@ -122,6 +125,15 @@ const Navigation = () => {
                 <span>My Dashboard</span>
               </Link>
             )}
+
+            {/* Home button */}
+            <Link 
+              to="/"
+              className={`${isActive('/') ? 'text-emerald-600' : 'text-gray-600 hover:text-gray-900'}`}
+              onClick={closeMenu}
+            >
+              Home
+            </Link>
             
             <Link 
               to="/features" 

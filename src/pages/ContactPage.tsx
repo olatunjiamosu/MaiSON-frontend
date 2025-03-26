@@ -4,8 +4,10 @@ import { Mail, Phone, MapPin } from 'lucide-react';
 import PersistentChat from '../components/chat/PersistentChat';
 import Footer from '../components/layout/Footer';
 import PageTitle from '../components/PageTitle';
+import { useMenu } from '../context/MenuContext';
 
 const ContactPage = () => {
+  const { isMenuOpen } = useMenu();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -144,7 +146,7 @@ const ContactPage = () => {
           </div>
         </main>
 
-        <PersistentChat />
+        {!isMenuOpen && <PersistentChat />}
         <Footer />
       </div>
     </>
