@@ -8,6 +8,7 @@ import PropertyService from '../services/PropertyService';
 import { PropertySummary, PropertyFilters } from '../types/property';
 import { formatPrice } from '../lib/formatters';
 import Footer from '../components/layout/Footer';
+import { useMenu } from '../context/MenuContext';
 
 // Interface for the component's property display
 interface PropertyDisplay {
@@ -69,6 +70,8 @@ const PublicListings = () => {
     parkingSpaces: 'Any',
     receptionRooms: 'Any'
   });
+
+  const { isMenuOpen } = useMenu();
 
   // Load saved filters and settings from localStorage on component mount
   useEffect(() => {
@@ -481,7 +484,7 @@ const PublicListings = () => {
         currentFilters={uiFilters}
       />
       
-      <PersistentChat />
+      {!isMenuOpen && <PersistentChat />}
       <Footer />
     </div>
   );
