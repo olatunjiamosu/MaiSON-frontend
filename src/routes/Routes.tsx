@@ -21,6 +21,7 @@ import ContactPage from '../pages/ContactPage';
 import SellerDashboard from '../pages/dashboard/SellerDashboard';
 import SellerPropertyGrid from '../pages/dashboard/SellerPropertyGrid';
 import RoleRoute from './RoleRoute';
+import Dashboard from '../pages/dashboard/Dashboard';
 
 // Remove mock property data as we're now using the API
 
@@ -38,6 +39,16 @@ const AppRoutes = () => (
     <Route path="/contact" element={<PublicRoute><ContactPage /></PublicRoute>} />
     <Route path="/select-user-type" element={<PrivateRoute><SelectUserType /></PrivateRoute>} />
     
+    {/* Temporary route for testing new dashboard */}
+    <Route 
+      path="/dashboard" 
+      element={
+        <PrivateRoute>
+          <Dashboard />
+        </PrivateRoute>
+      }
+    />
+
     {/* Dashboard Selection for Both-Role Users */}
     <Route 
       path="/select-dashboard" 

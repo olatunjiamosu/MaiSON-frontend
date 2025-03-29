@@ -182,17 +182,16 @@ export interface UserInfo {
 
 export interface OfferedProperty {
   property_id: string;
+  main_image_url: string;
   address: {
-    house_number: string;
     street: string;
     city: string;
     postcode: string;
   };
-  price: number;
-  latest_offer: {
-    amount: number;
-    status: string;
-    last_updated: string;
+  specs: {
+    bedrooms: number;
+    bathrooms: number;
+    square_footage: number;
   };
 }
 
@@ -206,4 +205,18 @@ export interface DashboardResponse {
   offered_properties: OfferedProperty[];
   total_saved_properties: number;
   total_properties_listed: number;
+  upcoming_viewings: {
+    id: string;
+    datetime: string;
+    property: {
+      address: {
+        street: string;
+      };
+    };
+  }[];
+  recent_chats: {
+    id: string;
+    last_message: string;
+    timestamp: string;
+  }[];
 } 
