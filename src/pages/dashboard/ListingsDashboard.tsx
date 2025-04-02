@@ -11,6 +11,8 @@ import {
   List,
   X,
   SwitchCamera,
+  ChevronLeft,
+  Search,
 } from 'lucide-react';
 import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
 import PersistentChat from '../../components/chat/PersistentChat';
@@ -31,6 +33,7 @@ import ViewingsSection from './buyer-sections/ViewingsSection';
 import ApplicationsSection from './buyer-sections/ApplicationsSection';
 import PropertyChats from './buyer-sections/PropertyChats';
 import DocumentsSection from './buyer-sections/DocumentsSection';
+import SavedSearchesSection from './buyer-sections/SavedSearchesSection';
 
 // Add this interface near the top
 interface ChatHistory {
@@ -49,7 +52,7 @@ interface ChatMessageDisplay {
   timestamp?: string;
 }
 
-const BuyerDashboard: React.FC = () => {
+const ListingsDashboard: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<string>('listings');
@@ -86,6 +89,8 @@ const BuyerDashboard: React.FC = () => {
   useEffect(() => {
     if (location.pathname.includes('/applications')) {
       setActiveSection('applications');
+    } else if (location.pathname.includes('/saved-searches')) {
+      setActiveSection('saved-searches');
     } else if (location.pathname.includes('/saved')) {
       setActiveSection('saved');
     } else if (location.pathname.includes('/viewings')) {
@@ -94,7 +99,7 @@ const BuyerDashboard: React.FC = () => {
       setActiveSection('messages');
       // Clear selected chat when navigating to property chats
       setSelectedChat(null);
-    } else if (location.pathname === '/buyer-dashboard') {
+    } else if (location.pathname === '/dashboard/listings') {
       setActiveSection('listings');
     }
   }, [location.pathname]);
@@ -240,7 +245,7 @@ const BuyerDashboard: React.FC = () => {
   };
 
   // Add console.log to debug
-  console.log('Rendering BuyerDashboard');
+  console.log('Rendering ListingsDashboard');
 
   // Compute if we're in the messages section to hide the persistent chat
   const isMessagesSection = activeSection === 'messages' || 
@@ -339,47 +344,45 @@ const BuyerDashboard: React.FC = () => {
   return (
     <React.Fragment>
       {/* Dynamic PageTitle based on active section */}
-      {activeSection === 'listings' && <PageTitle title="Property Listings | Buyer Dashboard" />}
-      {activeSection === 'saved' && <PageTitle title="Saved Properties | Buyer Dashboard" />}
-      {activeSection === 'messages' && <PageTitle title="Property Chats | Buyer Dashboard" />}
-      {activeSection === 'viewings' && <PageTitle title="Viewings | Buyer Dashboard" />}
-      {activeSection === 'applications' && <PageTitle title="Offers | Buyer Dashboard" />}
-      {activeSection === 'documents' && <PageTitle title="Documents | Buyer Dashboard" />}
+      {activeSection === 'listings' && <PageTitle title="Property Listings | Listings Dashboard" />}
+      {activeSection === 'saved' && <PageTitle title="Saved Properties | Listings Dashboard" />}
+      {activeSection === 'messages' && <PageTitle title="Property Chats | Listings Dashboard" />}
+      {activeSection === 'viewings' && <PageTitle title="Viewings | Listings Dashboard" />}
+      {activeSection === 'applications' && <PageTitle title="Offers | Listings Dashboard" />}
+      {activeSection === 'documents' && <PageTitle title="Documents | Listings Dashboard" />}
 
       <div className="flex h-screen bg-gray-50 overflow-hidden">
         {/* Sidebar */}
-        <aside
-          className={`fixed md:static inset-y-0 left-0 w-64 bg-white shadow-sm border-r transform transition-transform duration-200 ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } md:translate-x-0 z-30 flex flex-col`}
-        >
-          {/* Logo & Menu Toggle */}
-          <div className="p-4 border-b flex items-center justify-between">
-            <div 
-              className="flex items-center space-x-2 cursor-pointer"
-              onClick={handleLogoClick}
-            >
-              <Home className="h-6 w-6 text-emerald-600" />
-              <span className="text-xl font-bold tracking-tight">
-                <span>M</span>
-                <span className="text-emerald-600">ai</span>
-                <span>SON</span>
-              </span>
+        <div className={`fixed inset-y-0 left-0 w-64 bg-white border-r transform transition-transform duration-200 ease-in-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0 z-30 flex flex-col`}>
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center space-x-2">
+              <div 
+                onClick={() => navigate('/')}
+                className="flex items-center space-x-2 cursor-pointer"
+              >
+                <Home className="h-7 w-7 text-emerald-600" />
+                <span className="text-2xl font-bold tracking-tight">
+                  <span>M</span>
+                  <span className="text-emerald-600">ai</span>
+                  <span>SON</span>
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Switch Dashboard Button - Only visible to 'both' role users */}
-          {userRole === 'both' && (
-            <div className="px-4 py-3 border-b">
-              <button
-                onClick={handleSwitchDashboard}
-                className="flex items-center justify-center w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md transition-colors"
-              >
-                <SwitchCamera className="h-4 w-4 mr-2" />
-                <span>Switch Dashboard</span>
-              </button>
-            </div>
-          )}
+          {/* Back to Dashboard Button */}
+          <div className="p-4 border-b">
+            <button 
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center text-emerald-600 hover:text-emerald-700"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1.5" />
+              <span className="text-[0.9375rem] font-medium">Back to Dashboard</span>
+            </button>
+          </div>
 
           {/* Navigation Links */}
           <nav className="p-4 space-y-1">
@@ -389,26 +392,29 @@ const BuyerDashboard: React.FC = () => {
               active={activeSection === 'listings'}
               onClick={() => {
                 setActiveSection('listings');
-                navigate('/buyer-dashboard');
+                navigate('/dashboard/listings');
               }}
-              path="/buyer-dashboard"
+              path="/dashboard/listings"
             />
-            {/* <NavItem
-              icon={<Handshake />}
-              label="My Matches"
-              active={activeSection === 'matches'}
-              onClick={() => setActiveSection('matches')}
-              path="/buyer-dashboard/matches"
-            /> */}
+            <NavItem
+              icon={<Search />}
+              label="Saved Searches"
+              active={activeSection === 'saved-searches'}
+              onClick={() => {
+                setActiveSection('saved-searches');
+                navigate('/dashboard/listings/saved-searches');
+              }}
+              path="/dashboard/listings/saved-searches"
+            />
             <NavItem
               icon={<Heart />}
               label="Saved Properties"
               active={activeSection === 'saved'}
               onClick={() => {
                 setActiveSection('saved');
-                navigate('/buyer-dashboard/saved');
+                navigate('/dashboard/listings/saved');
               }}
-              path="/buyer-dashboard/saved"
+              path="/dashboard/listings/saved"
             />
             <NavItem
               icon={<MessageCircle />}
@@ -416,9 +422,9 @@ const BuyerDashboard: React.FC = () => {
               active={activeSection === 'messages'}
               onClick={() => {
                 setActiveSection('messages');
-                navigate('/buyer-dashboard/property-chats');
+                navigate('/dashboard/listings/property-chats');
               }}
-              path="/buyer-dashboard/property-chats"
+              path="/dashboard/listings/property-chats"
             />
             <NavItem
               icon={<Calendar />}
@@ -426,53 +432,26 @@ const BuyerDashboard: React.FC = () => {
               active={activeSection === 'viewings'}
               onClick={() => {
                 setActiveSection('viewings');
-                navigate('/buyer-dashboard/viewings');
+                navigate('/dashboard/listings/viewings');
               }}
-              path="/buyer-dashboard/viewings"
+              path="/dashboard/listings/viewings"
             />
             <NavItem
               icon={<ClipboardList />}
               label="Offers"
               active={activeSection === 'applications'}
               onClick={() => setActiveSection('applications')}
-              path="/buyer-dashboard/applications"
+              path="/dashboard/listings/applications"
             />
             <NavItem
               icon={<FileText />}
               label="Documents"
               active={activeSection === 'documents'}
               onClick={() => setActiveSection('documents')}
-              path="/buyer-dashboard/documents"
+              path="/dashboard/listings/documents"
             />
           </nav>
-
-          {/* Mia Chat History - Previous Chats section with enhanced UI */}
-          <div className="px-4 py-3 border-t">
-            <PreviousChats 
-              onSelectChat={setSelectedChat} 
-              selectedChatId={selectedChat?.id} 
-            />
-          </div>
-
-          {/* Profile Section */}
-          <div className="mt-auto border-t p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                <span className="text-emerald-600 font-medium">{userData.name[0].toUpperCase()}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-700 truncate">{userData.email}</p>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="text-gray-400 hover:text-gray-500"
-                aria-label="Log out"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </aside>
+        </div>
 
         {/* Add overlay for closing sidebar on mobile */}
         {sidebarOpen && (
@@ -483,7 +462,7 @@ const BuyerDashboard: React.FC = () => {
         )}
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden relative">
+        <div className="flex-1 flex flex-col overflow-hidden relative md:ml-64">
           <main className={`flex-1 overflow-y-auto ${
             activeSection === 'messages' ? 'p-0' : 'p-8'
           }`}>
@@ -495,6 +474,7 @@ const BuyerDashboard: React.FC = () => {
                   index
                   element={<ListingsSection />}
                 />
+                <Route path="saved-searches" element={<SavedSearchesSection />} />
                 <Route path="saved" element={<SavedPropertiesSection />} />
                 <Route path="viewings" element={<ViewingsSection />} />
                 <Route path="messages" element={<PropertyChats />} />
@@ -666,4 +646,4 @@ const NavItem = ({ icon, label, active, onClick, path }: NavItemProps) => {
   );
 };
 
-export default BuyerDashboard;
+export default ListingsDashboard;

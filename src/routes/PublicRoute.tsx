@@ -21,7 +21,7 @@ const PublicRoute = ({
   
   // Only redirect if user is authenticated AND route is protected
   if (user && isProtected) {
-    return <Navigate to="/buyer-dashboard" />;
+    return <Navigate to="/dashboard/listings" />;
   }
 
   return <>{children}</>;

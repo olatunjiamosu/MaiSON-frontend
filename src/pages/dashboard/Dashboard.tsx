@@ -52,7 +52,7 @@ const Dashboard = () => {
   const { user, userRole, logout } = useAuth();
   const { isMenuOpen } = useMenu();
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewings, setViewings] = useState<Viewing[]>([]);
@@ -65,7 +65,7 @@ const Dashboard = () => {
       if (refresh) {
         setIsRefreshing(true);
       } else {
-        setIsLoading(true);
+        setIsLoadingDashboard(true);
       }
       setError(null);
       
@@ -76,7 +76,7 @@ const Dashboard = () => {
       console.error('Error fetching dashboard data:', err);
       setError('Failed to load dashboard data. Please try again later.');
     } finally {
-      setIsLoading(false);
+      setIsLoadingDashboard(false);
       setIsRefreshing(false);
     }
   };
@@ -116,8 +116,8 @@ const Dashboard = () => {
     }
   };
 
-  // Render loading state
-  if (isLoading) {
+  // Render loading state only for initial dashboard load
+  if (isLoadingDashboard) {
     return (
       <div className="min-h-screen bg-white">
         <div className="container mx-auto px-4 py-8">
@@ -259,9 +259,15 @@ const Dashboard = () => {
                       <p className="text-sm text-gray-500">Next 7 days</p>
                     </div>
                   </div>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {viewings?.length || 0}
-                  </p>
+                  {isLoadingViewings ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : (
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {viewings?.length || 0}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -411,7 +417,7 @@ const Dashboard = () => {
                 {/* Browse Properties Card */}
                 <div className="w-[250px]">
                   <div 
-                    onClick={() => navigate('/buyer-dashboard')}
+                    onClick={() => navigate('/dashboard/listings')}
                     className="flex flex-col items-center justify-center p-4 bg-white rounded-lg border-2 border-dashed border-emerald-300 hover:border-emerald-500 hover:bg-emerald-50 transition-all duration-300 cursor-pointer h-[180px]"
                   >
                     <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-3">
@@ -445,7 +451,14 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="space-y-4 h-[180px] overflow-y-auto">
-                {viewings && viewings.length > 0 ? (
+                {isLoadingViewings ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mb-2"></div>
+                      <p className="text-gray-500">Loading viewings...</p>
+                    </div>
+                  </div>
+                ) : viewings && viewings.length > 0 ? (
                   viewings.map((viewing) => (
                     <div key={viewing.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                       <div>
@@ -479,7 +492,14 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="space-y-4 h-[180px] overflow-y-auto">
-                {chatHistory && chatHistory.length > 0 ? (
+                {isLoadingChats ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-600 mb-2"></div>
+                      <p className="text-gray-500">Loading chats...</p>
+                    </div>
+                  </div>
+                ) : chatHistory && chatHistory.length > 0 ? (
                   chatHistory.map((chat) => (
                     <div key={chat.id} className="p-4 bg-gray-50 rounded-lg">
                       <p className="text-gray-900 mb-1">{chat.question}</p>

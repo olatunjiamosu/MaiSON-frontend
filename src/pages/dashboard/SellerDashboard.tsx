@@ -486,7 +486,10 @@ const SellerDashboard = () => {
 
           {/* Property Info (if property is loaded) */}
           {propertyId && property && (
-            <div className="p-4 border-b">
+            <div 
+              className="p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors"
+              onClick={() => handleSectionChange('my-property', `/dashboard/seller/property/${propertyId}`)}
+            >
               <div className="flex items-center gap-3">
                 <div className="w-16 h-16 rounded-full overflow-hidden">
                   <img 
@@ -541,13 +544,6 @@ const SellerDashboard = () => {
                 path={`/dashboard/seller/property/${propertyId}`}
               />
               <NavItem
-                icon={<ArrowUpRight />}
-                label="View as Buyer"
-                active={activeSection === 'view-as-buyer'}
-                onClick={() => navigate(`/property/${propertyId}?from=seller-dashboard`)}
-                path={`/property/${propertyId}?from=seller-dashboard`}
-              />
-              <NavItem
                 icon={<DollarSign />}
                 label="Offers"
                 active={activeSection === 'offers'}
@@ -581,6 +577,13 @@ const SellerDashboard = () => {
                 active={activeSection === 'documents'}
                 onClick={() => handleSectionChange('documents', `/dashboard/seller/property/${propertyId}/documents`)}
                 path={`/dashboard/seller/property/${propertyId}/documents`}
+              />
+              <NavItem
+                icon={<ArrowUpRight />}
+                label="View as Buyer"
+                active={activeSection === 'view-as-buyer'}
+                onClick={() => navigate(`/property/${propertyId}?from=seller-dashboard`)}
+                path={`/property/${propertyId}?from=seller-dashboard`}
               />
             </>
           ) : (
@@ -658,8 +661,8 @@ const SellerDashboard = () => {
                 <Route path="viewings" element={<ViewingsSection />} />
                 <Route path="availability" element={<AvailabilitySection />} />
                 <Route path="documents" element={<DocumentsSection />} />
-                <Route path="my-property" element={<MyPropertySection property={property || undefined} />} />
-                <Route index element={<MyPropertySection property={property || undefined} />} />
+                <Route path="my-property" element={!isLoadingProperty ? <MyPropertySection property={property || undefined} /> : null} />
+                <Route index element={!isLoadingProperty ? <MyPropertySection property={property || undefined} /> : null} />
               </Routes>
           </div>
           {/* Add padding at the bottom to ensure content isn't hidden behind the chat input */}

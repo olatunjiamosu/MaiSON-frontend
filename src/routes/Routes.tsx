@@ -5,7 +5,7 @@ import Verification from '../pages/auth/Verification';
 import ResetPassword from '../pages/auth/ResetPassword';
 import PrivateRoute from './PrivateRoute';
 import PublicRoute from './PublicRoute';
-import BuyerDashboard from '../pages/dashboard/BuyerDashboard';
+import ListingsDashboard from '../pages/dashboard/ListingsDashboard';
 import SelectUserType from '../pages/auth/SelectUserType';
 import SignUp from '../pages/auth/SignUp';
 import PropertyDetails from '../pages/property/PropertyDetails';
@@ -55,10 +55,10 @@ const AppRoutes = () => (
 
     {/* Protected Routes */}
     <Route 
-      path="/buyer-dashboard/*" 
+      path="/dashboard/listings/*" 
       element={
         <PrivateRoute>
-          <BuyerDashboard />
+          <ListingsDashboard />
         </PrivateRoute>
       }
     />

@@ -14,7 +14,11 @@ import {
   X,
   Settings,
   LogOut,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { PropertyDetail } from '../../../types/property';
@@ -23,10 +27,27 @@ interface MyPropertySectionProps {
   property?: PropertyDetail;
 }
 
+type EditingSection = 'basic' | 'features' | 'address' | 'description' | 'additional' | null;
+
 const MyPropertySection: React.FC<MyPropertySectionProps> = ({ property }) => {
   const navigate = useNavigate();
-  const [isEditing, setIsEditing] = useState(false);
+  const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [editedProperty, setEditedProperty] = useState<PropertyDetail | undefined>(property);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Combine main image and additional images into a single array
+  const allImages = property?.main_image_url 
+    ? [property.main_image_url, ...(property.image_urls?.filter(url => url !== property.main_image_url) || [])]
+    : property?.image_urls || [];
+
+  const nextImage = () => {
+    setSelectedImage((prev) => (prev + 1) % allImages.length);
+  };
+
+  const previousImage = () => {
+    setSelectedImage((prev) => (prev - 1 + allImages.length) % allImages.length);
+  };
 
   const handleLogout = async () => {
     try {
@@ -50,14 +71,14 @@ const MyPropertySection: React.FC<MyPropertySectionProps> = ({ property }) => {
     }
   };
 
-  const handleEdit = () => {
-    setIsEditing(true);
+  const handleEdit = (section: EditingSection) => {
+    setEditingSection(section);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (section: EditingSection) => {
     try {
       // TODO: Implement API call to save property details
-      setIsEditing(false);
+      setEditingSection(null);
       toast.success('Property details updated successfully');
     } catch (error) {
       console.error('Error saving property details:', error);
@@ -65,9 +86,9 @@ const MyPropertySection: React.FC<MyPropertySectionProps> = ({ property }) => {
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = (section: EditingSection) => {
     setEditedProperty(property);
-    setIsEditing(false);
+    setEditingSection(null);
   };
 
   const handleInputChange = (field: keyof PropertyDetail, value: any) => {
@@ -117,52 +138,120 @@ const MyPropertySection: React.FC<MyPropertySectionProps> = ({ property }) => {
         </div>
       </div>
 
-      {/* Main Property Image */}
-      <div className="relative h-[400px] rounded-lg overflow-hidden">
-        <img
-          src={property.main_image_url || '/placeholder-property.jpg'}
-          alt={property.address.street}
-          className="w-full h-full object-cover"
-        />
-        {isEditing && (
-          <div className="absolute top-4 right-4 flex gap-2">
+      {/* Image Gallery */}
+      <div className="relative">
+        {/* Main Image Container */}
+        <div
+          className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : ''}`}
+        >
+          <img
+            src={allImages[selectedImage]}
+            alt="Property"
+            className={`
+              ${
+                isFullscreen
+                  ? 'h-screen w-screen object-contain'
+                  : 'w-full h-[600px] object-cover rounded-lg'
+              }
+            `}
+          />
+
+          {/* Gallery Controls */}
+          <div
+            className={`absolute inset-0 flex items-center justify-between p-4 ${
+              isFullscreen
+                ? 'bg-black/50'
+                : 'bg-gradient-to-r from-black/20 via-transparent to-black/20'
+            }`}
+          >
+            {/* Previous Button */}
             <button
-              onClick={handleSave}
-              className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2"
+              onClick={previousImage}
+              className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
             >
-              <Save className="h-4 w-4" />
-              Save Changes
+              <ChevronLeft className="h-6 w-6" />
             </button>
+
+            {/* Next Button */}
             <button
-              onClick={handleCancel}
-              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2"
+              onClick={nextImage}
+              className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
             >
-              <X className="h-4 w-4" />
-              Cancel
+              <ChevronRight className="h-6 w-6" />
             </button>
+          </div>
+
+          {/* Image Counter & Fullscreen Toggle */}
+          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
+            <div className="px-4 py-2 rounded-full bg-black/50 text-white text-sm">
+              {selectedImage + 1} / {allImages.length}
+            </div>
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+            >
+              {isFullscreen ? (
+                <Minimize2 className="h-5 w-5" />
+              ) : (
+                <Maximize2 className="h-5 w-5" />
+              )}
+            </button>
+          </div>
+
+          {/* Fullscreen Close Button */}
+          {isFullscreen && (
+            <button
+              onClick={() => setIsFullscreen(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          )}
+        </div>
+
+        {/* Thumbnails - Only show when not in fullscreen */}
+        {!isFullscreen && allImages.length > 1 && (
+          <div className="grid grid-cols-5 gap-4 mt-4">
+            {allImages.map((image, index) => (
+              <button
+                key={index}
+                onClick={() => setSelectedImage(index)}
+                className={`relative aspect-w-16 aspect-h-9 transition-all ${
+                  selectedImage === index
+                    ? 'ring-2 ring-emerald-600 opacity-100 rounded-lg'
+                    : 'opacity-60 hover:opacity-100'
+                }`}
+              >
+                <img
+                  src={image}
+                  alt={`Property view ${index + 1}`}
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              </button>
+            ))}
           </div>
         )}
       </div>
 
       {/* Property Details Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Basic Information */}
         <div className="bg-white p-6 rounded-lg border shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
-            {!isEditing && (
+            {editingSection !== 'basic' && (
               <button
-                onClick={handleEdit}
+                onClick={() => handleEdit('basic')}
                 className="text-emerald-600 hover:text-emerald-700"
               >
                 <Edit2 className="h-5 w-5" />
               </button>
             )}
           </div>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700">Property Type</label>
-              {isEditing ? (
+              {editingSection === 'basic' ? (
                 <select
                   value={editedProperty?.specs?.property_type || ''}
                   onChange={(e) => handleInputChange('specs', { ...property.specs, property_type: e.target.value })}
@@ -174,12 +263,14 @@ const MyPropertySection: React.FC<MyPropertySectionProps> = ({ property }) => {
                   <option value="bungalow">Bungalow</option>
                 </select>
               ) : (
-                <p className="mt-1 text-gray-900">{property.specs.property_type}</p>
+                <p className="mt-1 text-gray-900">
+                  {property.specs.property_type.charAt(0).toUpperCase() + property.specs.property_type.slice(1)}
+                </p>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Price</label>
-              {isEditing ? (
+              {editingSection === 'basic' ? (
                 <input
                   type="number"
                   value={editedProperty?.price || ''}
@@ -190,26 +281,90 @@ const MyPropertySection: React.FC<MyPropertySectionProps> = ({ property }) => {
                 <p className="mt-1 text-gray-900">£{property.price.toLocaleString()}</p>
               )}
             </div>
+            <div className="md:row-span-2">
+              <label className="block text-sm font-medium text-gray-700">Address</label>
+              {editingSection === 'basic' ? (
+                <div className="mt-1 space-y-2">
+                  <input
+                    type="text"
+                    value={editedProperty?.address?.house_number || ''}
+                    onChange={(e) => handleInputChange('address', { ...property.address, house_number: e.target.value })}
+                    placeholder="House Number"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  />
+                  <input
+                    type="text"
+                    value={editedProperty?.address?.street || ''}
+                    onChange={(e) => handleInputChange('address', { ...property.address, street: e.target.value })}
+                    placeholder="Street"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  />
+                  <input
+                    type="text"
+                    value={editedProperty?.address?.city || ''}
+                    onChange={(e) => handleInputChange('address', { ...property.address, city: e.target.value })}
+                    placeholder="City"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  />
+                  <input
+                    type="text"
+                    value={editedProperty?.address?.postcode || ''}
+                    onChange={(e) => handleInputChange('address', { ...property.address, postcode: e.target.value })}
+                    placeholder="Postcode"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  />
+                </div>
+              ) : (
+                <p className="mt-1 text-gray-900 whitespace-pre-line">
+                  {[
+                    `${property.address.house_number} ${property.address.street}`,
+                    property.address.city,
+                    property.address.postcode
+                  ].filter(Boolean).join('\n')}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">EPC Rating</label>
+              {editingSection === 'basic' ? (
+                <select
+                  value={editedProperty?.specs?.epc_rating || ''}
+                  onChange={(e) => handleInputChange('specs', { ...property.specs, epc_rating: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                >
+                  <option value="">Select EPC Rating</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                  <option value="D">D</option>
+                  <option value="E">E</option>
+                  <option value="F">F</option>
+                  <option value="G">G</option>
+                </select>
+              ) : (
+                <p className="mt-1 text-gray-900">{property.specs.epc_rating || 'Not specified'}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Square Footage</label>
+              {editingSection === 'basic' ? (
+                <input
+                  type="number"
+                  value={editedProperty?.specs?.square_footage || ''}
+                  onChange={(e) => handleInputChange('specs', { ...property.specs, square_footage: Number(e.target.value) })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                />
+              ) : (
+                <p className="mt-1 text-gray-900">{property.specs.square_footage} sq ft</p>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Property Features */}
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Property Features</h3>
-            {!isEditing && (
-              <button
-                onClick={handleEdit}
-                className="text-emerald-600 hover:text-emerald-700"
-              >
-                <Edit2 className="h-5 w-5" />
-              </button>
-            )}
-          </div>
-          <div className="space-y-4">
+          {/* Room Numbers Row */}
+          <div className="grid grid-cols-3 gap-6 mt-6">
             <div>
               <label className="block text-sm font-medium text-gray-700">Bedrooms</label>
-              {isEditing ? (
+              {editingSection === 'basic' ? (
                 <input
                   type="number"
                   value={editedProperty?.specs?.bedrooms || ''}
@@ -222,7 +377,7 @@ const MyPropertySection: React.FC<MyPropertySectionProps> = ({ property }) => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Bathrooms</label>
-              {isEditing ? (
+              {editingSection === 'basic' ? (
                 <input
                   type="number"
                   value={editedProperty?.specs?.bathrooms || ''}
@@ -234,91 +389,52 @@ const MyPropertySection: React.FC<MyPropertySectionProps> = ({ property }) => {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Square Footage</label>
-              {isEditing ? (
+              <label className="block text-sm font-medium text-gray-700">Reception Rooms</label>
+              {editingSection === 'basic' ? (
                 <input
                   type="number"
-                  value={editedProperty?.specs?.square_footage || ''}
-                  onChange={(e) => handleInputChange('specs', { ...property.specs, square_footage: Number(e.target.value) })}
+                  value={editedProperty?.specs?.reception_rooms || ''}
+                  onChange={(e) => handleInputChange('specs', { ...property.specs, reception_rooms: Number(e.target.value) })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
                 />
               ) : (
-                <p className="mt-1 text-gray-900">{property.specs.square_footage} sq ft</p>
+                <p className="mt-1 text-gray-900">{property.specs.reception_rooms || 'Not specified'}</p>
               )}
             </div>
           </div>
-        </div>
 
-        {/* Address Information */}
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Address</h3>
-            {!isEditing && (
+          {editingSection === 'basic' && (
+            <div className="flex justify-end gap-2 mt-6">
               <button
-                onClick={handleEdit}
-                className="text-emerald-600 hover:text-emerald-700"
+                onClick={() => handleCancel('basic')}
+                className="bg-white text-red-600 px-3 py-1.5 rounded-md border border-red-200 hover:bg-red-50 text-sm font-medium"
               >
-                <Edit2 className="h-5 w-5" />
+                Cancel
               </button>
-            )}
-          </div>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Street</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editedProperty?.address?.street || ''}
-                  onChange={(e) => handleInputChange('address', { ...property.address, street: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
-                />
-              ) : (
-                <p className="mt-1 text-gray-900">{property.address.street}</p>
-              )}
+              <button
+                onClick={() => handleSave('basic')}
+                className="bg-white text-gray-700 px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-50 text-sm font-medium"
+              >
+                Apply
+              </button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">City</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editedProperty?.address?.city || ''}
-                  onChange={(e) => handleInputChange('address', { ...property.address, city: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
-                />
-              ) : (
-                <p className="mt-1 text-gray-900">{property.address.city}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Postcode</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editedProperty?.address?.postcode || ''}
-                  onChange={(e) => handleInputChange('address', { ...property.address, postcode: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
-                />
-              ) : (
-                <p className="mt-1 text-gray-900">{property.address.postcode}</p>
-              )}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Description */}
-        <div className="bg-white p-6 rounded-lg border shadow-sm md:col-span-2 lg:col-span-3">
+        <div className="bg-white p-6 rounded-lg border shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Description</h3>
-            {!isEditing && (
+            {editingSection !== 'description' && (
               <button
-                onClick={handleEdit}
+                onClick={() => handleEdit('description')}
                 className="text-emerald-600 hover:text-emerald-700"
               >
                 <Edit2 className="h-5 w-5" />
               </button>
             )}
           </div>
-          {isEditing ? (
+          {editingSection === 'description' ? (
             <textarea
               value={editedProperty?.details?.description || ''}
               onChange={(e) => handleInputChange('details', { ...property.details, description: e.target.value })}
@@ -327,6 +443,154 @@ const MyPropertySection: React.FC<MyPropertySectionProps> = ({ property }) => {
             />
           ) : (
             <p className="text-gray-900 whitespace-pre-wrap">{property.details?.description || 'No description available'}</p>
+          )}
+          {editingSection === 'description' && (
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => handleCancel('description')}
+                className="bg-white text-red-600 px-3 py-1.5 rounded-md border border-red-200 hover:bg-red-50 text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSave('description')}
+                className="bg-white text-gray-700 px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-50 text-sm font-medium"
+              >
+                Apply
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Additional Details */}
+        <div className="bg-white p-6 rounded-lg border shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Additional Details</h3>
+            {editingSection !== 'additional' && (
+              <button
+                onClick={() => handleEdit('additional')}
+                className="text-emerald-600 hover:text-emerald-700"
+              >
+                <Edit2 className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Construction Year</label>
+              {editingSection === 'additional' ? (
+                <input
+                  type="number"
+                  value={editedProperty?.details?.construction_year || ''}
+                  onChange={(e) => handleInputChange('details', { ...property.details, construction_year: Number(e.target.value) })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                />
+              ) : (
+                <p className="mt-1 text-gray-900">{property.details?.construction_year || 'Not specified'}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Parking Spaces</label>
+              {editingSection === 'additional' ? (
+                <input
+                  type="number"
+                  value={editedProperty?.details?.parking_spaces || ''}
+                  onChange={(e) => handleInputChange('details', { ...property.details, parking_spaces: Number(e.target.value) })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                />
+              ) : (
+                <p className="mt-1 text-gray-900">{property.details?.parking_spaces || 'Not specified'}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Heating Type</label>
+              {editingSection === 'additional' ? (
+                <select
+                  value={editedProperty?.details?.heating_type || ''}
+                  onChange={(e) => handleInputChange('details', { ...property.details, heating_type: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                >
+                  <option value="">Select Heating Type</option>
+                  <option value="gas_central">Gas Central Heating</option>
+                  <option value="electric">Electric</option>
+                  <option value="oil">Oil</option>
+                  <option value="heat_pump">Heat Pump</option>
+                  <option value="other">Other</option>
+                </select>
+              ) : (
+                <p className="mt-1 text-gray-900">
+                  {property.details?.heating_type
+                    ? property.details.heating_type
+                        .split('_')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ')
+                    : 'Not specified'}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Garden</label>
+              {editingSection === 'additional' ? (
+                <div className="mt-1 space-y-2">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={editedProperty?.features?.has_garden || false}
+                      onChange={(e) => handleInputChange('features', { ...property.features, has_garden: e.target.checked })}
+                      className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <label className="ml-2 text-sm text-gray-700">Has Garden</label>
+                  </div>
+                  {editedProperty?.features?.has_garden && (
+                    <input
+                      type="number"
+                      value={editedProperty?.features?.garden_size || ''}
+                      onChange={(e) => handleInputChange('features', { ...property.features, garden_size: Number(e.target.value) })}
+                      placeholder="Garden Size (sq ft)"
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                    />
+                  )}
+                </div>
+              ) : (
+                <p className="mt-1 text-gray-900">
+                  {property.features?.has_garden 
+                    ? `Yes (${property.features.garden_size || 'Size not specified'} sq ft)`
+                    : 'No'}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Garage</label>
+              {editingSection === 'additional' ? (
+                <div className="flex items-center mt-1">
+                  <input
+                    type="checkbox"
+                    checked={editedProperty?.features?.has_garage || false}
+                    onChange={(e) => handleInputChange('features', { ...property.features, has_garage: e.target.checked })}
+                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <label className="ml-2 text-sm text-gray-700">Has Garage</label>
+                </div>
+              ) : (
+                <p className="mt-1 text-gray-900">{property.features?.has_garage ? 'Yes' : 'No'}</p>
+              )}
+            </div>
+          </div>
+          {editingSection === 'additional' && (
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => handleCancel('additional')}
+                className="bg-white text-red-600 px-3 py-1.5 rounded-md border border-red-200 hover:bg-red-50 text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSave('additional')}
+                className="bg-white text-gray-700 px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-50 text-sm font-medium"
+              >
+                Apply
+              </button>
+            </div>
           )}
         </div>
       </div>
