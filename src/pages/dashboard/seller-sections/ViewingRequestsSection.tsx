@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Calendar, Clock, Home, Check, X, MoreVertical, Settings, LogOut, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
+import { toast } from 'react-hot-toast';
 
 interface ViewingRequest {
   id: string;
@@ -47,6 +49,7 @@ const ViewingRequestsSection = () => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'pending' | 'accepted' | 'declined'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleAccept = (viewingId: string) => {
     console.log('Accepting viewing:', viewingId);
@@ -58,8 +61,14 @@ const ViewingRequestsSection = () => {
     // TODO: Implement decline logic
   };
 
-  const handleLogout = () => {
-    // TODO: Implement logout logic
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast.error('Failed to logout. Please try again.');
+    }
   };
 
   const filteredViewings = mockViewings.filter(viewing => {

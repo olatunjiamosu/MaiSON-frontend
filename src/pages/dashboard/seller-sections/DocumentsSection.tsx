@@ -20,6 +20,7 @@ import DocumentService, { Document as ApiDocument } from '@/services/DocumentSer
 import { toast } from 'react-toastify';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
+import { useAuth } from '../../../context/AuthContext';
 
 // Rename to avoid conflict with DOM Document
 interface DocumentItem {
@@ -144,12 +145,13 @@ export default function DocumentsSection() {
   const [currentPropertyId, setCurrentPropertyId] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   
   // Try to get property ID from URL params or location state
   const params = useParams<{ propertyId?: string }>();
   const location = useLocation();
   const locationState = location.state as { propertyId?: string } | null;
-  const navigate = useNavigate();
 
   // Get current user ID from Firebase
   const getCurrentUserId = async (): Promise<string | null> => {
@@ -431,16 +433,22 @@ export default function DocumentsSection() {
     { id: 'other', label: 'Other', icon: FileText },
   ];
 
-  const handleLogout = () => {
-    // Implement logout functionality
-    console.log('Logging out');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast.error('Failed to logout. Please try again.');
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Documents</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Documents</h2>
+          <p className="text-gray-500">Manage your property documents</p>
         </div>
         <div className="flex items-center gap-4">
           <button

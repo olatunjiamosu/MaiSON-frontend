@@ -37,6 +37,7 @@ import MyPropertiesSection from './seller-sections/ListingsManagementSection';
 import AddPropertySection from './seller-sections/AddPropertySection';
 import OffersSection from './seller-sections/OffersSection';
 import ViewingsSection from './seller-sections/ViewingRequestsSection';
+import MyPropertySection from './seller-sections/MyPropertySection';
 //import MessagesSection from './seller-sections/PropertyChats';
 //import AnalyticsSection from './seller-sections/AnalyticsSection';
 //import MarketInsightsSection from './seller-sections/MarketInsightsSection';
@@ -159,8 +160,12 @@ const SellerDashboard = () => {
       setActiveSection(lastPart);
     } else if (location.pathname === '/seller-dashboard') {
       setActiveSection('properties');
+    } else if (propertyId) {
+      // When we're at the property root path (e.g., /dashboard/seller/property/123)
+      // or any property-specific path without a section
+      setActiveSection('my-property');
     }
-  }, [location.pathname]);
+  }, [location.pathname, propertyId]);
 
   // Mock user data
   const userData = {
@@ -420,9 +425,9 @@ const SellerDashboard = () => {
           {location.pathname.includes('/view-as-buyer') && (
             <PageTitle title={`Buyer View | ${property.address.street} | Seller Dashboard`} />
           )}
-          {/* Default to Offers when first loading a property */}
+          {/* Default to My Property when first loading a property */}
           {!location.pathname.includes('/') && (
-            <PageTitle title={`Offers | ${property.address.street} | Seller Dashboard`} />
+            <PageTitle title={`My Property | ${property.address.street} | Seller Dashboard`} />
           )}
         </>
       ) : (
@@ -530,10 +535,10 @@ const SellerDashboard = () => {
             <>
               <NavItem
                 icon={<Home />}
-                label="Overview"
-                active={activeSection === 'overview'}
-                onClick={() => handleSectionChange('overview', `/dashboard/seller/property/${propertyId}/overview`)}
-                path={`/dashboard/seller/property/${propertyId}/overview`}
+                label="My Property"
+                active={activeSection === 'my-property' || !activeSection}
+                onClick={() => handleSectionChange('my-property', `/dashboard/seller/property/${propertyId}`)}
+                path={`/dashboard/seller/property/${propertyId}`}
               />
               <NavItem
                 icon={<ArrowUpRight />}
@@ -653,7 +658,8 @@ const SellerDashboard = () => {
                 <Route path="viewings" element={<ViewingsSection />} />
                 <Route path="availability" element={<AvailabilitySection />} />
                 <Route path="documents" element={<DocumentsSection />} />
-                <Route index element={<OffersSection property={property || undefined} />} />
+                <Route path="my-property" element={<MyPropertySection property={property || undefined} />} />
+                <Route index element={<MyPropertySection property={property || undefined} />} />
               </Routes>
           </div>
           {/* Add padding at the bottom to ensure content isn't hidden behind the chat input */}

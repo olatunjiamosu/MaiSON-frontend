@@ -5,6 +5,7 @@ import { format, parse, addDays, isBefore, isAfter, addWeeks } from 'date-fns';
 import { Plus, Trash2, Clock, Calendar as CalendarIcon, Repeat, AlertCircle, Check, X, Settings, LogOut, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 // Custom CSS to override react-calendar styles
 const calendarStyles = `
@@ -66,7 +67,7 @@ const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'F
 const STORAGE_KEY = 'seller_availability';
 
 const AvailabilitySection: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [availabilityDates, setAvailabilityDates] = useState<AvailabilityDate[]>([]);
   const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
@@ -406,16 +407,22 @@ const AvailabilitySection: React.FC = () => {
     ) : null;
   };
 
-  const handleLogout = () => {
-    // Implement logout functionality
-    console.log('Logging out');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast.error('Failed to logout. Please try again.');
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">My Availability</h1>
+          <h2 className="text-2xl font-bold text-gray-900">My Availability</h2>
+          <p className="text-gray-500">Manage your availability for property viewings</p>
         </div>
         <div className="flex items-center gap-4">
           <button

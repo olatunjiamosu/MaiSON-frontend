@@ -24,13 +24,13 @@ import PropertyService from '../../../services/PropertyService';
 import { PricingApiResponse } from '../../../types/pricing';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 
 // Local storage keys
 const LS_PRICING_DATA_PREFIX = 'maison_pricing_data_';
 const LS_PRICING_TIMESTAMP_PREFIX = 'maison_pricing_timestamp_';
 // Cache expiry time - 24 hours in milliseconds
 const CACHE_EXPIRY_TIME = 24 * 60 * 60 * 1000;
-import { useAuth } from '../../../context/AuthContext';
 
 type ViewMode = 'list' | 'detail';
 
@@ -279,7 +279,7 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
       setSampleSize(null);
     }
   };
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'accepted' | 'rejected' | 'pending' | 'action_required'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedNegotiation, setSelectedNegotiation] = useState<SellerNegotiation | null>(null);
@@ -586,8 +586,14 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
   };
 
   const navigate = useNavigate();
-  const handleLogout = () => {
-    // Implement logout functionality
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast.error('Failed to logout. Please try again.');
+    }
   };
 
   if (viewMode === 'detail' && selectedNegotiation) {
