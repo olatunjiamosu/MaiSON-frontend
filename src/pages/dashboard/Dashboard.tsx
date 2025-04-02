@@ -23,6 +23,9 @@ import PageTitle from '../../components/PageTitle';
 import PersistentChat from '../../components/chat/PersistentChat';
 import { useMenu } from '../../context/MenuContext';
 import { toast } from 'react-hot-toast';
+import ViewingService from '../../services/ViewingService';
+import { Viewing } from '../../types/viewing';
+import { useChat } from '../../context/ChatContext';
 
 // Add formatStatus helper function after imports
 const formatStatus = (status: string): string => {
@@ -52,6 +55,9 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [viewings, setViewings] = useState<Viewing[]>([]);
+  const [isLoadingViewings, setIsLoadingViewings] = useState(true);
+  const { chatHistory, isLoadingChats } = useChat();
 
   // Fetch dashboard data
   const fetchDashboardData = async (refresh = false) => {
@@ -75,9 +81,23 @@ const Dashboard = () => {
     }
   };
 
-  // Initial fetch
+  // Fetch viewings data
+  const fetchViewings = async () => {
+    try {
+      setIsLoadingViewings(true);
+      const data = await ViewingService.getUpcomingViewings();
+      setViewings(data);
+    } catch (error) {
+      console.error('Error fetching viewings:', error);
+    } finally {
+      setIsLoadingViewings(false);
+    }
+  };
+
+  // Initial fetch of all data
   useEffect(() => {
     fetchDashboardData();
+    fetchViewings();
   }, []);
 
   // Handle manual refresh
@@ -240,7 +260,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {dashboardData?.upcoming_viewings?.length || 0}
+                    {viewings?.length || 0}
                   </p>
                 </div>
               </div>
@@ -250,20 +270,26 @@ const Dashboard = () => {
           {/* Main content grid - combine both grids into one */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Properties I'm Selling Section */}
-            <section className={`border border-gray-100 rounded-lg p-6 bg-white shadow-sm ${dashboardData?.listed_properties && dashboardData.listed_properties.length > 0 ? 'lg:col-span-2' : 'lg:col-span-1'}`}>
+            <section className={`border border-gray-100 rounded-lg p-6 bg-white shadow-sm ${
+              dashboardData?.listed_properties && dashboardData.listed_properties.length > 0 
+                ? dashboardData?.negotiations_as_buyer && dashboardData.negotiations_as_buyer.length > 0
+                  ? 'lg:col-span-2'
+                  : 'lg:col-span-3'
+                : 'lg:col-span-1'
+            }`}>
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-semibold text-gray-900">Properties I'm Selling</h2>
                 </div>
               </div>
               
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-4 justify-center">
                 {/* Property Cards */}
                 {dashboardData?.listed_properties && dashboardData.listed_properties.map((property) => (
                   <div 
                     key={property.id}
                     className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer w-[250px]"
-                    onClick={() => navigate(`/seller-dashboard/property/${property.id}`)}
+                    onClick={() => navigate(`/dashboard/seller/property/${property.id}`)}
                   >
                     <div className="relative h-28">
                       <img 
@@ -316,14 +342,20 @@ const Dashboard = () => {
             </section>
 
             {/* Properties I'm Buying Section */}
-            <section className={`border border-gray-100 rounded-lg p-6 bg-white shadow-sm ${dashboardData?.negotiations_as_buyer && dashboardData.negotiations_as_buyer.length > 0 ? 'lg:col-span-2' : 'lg:col-span-1'}`}>
+            <section className={`border border-gray-100 rounded-lg p-6 bg-white shadow-sm ${
+              dashboardData?.negotiations_as_buyer && dashboardData.negotiations_as_buyer.length > 0 
+                ? dashboardData?.listed_properties && dashboardData.listed_properties.length > 0
+                  ? 'lg:col-span-2'
+                  : 'lg:col-span-3'
+                : 'lg:col-span-1'
+            }`}>
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-semibold text-gray-900">Properties I'm Buying</h2>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-4 justify-center">
                 {/* Properties with Offers */}
                 {dashboardData?.negotiations_as_buyer && dashboardData.negotiations_as_buyer.map((negotiation) => {
                   const property = dashboardData.offered_properties.find(p => p.property_id === negotiation.property_id);
@@ -387,9 +419,13 @@ const Dashboard = () => {
               </div>
             </section>
 
-            {/* Other sections wrapper */}
-            <section className="border border-gray-100 rounded-lg p-6 bg-white shadow-sm lg:col-span-2">
-              {/* Upcoming Viewings Section */}
+            {/* Upcoming Viewings Section */}
+            <section className={`border border-gray-100 rounded-lg p-6 bg-white shadow-sm ${
+              (!dashboardData?.listed_properties || dashboardData.listed_properties.length === 0) && 
+              (!dashboardData?.negotiations_as_buyer || dashboardData.negotiations_as_buyer.length === 0)
+                ? 'lg:col-span-2'
+                : 'lg:col-span-2'
+            }`}>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
@@ -399,8 +435,8 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="space-y-4 h-[180px] overflow-y-auto">
-                {dashboardData?.upcoming_viewings && dashboardData.upcoming_viewings.length > 0 ? (
-                  dashboardData.upcoming_viewings.map((viewing) => (
+                {viewings && viewings.length > 0 ? (
+                  viewings.map((viewing) => (
                     <div key={viewing.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                       <div>
                         <h3 className="font-medium text-gray-900">{viewing.property.address.street}</h3>
@@ -433,10 +469,10 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="space-y-4 h-[180px] overflow-y-auto">
-                {dashboardData?.recent_chats && dashboardData.recent_chats.length > 0 ? (
-                  dashboardData.recent_chats.map((chat) => (
+                {chatHistory && chatHistory.length > 0 ? (
+                  chatHistory.map((chat) => (
                     <div key={chat.id} className="p-4 bg-gray-50 rounded-lg">
-                      <p className="text-gray-900 mb-1">{chat.last_message}</p>
+                      <p className="text-gray-900 mb-1">{chat.question}</p>
                       <p className="text-sm text-gray-500">{new Date(chat.timestamp).toLocaleString()}</p>
                     </div>
                   ))

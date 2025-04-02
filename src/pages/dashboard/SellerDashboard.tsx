@@ -391,9 +391,7 @@ const SellerDashboard = () => {
 
   // Function to handle section changes - explicitly set state and navigate
   const handleSectionChange = (section: string, path: string) => {
-    // Immediately set the active section for instant UI feedback
     setActiveSection(section);
-    // Then navigate to the path
     navigate(path);
   };
 
@@ -529,22 +527,22 @@ const SellerDashboard = () => {
                 icon={<DollarSign />}
                 label="Offers"
                 active={activeSection === 'offers'}
-                onClick={() => handleSectionChange('offers', `/seller-dashboard/property/${propertyId}/offers`)}
-                path={`/seller-dashboard/property/${propertyId}/offers`}
+                onClick={() => handleSectionChange('offers', `/dashboard/seller/property/${propertyId}/offers`)}
+                path={`/dashboard/seller/property/${propertyId}/offers`}
               />
               <NavItem
                 icon={<Calendar />}
                 label="Viewings"
                 active={activeSection === 'viewings'}
-                onClick={() => handleSectionChange('viewings', `/seller-dashboard/property/${propertyId}/viewings`)}
-                path={`/seller-dashboard/property/${propertyId}/viewings`}
+                onClick={() => handleSectionChange('viewings', `/dashboard/seller/property/${propertyId}/viewings`)}
+                path={`/dashboard/seller/property/${propertyId}/viewings`}
               />
               <NavItem
                 icon={<Clock />}
                 label="My Availability"
                 active={activeSection === 'availability'}
-                onClick={() => handleSectionChange('availability', `/seller-dashboard/property/${propertyId}/availability`)}
-                path={`/seller-dashboard/property/${propertyId}/availability`}
+                onClick={() => handleSectionChange('availability', `/dashboard/seller/property/${propertyId}/availability`)}
+                path={`/dashboard/seller/property/${propertyId}/availability`}
               />
               {/* Property-specific "View as Buyer" option */}
               <NavItem

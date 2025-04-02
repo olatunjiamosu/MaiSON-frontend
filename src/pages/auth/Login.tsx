@@ -40,16 +40,8 @@ const Login = () => {
         // Navigate back to the page the user was trying to access
         navigate(returnUrl);
       } else {
-        // Navigate based on user role
-        if (userRole === 'buyer') {
-          navigate('/buyer-dashboard');
-        } else if (userRole === 'seller') {
-          navigate('/seller-dashboard');
-        } else if (userRole === 'both') {
-          navigate('/select-dashboard');
-        } else {
-          navigate('/select-user-type');
-        }
+        // Navigate to the new dashboard for all users
+        navigate('/dashboard');
       }
       
       // Reset the login flow flag

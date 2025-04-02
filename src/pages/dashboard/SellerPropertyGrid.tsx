@@ -136,7 +136,7 @@ const SellerPropertyGrid = () => {
 
   // Handle property click to navigate to property-specific dashboard
   const handlePropertyClick = (propertyId: string) => {
-    navigate(`/seller-dashboard/property/${propertyId}`);
+    navigate(`/dashboard/seller/property/${propertyId}`);
   };
 
   // Toggle add property form

@@ -16,15 +16,7 @@ const Navigation = () => {
   };
 
   const getDashboardPath = () => {
-    if (userRole === 'buyer') {
-      return '/buyer-dashboard';
-    } else if (userRole === 'seller') {
-      return '/seller-dashboard';
-    } else if (userRole === 'both') {
-      return '/select-dashboard';
-    } else {
-      return '/select-user-type';
-    }
+    return '/dashboard';
   };
 
   const toggleMenu = () => {

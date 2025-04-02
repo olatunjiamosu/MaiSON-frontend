@@ -1,4 +1,3 @@
-import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LandingPage from '../pages/LandingPage';
 import Login from '../pages/auth/Login';
@@ -8,18 +7,12 @@ import PrivateRoute from './PrivateRoute';
 import PublicRoute from './PublicRoute';
 import BuyerDashboard from '../pages/dashboard/BuyerDashboard';
 import SelectUserType from '../pages/auth/SelectUserType';
-import SelectDashboard from '../pages/dashboard/SelectDashboard';
-import PropertyChats from '../pages/dashboard/buyer-sections/PropertyChats';
 import SignUp from '../pages/auth/SignUp';
 import PropertyDetails from '../pages/property/PropertyDetails';
-import SavedPropertiesSection from '../pages/dashboard/buyer-sections/SavedPropertiesSection';
-import ViewingsSection from '../pages/dashboard/buyer-sections/ViewingsSection';
 import PublicListings from '../pages/PublicListings';
 import FeaturesPage from '../pages/FeaturesPage';
 import AboutPage from '../pages/AboutPage';
 import ContactPage from '../pages/ContactPage';
-import SellerDashboard from '../pages/dashboard/SellerDashboard';
-import SellerPropertyGrid from '../pages/dashboard/SellerPropertyGrid';
 import RoleRoute from './RoleRoute';
 import Dashboard from '../pages/dashboard/Dashboard';
 
@@ -39,24 +32,12 @@ const AppRoutes = () => (
     <Route path="/contact" element={<PublicRoute><ContactPage /></PublicRoute>} />
     <Route path="/select-user-type" element={<PrivateRoute><SelectUserType /></PrivateRoute>} />
     
-    {/* Temporary route for testing new dashboard */}
+    {/* Main Dashboard Route */}
     <Route 
       path="/dashboard" 
       element={
         <PrivateRoute>
           <Dashboard />
-        </PrivateRoute>
-      }
-    />
-
-    {/* Dashboard Selection for Both-Role Users */}
-    <Route 
-      path="/select-dashboard" 
-      element={
-        <PrivateRoute>
-          <RoleRoute allowedRoles={['both']}>
-            <SelectDashboard />
-          </RoleRoute>
         </PrivateRoute>
       }
     />
@@ -68,62 +49,6 @@ const AppRoutes = () => (
         <PrivateRoute>
           <RoleRoute allowedRoles={['buyer', 'both']}>
             <BuyerDashboard />
-          </RoleRoute>
-        </PrivateRoute>
-      }
-    />
-
-    {/* Seller Dashboard Routes */}
-    <Route 
-      path="/seller-dashboard" 
-      element={
-        <PrivateRoute>
-          <RoleRoute allowedRoles={['seller', 'both']}>
-            <SellerPropertyGrid />
-          </RoleRoute>
-        </PrivateRoute>
-      }
-    />
-    
-    <Route 
-      path="/seller-dashboard/properties" 
-      element={
-        <PrivateRoute>
-          <RoleRoute allowedRoles={['seller', 'both']}>
-            <SellerPropertyGrid />
-          </RoleRoute>
-        </PrivateRoute>
-      }
-    />
-    
-    <Route 
-      path="/seller-dashboard/property/:propertyId/*" 
-      element={
-        <PrivateRoute>
-          <RoleRoute allowedRoles={['seller', 'both']}>
-            <SellerDashboard />
-          </RoleRoute>
-        </PrivateRoute>
-      }
-    />
-    
-    <Route 
-      path="/seller-dashboard/add-property" 
-      element={
-        <PrivateRoute>
-          <RoleRoute allowedRoles={['seller', 'both']}>
-            <SellerDashboard />
-          </RoleRoute>
-        </PrivateRoute>
-      }
-    />
-    
-    <Route 
-      path="/seller-dashboard/edit-property/:propertyId" 
-      element={
-        <PrivateRoute>
-          <RoleRoute allowedRoles={['seller', 'both']}>
-            <SellerDashboard />
           </RoleRoute>
         </PrivateRoute>
       }

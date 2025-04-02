@@ -165,7 +165,7 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
       navigate('/buyer-dashboard/saved');
     } else if (location.search?.includes('from=seller-dashboard')) {
       // If viewing from seller dashboard, navigate back to that specific property's dashboard
-      navigate(`/seller-dashboard/property/${id}`);
+      navigate(`/dashboard/seller/property/${id}`);
     } else {
       navigate(-1);
     }

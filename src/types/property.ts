@@ -205,18 +205,4 @@ export interface DashboardResponse {
   offered_properties: OfferedProperty[];
   total_saved_properties: number;
   total_properties_listed: number;
-  upcoming_viewings: {
-    id: string;
-    datetime: string;
-    property: {
-      address: {
-        street: string;
-      };
-    };
-  }[];
-  recent_chats: {
-    id: string;
-    last_message: string;
-    timestamp: string;
-  }[];
 } 

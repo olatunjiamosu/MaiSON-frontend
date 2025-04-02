@@ -214,6 +214,7 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
   
   // Save view mode to localStorage when it changes
   useEffect(() => {
+    console.log('ViewMode changed to:', viewMode);
     localStorage.setItem('propertyViewMode', viewMode);
   }, [viewMode]);
 
@@ -300,29 +301,36 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
 
   // Transform properties for map view
   const getMapProperties = (): MapProperty[] => {
-    console.log('Original properties:', properties);
-    const mapProps = getSortedProperties()
-      .filter(p => 
-        typeof p.address.latitude === 'number' && 
-        typeof p.address.longitude === 'number'
-      ) // Only include properties with valid coordinates
-      .map(p => {
-        console.log('Property address for map:', p.id, p.address);
-        return {
-          id: p.id,
-          lat: p.address.latitude as number,
-          lng: p.address.longitude as number,
-          price: formatPrice(p.price),
-          image: p.main_image_url || '/placeholder-property.jpg',
-          beds: p.specs.bedrooms,
-          propertyType: p.specs.property_type,
-          address: {
-            street: p.address.street,
-            postcode: p.address.postcode
-          }
-        };
-      });
-    console.log('Map properties:', mapProps);
+    console.log('getMapProperties called, viewMode:', viewMode);
+    console.log('Original properties count:', properties.length);
+    
+    const sortedProps = getSortedProperties();
+    console.log('Sorted properties count:', sortedProps.length);
+    
+    const filteredProps = sortedProps.filter(p => 
+      typeof p.address.latitude === 'number' && 
+      typeof p.address.longitude === 'number'
+    );
+    console.log('Properties with valid coordinates count:', filteredProps.length);
+    
+    const mapProps = filteredProps.map(p => {
+      console.log('Mapping property for map:', p.id, 'lat:', p.address.latitude, 'lng:', p.address.longitude);
+      return {
+        id: p.id,
+        lat: p.address.latitude as number,
+        lng: p.address.longitude as number,
+        price: formatPrice(p.price),
+        image: p.main_image_url || '/placeholder-property.jpg',
+        beds: p.specs.bedrooms,
+        propertyType: p.specs.property_type,
+        address: {
+          street: p.address.street,
+          postcode: p.address.postcode
+        }
+      };
+    });
+    
+    console.log('Final map properties count:', mapProps.length);
     return mapProps;
   };
 

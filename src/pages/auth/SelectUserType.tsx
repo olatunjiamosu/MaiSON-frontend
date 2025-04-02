@@ -19,13 +19,7 @@ const SelectUserType = () => {
     // Redirect if user already has a role
     if (!roleLoading && userRole) {
       console.log('User already has role:', userRole);
-      if (userRole === 'buyer') {
-        navigate('/buyer-dashboard');
-      } else if (userRole === 'seller') {
-        navigate('/seller-dashboard');
-      } else if (userRole === 'both') {
-        navigate('/select-dashboard');
-      }
+      navigate('/dashboard');
     }
   }, [userRole, roleLoading, navigate]);
 
@@ -34,14 +28,7 @@ const SelectUserType = () => {
     // Only navigate if we've completed the role update process
     if (roleUpdateCompleted && !roleLoading && userRole) {
       console.log('Role update completed, navigating with role:', userRole);
-      
-      if (userRole === 'buyer') {
-        navigate('/buyer-dashboard');
-      } else if (userRole === 'seller') {
-        navigate('/seller-dashboard');
-      } else if (userRole === 'both') {
-        navigate('/select-dashboard');
-      }
+      navigate('/dashboard');
       
       // Reset the flag after navigation
       setRoleUpdateCompleted(false);
