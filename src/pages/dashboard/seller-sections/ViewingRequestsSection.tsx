@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Home, Check, X, MoreVertical } from 'lucide-react';
+import { Calendar, Clock, Home, Check, X, MoreVertical, Settings, LogOut, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface ViewingRequest {
   id: string;
@@ -45,6 +46,7 @@ const mockViewings: ViewingRequest[] = [
 const ViewingRequestsSection = () => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'pending' | 'accepted' | 'declined'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
 
   const handleAccept = (viewingId: string) => {
     console.log('Accepting viewing:', viewingId);
@@ -56,6 +58,10 @@ const ViewingRequestsSection = () => {
     // TODO: Implement decline logic
   };
 
+  const handleLogout = () => {
+    // TODO: Implement logout logic
+  };
+
   const filteredViewings = mockViewings.filter(viewing => {
     const matchesSearch = viewing.propertyAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          viewing.buyerName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -65,13 +71,35 @@ const ViewingRequestsSection = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Viewing Requests</h2>
           <p className="text-gray-500">Manage property viewing requests from potential buyers</p>
         </div>
+        <div className="flex items-center gap-4">
+          <button
+            className="text-gray-600 hover:text-gray-900"
+            onClick={() => navigate('/profile')}
+          >
+            <Settings className="h-6 w-6" />
+          </button>
+          <button
+            className="text-gray-600 hover:text-gray-900"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-6 w-6" />
+          </button>
+          <button
+            className="text-gray-600 hover:text-gray-900 disabled:text-gray-300"
+            onClick={() => window.location.reload()}
+          >
+            <RefreshCw className="h-6 w-6" />
+          </button>
+        </div>
+      </div>
 
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <input
             type="text"

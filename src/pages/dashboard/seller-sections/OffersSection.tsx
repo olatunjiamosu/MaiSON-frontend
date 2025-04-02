@@ -14,12 +14,16 @@ import {
   AlertCircle,
   X,
   FileText,
-  Check
+  Check,
+  Settings,
+  LogOut,
+  RefreshCw
 } from 'lucide-react';
 import PricingService from '../../../services/PricingService';
 import PropertyService from '../../../services/PropertyService';
 import { PricingApiResponse } from '../../../types/pricing';
 import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 // Local storage keys
 const LS_PRICING_DATA_PREFIX = 'maison_pricing_data_';
@@ -581,6 +585,11 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
     setViewMode('detail');
   };
 
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    // Implement logout functionality
+  };
+
   if (viewMode === 'detail' && selectedNegotiation) {
     // Map transaction history to timeline events
     const timelineEvents = selectedNegotiation.transaction_history.map(transaction => ({
@@ -671,6 +680,33 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Offers</h2>
+          <p className="text-gray-500">Manage and analyze offers for your property</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <button
+            className="text-gray-600 hover:text-gray-900"
+            onClick={() => navigate('/profile')}
+          >
+            <Settings className="h-6 w-6" />
+          </button>
+          <button
+            className="text-gray-600 hover:text-gray-900"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-6 w-6" />
+          </button>
+          <button
+            className="text-gray-600 hover:text-gray-900 disabled:text-gray-300"
+            onClick={() => window.location.reload()}
+          >
+            <RefreshCw className="h-6 w-6" />
+          </button>
+        </div>
+      </div>
+
       {loading ? (
         <div className="p-6 text-center text-gray-500">Loading offers...</div>
       ) : error ? (
@@ -712,11 +748,6 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
         </div>
       ) : (
         <div className="space-y-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Offers Portal</h2>
-            <p className="text-gray-500">Manage and analyze offers for your properties</p>
-          </div>
-
           {/* Market Overview Cards */}
           <div className="bg-white p-6 rounded-lg border shadow-sm">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Market Position</h2>

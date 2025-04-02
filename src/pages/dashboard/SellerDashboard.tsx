@@ -20,7 +20,8 @@ import {
   TrendingUp,
   Clock,
   ChevronLeft,
-  SwitchCamera
+  SwitchCamera,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Routes, Route, useLocation, useParams, Link } from 'react-router-dom';
@@ -311,7 +312,7 @@ const SellerDashboard = () => {
   };
 
   const handleBackToProperties = () => {
-    navigate('/seller-dashboard');
+    navigate('/dashboard');
   };
 
   // Format price to GBP
@@ -465,15 +466,15 @@ const SellerDashboard = () => {
             </button>
           </div>
 
-          {/* Switch Dashboard Button - Only visible to 'both' role users */}
-          {userRole === 'both' && (
-            <div className="px-4 py-3 border-b">
-              <button
-                onClick={handleSwitchDashboard}
-                className="flex items-center justify-center w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md transition-colors"
+          {/* Back to Dashboard Button */}
+          {propertyId && property && (
+            <div className="p-4 border-b">
+              <button 
+                onClick={handleBackToProperties}
+                className="flex items-center text-emerald-600 hover:text-emerald-700"
               >
-                <SwitchCamera className="h-4 w-4 mr-2" />
-                <span>Switch Dashboard</span>
+                <ChevronLeft className="h-4 w-4 mr-1.5" />
+                <span className="text-[0.9375rem] font-medium">Back to Dashboard</span>
               </button>
             </div>
           )}
@@ -481,31 +482,35 @@ const SellerDashboard = () => {
           {/* Property Info (if property is loaded) */}
           {propertyId && property && (
             <div className="p-4 border-b">
-              <button 
-                onClick={handleBackToProperties}
-                className="flex items-center text-emerald-600 hover:text-emerald-700 mb-2"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                <span className="text-sm">Back to Properties</span>
-              </button>
-              <h2 className="font-semibold text-gray-900 truncate">
-                {property.address.street}
-              </h2>
-              <p className="text-sm text-gray-500">
-                {property.address.city}, {property.address.postcode}
-              </p>
-              <div className="mt-2 flex items-center">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium
-                  ${property.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
-                    property.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                    property.status === 'sold' ? 'bg-blue-100 text-blue-700' :
-                    'bg-gray-100 text-gray-700'}`}
-                >
-                  {property.status || 'Active'}
-                </span>
-                <span className="ml-2 text-sm font-medium text-gray-900">
-                  {formatPrice(property.price)}
-                </span>
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-full overflow-hidden">
+                  <img 
+                    src={property.main_image_url || '/placeholder-property.jpg'} 
+                    alt={property.address.street}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-gray-900 truncate">
+                    {property.address.street}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {property.address.city}, {property.address.postcode}
+                  </p>
+                  <div className="mt-2 flex items-center">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium
+                      ${property.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
+                        property.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        property.status === 'sold' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'}`}
+                    >
+                      {property.status || 'Active'}
+                    </span>
+                    <span className="ml-2 text-sm font-medium text-gray-900">
+                      {formatPrice(property.price)}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -523,6 +528,20 @@ const SellerDashboard = () => {
           {propertyId ? (
             // Property-specific navigation
             <>
+              <NavItem
+                icon={<Home />}
+                label="Overview"
+                active={activeSection === 'overview'}
+                onClick={() => handleSectionChange('overview', `/dashboard/seller/property/${propertyId}/overview`)}
+                path={`/dashboard/seller/property/${propertyId}/overview`}
+              />
+              <NavItem
+                icon={<ArrowUpRight />}
+                label="View as Buyer"
+                active={activeSection === 'view-as-buyer'}
+                onClick={() => navigate(`/property/${propertyId}?from=seller-dashboard`)}
+                path={`/property/${propertyId}?from=seller-dashboard`}
+              />
               <NavItem
                 icon={<DollarSign />}
                 label="Offers"
@@ -544,20 +563,19 @@ const SellerDashboard = () => {
                 onClick={() => handleSectionChange('availability', `/dashboard/seller/property/${propertyId}/availability`)}
                 path={`/dashboard/seller/property/${propertyId}/availability`}
               />
-              {/* Property-specific "View as Buyer" option */}
               <NavItem
-                icon={<ArrowUpRight />}
-                label="View as Buyer"
-                active={activeSection === 'view-as-buyer'}
-                onClick={() => navigate(`/property/${propertyId}?from=seller-dashboard`)}
-                path={`/property/${propertyId}?from=seller-dashboard`}
+                icon={<MessageCircle />}
+                label="Property Chat"
+                active={activeSection === 'chat'}
+                onClick={() => handleSectionChange('chat', `/dashboard/seller/property/${propertyId}/chat`)}
+                path={`/dashboard/seller/property/${propertyId}/chat`}
               />
               <NavItem
                 icon={<FileText />}
                 label="Documents"
                 active={activeSection === 'documents'}
-                onClick={() => handleSectionChange('documents', `/seller-dashboard/property/${propertyId}/documents`)}
-                path={`/seller-dashboard/property/${propertyId}/documents`}
+                onClick={() => handleSectionChange('documents', `/dashboard/seller/property/${propertyId}/documents`)}
+                path={`/dashboard/seller/property/${propertyId}/documents`}
               />
             </>
           ) : (
@@ -581,37 +599,6 @@ const SellerDashboard = () => {
             </>
           )}
         </nav>
-
-        {/* Previous Chats - Only this section is scrollable */}
-        <div className="border-t flex-1 overflow-hidden">
-          <PreviousChats 
-            onSelectChat={setSelectedChat} 
-            selectedChatId={selectedChat?.id} 
-          />
-        </div>
-
-        {/* Fixed bottom section with profile/logout button */}
-        <div className="flex-shrink-0 border-t border-gray-200 p-4 bg-white">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-              <span className="text-emerald-600 font-medium">
-                {user?.email ? user.email[0].toUpperCase() : 'U'}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {user?.displayName || user?.email || 'User'}
-              </p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="text-gray-400 hover:text-gray-500"
-              aria-label="Log out"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
       </aside>
 
       {/* Add overlay for closing sidebar on mobile */}
@@ -624,23 +611,14 @@ const SellerDashboard = () => {
 
       {/* Main Content Area */}
       <div className={`flex-1 flex flex-col overflow-hidden relative`}>
-        {/* Mobile Header */}
-        <header className="bg-white border-b md:hidden p-4 flex items-center justify-between">
+        {/* Mobile Header - only for menu toggle */}
+        <header className="bg-transparent md:hidden p-4 flex items-center">
           <button
             className="text-gray-500 hover:text-gray-600"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
           </button>
-          <div className="flex items-center space-x-2">
-            <Home className="h-5 w-5 text-emerald-600" />
-            <span className="text-lg font-bold tracking-tight">
-              <span>M</span>
-              <span className="text-emerald-600">ai</span>
-              <span>SON</span>
-            </span>
-          </div>
-          <div className="w-6"></div> {/* Empty div for flex spacing */}
         </header>
 
         {/* Property Loading State */}

@@ -15,6 +15,7 @@ import AboutPage from '../pages/AboutPage';
 import ContactPage from '../pages/ContactPage';
 import RoleRoute from './RoleRoute';
 import Dashboard from '../pages/dashboard/Dashboard';
+import SellerDashboard from '../pages/dashboard/SellerDashboard';
 
 // Remove mock property data as we're now using the API
 
@@ -42,14 +43,22 @@ const AppRoutes = () => (
       }
     />
 
+    {/* Seller Property Dashboard Route */}
+    <Route 
+      path="/dashboard/seller/property/:propertyId/*" 
+      element={
+        <PrivateRoute>
+          <SellerDashboard />
+        </PrivateRoute>
+      }
+    />
+
     {/* Protected Routes */}
     <Route 
       path="/buyer-dashboard/*" 
       element={
         <PrivateRoute>
-          <RoleRoute allowedRoles={['buyer', 'both']}>
-            <BuyerDashboard />
-          </RoleRoute>
+          <BuyerDashboard />
         </PrivateRoute>
       }
     />

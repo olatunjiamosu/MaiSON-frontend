@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { format, parse, addDays, isBefore, isAfter, addWeeks } from 'date-fns';
-import { Plus, Trash2, Clock, Calendar as CalendarIcon, Repeat, AlertCircle, Check, X } from 'lucide-react';
+import { Plus, Trash2, Clock, Calendar as CalendarIcon, Repeat, AlertCircle, Check, X, Settings, LogOut, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 // Custom CSS to override react-calendar styles
 const calendarStyles = `
@@ -81,6 +82,8 @@ const AvailabilitySection: React.FC = () => {
     daysOfWeek: [],
     occurrences: 4
   });
+
+  const navigate = useNavigate();
 
   // Load availability data from localStorage on component mount
   useEffect(() => {
@@ -403,13 +406,43 @@ const AvailabilitySection: React.FC = () => {
     ) : null;
   };
 
+  const handleLogout = () => {
+    // Implement logout functionality
+    console.log('Logging out');
+  };
+
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">My Availability</h1>
+        </div>
+        <div className="flex items-center gap-4">
+          <button
+            className="text-gray-600 hover:text-gray-900"
+            onClick={() => navigate('/profile')}
+          >
+            <Settings className="h-6 w-6" />
+          </button>
+          <button
+            className="text-gray-600 hover:text-gray-900"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-6 w-6" />
+          </button>
+          <button
+            className="text-gray-600 hover:text-gray-900 disabled:text-gray-300"
+            onClick={() => window.location.reload()}
+          >
+            <RefreshCw className="h-6 w-6" />
+          </button>
+        </div>
+      </div>
+
       {/* Add the custom styles for the calendar */}
       <style>{calendarStyles}</style>
       
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">My Availability</h1>
         <div className="space-x-2">
           {availabilityDates.length > 0 && (
             <button 

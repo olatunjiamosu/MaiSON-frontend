@@ -338,6 +338,11 @@ const Dashboard = () => {
                     <p className="text-gray-500 text-sm text-center">List a new property</p>
                   </div>
                 </div>
+
+                {/* Invisible placeholder card to maintain grid layout */}
+                {dashboardData?.listed_properties && dashboardData.listed_properties.length === 2 && (
+                  <div className="w-[250px] invisible" />
+                )}
               </div>
             </section>
 
@@ -416,6 +421,11 @@ const Dashboard = () => {
                     <p className="text-gray-500 text-sm text-center">Find your next home</p>
                   </div>
                 </div>
+
+                {/* Invisible placeholder card to maintain grid layout */}
+                {dashboardData?.negotiations_as_buyer && dashboardData.negotiations_as_buyer.length === 2 && (
+                  <div className="w-[250px] invisible" />
+                )}
               </div>
             </section>
 

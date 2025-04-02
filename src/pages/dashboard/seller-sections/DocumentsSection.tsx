@@ -12,10 +12,13 @@ import {
   X,
   AlertCircle,
   Loader2,
+  Settings,
+  LogOut,
+  RefreshCw,
 } from 'lucide-react';
 import DocumentService, { Document as ApiDocument } from '@/services/DocumentService';
 import { toast } from 'react-toastify';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 
 // Rename to avoid conflict with DOM Document
@@ -146,6 +149,7 @@ export default function DocumentsSection() {
   const params = useParams<{ propertyId?: string }>();
   const location = useLocation();
   const locationState = location.state as { propertyId?: string } | null;
+  const navigate = useNavigate();
 
   // Get current user ID from Firebase
   const getCurrentUserId = async (): Promise<string | null> => {
@@ -427,10 +431,37 @@ export default function DocumentsSection() {
     { id: 'other', label: 'Other', icon: FileText },
   ];
 
+  const handleLogout = () => {
+    // Implement logout functionality
+    console.log('Logging out');
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Documents</h2>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Documents</h2>
+        </div>
+        <div className="flex items-center gap-4">
+          <button
+            className="text-gray-600 hover:text-gray-900"
+            onClick={() => navigate('/profile')}
+          >
+            <Settings className="h-6 w-6" />
+          </button>
+          <button
+            className="text-gray-600 hover:text-gray-900"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-6 w-6" />
+          </button>
+          <button
+            className="text-gray-600 hover:text-gray-900 disabled:text-gray-300"
+            onClick={() => window.location.reload()}
+          >
+            <RefreshCw className="h-6 w-6" />
+          </button>
+        </div>
       </div>
 
       {error && (
