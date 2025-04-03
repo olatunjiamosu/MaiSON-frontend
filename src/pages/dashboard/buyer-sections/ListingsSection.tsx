@@ -814,6 +814,7 @@ const ListingsSection: React.FC<ListingsSectionProps> = ({ initialProperties }) 
                 isSaved={savedPropertyIds.has(property.id)}
                 onToggleSave={handleToggleSave}
                 negotiations={negotiations}
+                fromSection="listings"
               />
             ))
           )}

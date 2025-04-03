@@ -17,6 +17,7 @@ export interface PropertyCardProps extends PropertySummary {
   showSaveButton?: boolean;
   negotiations?: Negotiation[];
   showChatButton?: boolean;
+  fromSection?: 'listings' | 'saved';
 }
 
 const PropertyCard = ({
@@ -32,6 +33,7 @@ const PropertyCard = ({
   showSaveButton = true,
   negotiations = [],
   showChatButton = true,
+  fromSection = 'listings',
 }: PropertyCardProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,8 +63,8 @@ const PropertyCard = ({
   }, [negotiations]);
 
   const handleViewProperty = () => {
-    navigate(`/property/${id}`, {
-      state: { from: localSaved ? 'saved' : 'listings' },
+    navigate(`/dashboard/buyer/property/${id}`, {
+      state: { from: fromSection },
     });
   };
 
@@ -343,59 +345,7 @@ const PropertyCard = ({
 
               <div className="flex justify-between items-center text-sm text-gray-600">
                 <span>{specs.square_footage.toLocaleString()} sq ft</span>
-                <span>{specs.property_type}</span>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="mt-4 space-y-2">
-                <button
-                  onClick={handleScheduleViewing}
-                  className="w-full border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
-                >
-                  Schedule Viewing
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (hasActiveNegotiation) {
-                      navigate('/buyer-dashboard/applications', { 
-                        replace: true,
-                        state: { from: location.pathname }
-                      });
-                    } else {
-                      handleMakeOffer(e);
-                    }
-                  }}
-                  className={`w-full ${
-                    hasActiveNegotiation 
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  } py-2 rounded-lg transition-colors flex items-center justify-center gap-2`}
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>{hasActiveNegotiation ? 'Offer Submitted' : 'Make an Offer'}</span>
-                </button>
-                {showChatButton && seller_id && (
-                  <button
-                    onClick={handleChatWithMia}
-                    disabled={initiatingChat}
-                    className={`w-full flex justify-center items-center gap-2 border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors ${
-                      initiatingChat ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    {initiatingChat ? (
-                      <>
-                        <div className="h-4 w-4 border-t-2 border-emerald-500 border-solid rounded-full animate-spin"></div>
-                        Starting chat...
-                      </>
-                    ) : (
-                      <>
-                        <MessageCircle className="h-4 w-4" />
-                        Chat with Mia about this property
-                      </>
-                    )}
-                  </button>
-                )}
+                <span>{specs.property_type.charAt(0).toUpperCase() + specs.property_type.slice(1)}</span>
               </div>
             </div>
           </>
@@ -454,60 +404,8 @@ const PropertyCard = ({
 
               <div className="flex items-center gap-8 text-sm text-gray-600">
                 <span>{specs.square_footage.toLocaleString()} sq ft</span>
-                <span>{specs.property_type}</span>
+                <span>{specs.property_type.charAt(0).toUpperCase() + specs.property_type.slice(1)}</span>
               </div>
-            </div>
-
-            {/* Action Buttons - Right column with stacked buttons */}
-            <div className="flex-shrink-0 w-52 p-4 flex flex-col justify-center space-y-2 border-l border-gray-100">
-              <button
-                onClick={handleScheduleViewing}
-                className="w-full border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
-              >
-                Schedule Viewing
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (hasActiveNegotiation) {
-                    navigate('/buyer-dashboard/applications', { 
-                      replace: true,
-                      state: { from: location.pathname }
-                    });
-                  } else {
-                    handleMakeOffer(e);
-                  }
-                }}
-                className={`w-full ${
-                  hasActiveNegotiation 
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                } py-2 rounded-lg transition-colors flex items-center justify-center gap-2`}
-              >
-                <FileText className="h-4 w-4" />
-                <span>{hasActiveNegotiation ? 'Offer' : 'Make Offer'}</span>
-              </button>
-              {showChatButton && seller_id && (
-                <button
-                  onClick={handleChatWithMia}
-                  disabled={initiatingChat}
-                  className={`w-full flex justify-center items-center gap-2 border border-emerald-600 text-emerald-600 py-2 rounded-lg hover:bg-emerald-50 transition-colors ${
-                    initiatingChat ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {initiatingChat ? (
-                    <>
-                      <div className="h-4 w-4 border-t-2 border-emerald-500 border-solid rounded-full animate-spin"></div>
-                      <span className="truncate">Starting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <MessageCircle className="h-4 w-4" />
-                      <span className="truncate">Chat with Mia</span>
-                    </>
-                  )}
-                </button>
-              )}
             </div>
           </div>
         )}

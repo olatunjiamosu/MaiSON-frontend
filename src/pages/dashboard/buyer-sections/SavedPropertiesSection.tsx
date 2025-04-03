@@ -218,6 +218,7 @@ export default function SavedPropertiesSection() {
                       showSaveButton
                       negotiations={negotiations}
                       showChatButton={!!seller_id}
+                      fromSection="saved"
                     />
                     
                     <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">
@@ -291,6 +292,7 @@ export default function SavedPropertiesSection() {
                       showSaveButton
                       negotiations={negotiations}
                       showChatButton={!!seller_id}
+                      fromSection="saved"
                     />
                     
                     <div className="-mt-2 mb-4 p-4 bg-white rounded-b-lg shadow-sm border border-gray-100 border-t-0">

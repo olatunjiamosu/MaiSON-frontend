@@ -71,6 +71,8 @@ interface PropertyDetailWithStatus extends PropertyDetail {
 const BuyersDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('properties');
+  const [cameFromListings, setCameFromListings] = useState(false);
+  const [cameFromSaved, setCameFromSaved] = useState(false);
   const auth = useAuth();
   const { user, userRole } = auth;
   const navigate = useNavigate();
@@ -132,6 +134,21 @@ const BuyersDashboard = () => {
     }
   }, [location.pathname, propertyId]);
 
+  // Add effect to check where user came from
+  useEffect(() => {
+    const from = location.state?.from;
+    if (from === 'listings') {
+      setCameFromListings(true);
+      setCameFromSaved(false);
+    } else if (from === 'saved') {
+      setCameFromListings(false);
+      setCameFromSaved(true);
+    } else {
+      setCameFromListings(false);
+      setCameFromSaved(false);
+    }
+  }, [location.state]);
+
   // Mock user data
   const userData = {
     name: user?.email?.split('@')[0] || 'User',
@@ -157,7 +174,13 @@ const BuyersDashboard = () => {
   };
 
   const handleBackToProperties = () => {
-    navigate('/dashboard');
+    if (cameFromListings) {
+      navigate('/dashboard/listings');
+    } else if (cameFromSaved) {
+      navigate('/dashboard/listings/saved');
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   // Add function to handle dashboard switch
@@ -277,7 +300,11 @@ const BuyersDashboard = () => {
                   className="flex items-center text-emerald-600 hover:text-emerald-700"
                 >
                   <ChevronLeft className="h-4 w-4 mr-1.5" />
-                  <span className="text-[0.9375rem] font-medium">Back to Dashboard</span>
+                  <span className="text-[0.9375rem] font-medium">
+                    {cameFromListings ? 'Back to All Listings' : 
+                     cameFromSaved ? 'Back to Saved Properties' : 
+                     'Back to Dashboard'}
+                  </span>
                 </button>
               </div>
             )}
