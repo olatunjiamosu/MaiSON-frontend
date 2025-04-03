@@ -112,8 +112,10 @@ const SellerDashboard = () => {
   const location = useLocation();
   const { propertyId } = useParams<{ propertyId: string }>();
   const [property, setProperty] = useState<PropertyDetailWithStatus | null>(null);
-  const [isLoadingProperty, setIsLoadingProperty] = useState(true);
+  const [isLoadingProperty, setIsLoadingProperty] = useState(false);
   const [propertyError, setPropertyError] = useState<string | null>(null);
+  const [isLoadingViewings, setIsLoadingViewings] = useState(false);
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
   
   // Compute if we're in the messages section to hide the persistent chat
   const isMessagesSection = activeSection === 'messages' || 
@@ -132,11 +134,10 @@ const SellerDashboard = () => {
       
       try {
         const propertyData = await PropertyService.getPropertyById(propertyId);
-        // Add a default status of 'active' to the property
         setProperty({
           ...propertyData,
-          status: 'active', // Default status
-          id: propertyData.id || propertyData.property_id || propertyId // Ensure we have the id regardless of API field name
+          status: 'active',
+          id: propertyData.id || propertyData.property_id || propertyId
         });
       } catch (error) {
         console.error('Error fetching property details:', error);
@@ -148,6 +149,36 @@ const SellerDashboard = () => {
     
     fetchPropertyDetails();
   }, [propertyId]);
+
+  // Load viewings and chat data after initial render
+  useEffect(() => {
+    const loadSecondaryData = async () => {
+      if (!propertyId) return;
+
+      // Load viewings data
+      setIsLoadingViewings(true);
+      try {
+        // Add your viewings API call here
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulated API call
+      } catch (error) {
+        console.error('Error loading viewings:', error);
+      } finally {
+        setIsLoadingViewings(false);
+      }
+
+      // Load chat data
+      setIsLoadingChat(true);
+      try {
+        await refreshChatHistory();
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+      } finally {
+        setIsLoadingChat(false);
+      }
+    };
+
+    loadSecondaryData();
+  }, [propertyId, refreshChatHistory]);
 
   // Update active section based on location - only as a backup for direct navigation
   useEffect(() => {
@@ -666,7 +697,15 @@ const SellerDashboard = () => {
           }`}>
               <Routes>
                 <Route path="offers" element={<OffersSection property={property || undefined} />} />
-                <Route path="viewings" element={<ViewingsSection />} />
+                <Route path="viewings" element={
+                  isLoadingViewings ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : (
+                    <ViewingsSection />
+                  )
+                } />
                 <Route path="availability" element={<AvailabilitySection />} />
                 <Route path="documents" element={<DocumentsSection />} />
                 <Route path="my-property" element={!isLoadingProperty ? <MyPropertySection property={property || undefined} /> : null} />
@@ -678,11 +717,17 @@ const SellerDashboard = () => {
                   </div>
                 } />
                 <Route path="chat" element={
-                  <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                    <MessageCircle className="w-12 h-12 text-emerald-500 mb-4" />
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-2">Property Chat</h2>
-                    <p className="text-gray-600">Coming soon! Chat with potential buyers and manage property-related conversations here.</p>
-                  </div>
+                  isLoadingChat ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                      <MessageCircle className="w-12 h-12 text-emerald-500 mb-4" />
+                      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Property Chat</h2>
+                      <p className="text-gray-600">Coming soon! Chat with potential buyers and manage property-related conversations here.</p>
+                    </div>
+                  )
                 } />
                 <Route index element={!isLoadingProperty ? <MyPropertySection property={property || undefined} /> : null} />
               </Routes>
