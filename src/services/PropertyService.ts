@@ -49,6 +49,12 @@ class PropertyService {
 
   private buildUrl(path: string = '', queryParams?: Record<string, any>): string {
     const baseUrl = `${PROPERTY_API_URL}${PROPERTY_API_ENDPOINT}${path}`;
+    console.log('Building URL with:', {
+      PROPERTY_API_URL,
+      PROPERTY_API_ENDPOINT,
+      path,
+      baseUrl
+    });
     
     if (!queryParams) return baseUrl;
     
@@ -60,7 +66,9 @@ class PropertyService {
     });
     
     const queryString = params.toString();
-    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+    const finalUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
+    console.log('Final URL:', finalUrl);
+    return finalUrl;
   }
 
   // Public endpoints (no auth required)
@@ -93,15 +101,18 @@ class PropertyService {
   async getPropertyById(id: string): Promise<PropertyDetail> {
     try {
       const url = this.buildUrl(`/${id}`);
+      console.log('Fetching property details from URL:', url);
       const response = await fetch(url, {
         headers: await this.getHeaders(false)
       });
       
       if (!response.ok) {
+        console.error('Failed to fetch property details:', response.status, response.statusText);
         throw new Error(`Failed to fetch property details: ${response.status} ${response.statusText}`);
       }
       
       const property = await response.json();
+      console.log('Received property details:', property);
       
       // Ensure we have a consistent id field regardless of whether API returns id or property_id
       if (!property.id && property.property_id) {

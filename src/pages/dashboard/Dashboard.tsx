@@ -374,7 +374,7 @@ const Dashboard = () => {
                     <div 
                       key={negotiation.property_id}
                       className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer w-[250px]"
-                      onClick={() => navigate(`/property/${negotiation.property_id}`)}
+                      onClick={() => navigate(`/dashboard/buyer/property/${negotiation.property_id}`)}
                     >
                       <div className="relative h-28">
                         <img 

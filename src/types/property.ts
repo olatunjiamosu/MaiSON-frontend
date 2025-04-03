@@ -67,18 +67,42 @@ export interface PropertySummary {
 export interface PropertyDetail {
   id: string;
   property_id?: string;
+  address: {
+    street: string;
+    city: string;
+    postcode: string;
+    latitude?: number;
+    longitude?: number;
+  };
   price: number;
   main_image_url?: string;
   image_urls?: string[];
-  floorplan_url?: string;
   created_at: string;
   last_updated?: string;
   owner_id: number;
-  seller_id: string;
-  address: PropertyAddress;
-  specs: PropertySpecs;
-  details?: PropertyDetails;
-  features?: PropertyFeatures;
+  seller_id?: string;
+  specs: {
+    bedrooms: number;
+    bathrooms: number;
+    reception_rooms?: number;
+    square_footage: number;
+    property_type: string;
+    epc_rating?: string;
+  };
+  details?: {
+    description?: string;
+    property_type?: string;
+    construction_year?: number;
+    parking_spaces?: number;
+    heating_type?: string;
+  };
+  features?: {
+    has_garden?: boolean;
+    garden_size?: number;
+    has_garage?: boolean;
+    parking_spaces?: number;
+  };
+  status?: string;
 }
 
 export interface CreatePropertyRequest {

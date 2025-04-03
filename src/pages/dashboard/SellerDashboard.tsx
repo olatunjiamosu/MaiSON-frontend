@@ -21,7 +21,8 @@ import {
   Clock,
   ChevronLeft,
   SwitchCamera,
-  RefreshCw
+  RefreshCw,
+  History
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Routes, Route, useLocation, useParams, Link } from 'react-router-dom';
@@ -156,7 +157,7 @@ const SellerDashboard = () => {
     const lastPart = pathParts[pathParts.length - 1];
     
     // Only change if it's a known section
-    if (['offers', 'viewings', 'messages', 'documents', 'availability', 'view-as-buyer'].includes(lastPart)) {
+    if (['offers', 'viewings', 'messages', 'documents', 'availability', 'view-as-buyer', 'timeline', 'chat'].includes(lastPart)) {
       setActiveSection(lastPart);
     } else if (location.pathname === '/seller-dashboard') {
       setActiveSection('properties');
@@ -544,6 +545,13 @@ const SellerDashboard = () => {
                 path={`/dashboard/seller/property/${propertyId}`}
               />
               <NavItem
+                icon={<History />}
+                label="Timeline"
+                active={activeSection === 'timeline'}
+                onClick={() => handleSectionChange('timeline', `/dashboard/seller/property/${propertyId}/timeline`)}
+                path={`/dashboard/seller/property/${propertyId}/timeline`}
+              />
+              <NavItem
                 icon={<DollarSign />}
                 label="Offers"
                 active={activeSection === 'offers'}
@@ -662,6 +670,20 @@ const SellerDashboard = () => {
                 <Route path="availability" element={<AvailabilitySection />} />
                 <Route path="documents" element={<DocumentsSection />} />
                 <Route path="my-property" element={!isLoadingProperty ? <MyPropertySection property={property || undefined} /> : null} />
+                <Route path="timeline" element={
+                  <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                    <History className="w-12 h-12 text-emerald-500 mb-4" />
+                    <h2 className="text-2xl font-semibold text-gray-900 mb-2">Timeline Section</h2>
+                    <p className="text-gray-600">Coming soon! Track your property's journey and important events here.</p>
+                  </div>
+                } />
+                <Route path="chat" element={
+                  <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                    <MessageCircle className="w-12 h-12 text-emerald-500 mb-4" />
+                    <h2 className="text-2xl font-semibold text-gray-900 mb-2">Property Chat</h2>
+                    <p className="text-gray-600">Coming soon! Chat with potential buyers and manage property-related conversations here.</p>
+                  </div>
+                } />
                 <Route index element={!isLoadingProperty ? <MyPropertySection property={property || undefined} /> : null} />
               </Routes>
           </div>

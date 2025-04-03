@@ -16,7 +16,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import DocumentService, { Document as ApiDocument } from '@/services/DocumentService';
-import { toast } from 'react-toastify';
+import { toast } from 'react-hot-toast';
 import { getAuth } from 'firebase/auth';
 
 interface Document {
@@ -62,7 +62,7 @@ const documentTypes: DocumentType[] = [
   }
 ];
 
-const DocumentsSection = () => {
+const DocumentsSection: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<'all' | Document['category']>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [documents, setDocuments] = useState<ApiDocument[]>([]);
@@ -324,11 +324,11 @@ const DocumentsSection = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
+        <div>
           <h2 className="text-2xl font-bold text-gray-900">My Documents</h2>
+          <p className="text-gray-500">View and manage your documents</p>
         </div>
-        <p className="text-gray-500">Manage your property purchase documents</p>
       </div>
 
       {/* Error display */}
@@ -569,16 +569,6 @@ const DocumentsSection = () => {
                       </div>
                     );
                   })}
-
-                {filteredDocuments.length === 0 && 
-                documentTypes.filter(docType => 
-                  selectedCategory === 'all' || docType.category === selectedCategory
-                ).length === 0 && (
-                  <div className="text-center py-12">
-                    <FolderOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No documents found</p>
-                  </div>
-                )}
               </div>
             </div>
           </div>
