@@ -39,6 +39,7 @@ import AddPropertySection from './seller-sections/AddPropertySection';
 import OffersSection from './seller-sections/OffersSection';
 import ViewingsSection from './seller-sections/ViewingRequestsSection';
 import MyPropertySection from './seller-sections/MyPropertySection';
+import TimelineSection from '../../components/timeline/TimelineSection';
 //import MessagesSection from './seller-sections/PropertyChats';
 //import AnalyticsSection from './seller-sections/AnalyticsSection';
 //import MarketInsightsSection from './seller-sections/MarketInsightsSection';
@@ -709,13 +710,7 @@ const SellerDashboard = () => {
                 <Route path="availability" element={<AvailabilitySection />} />
                 <Route path="documents" element={<DocumentsSection />} />
                 <Route path="my-property" element={!isLoadingProperty ? <MyPropertySection property={property || undefined} /> : null} />
-                <Route path="timeline" element={
-                  <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                    <History className="w-12 h-12 text-emerald-500 mb-4" />
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-2">Timeline Section</h2>
-                    <p className="text-gray-600">Coming soon! Track your property's journey and important events here.</p>
-                  </div>
-                } />
+                <Route path="timeline" element={<TimelineSection viewMode="seller" />} />
                 <Route path="chat" element={
                   isLoadingChat ? (
                     <div className="flex items-center justify-center h-full">

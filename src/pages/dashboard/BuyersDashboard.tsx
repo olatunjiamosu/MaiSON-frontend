@@ -48,6 +48,7 @@ import PreviousChats from '../../components/chat/PreviousChats';
 import PageTitle from '../../components/PageTitle';
 import MakeOfferSection from './buyer-sections/MakeOfferSection';
 import ScheduleViewingSection from './buyer-sections/ScheduleViewingSection';
+import TimelineSection from '../../components/timeline/TimelineSection';
 
 // Add interfaces for the components
 interface NavItemProps {
@@ -485,15 +486,7 @@ const BuyersDashboard = () => {
                     </div>
                   </div>
                 } />
-                <Route path="timeline" element={
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900">Timeline Section</h3>
-                      <p className="text-gray-500 mt-2">This section is coming soon.</p>
-                    </div>
-                  </div>
-                } />
+                <Route path="timeline" element={<TimelineSection viewMode="buyer" />} />
                 <Route path="chat" element={
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
