@@ -67,13 +67,7 @@ export interface PropertySummary {
 export interface PropertyDetail {
   id: string;
   property_id?: string;
-  address: {
-    street: string;
-    city: string;
-    postcode: string;
-    latitude?: number;
-    longitude?: number;
-  };
+  address: PropertyAddress;
   price: number;
   main_image_url?: string;
   image_urls?: string[];

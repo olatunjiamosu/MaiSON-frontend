@@ -46,6 +46,8 @@ import { toast } from 'react-hot-toast';
 import { formatLargeNumber } from '../../utils/numberUtils';
 import PreviousChats from '../../components/chat/PreviousChats';
 import PageTitle from '../../components/PageTitle';
+import MakeOfferSection from './buyer-sections/MakeOfferSection';
+import ScheduleViewingSection from './buyer-sections/ScheduleViewingSection';
 
 // Add interfaces for the components
 interface NavItemProps {
@@ -74,7 +76,7 @@ const BuyersDashboard = () => {
   const [cameFromListings, setCameFromListings] = useState(false);
   const [cameFromSaved, setCameFromSaved] = useState(false);
   const auth = useAuth();
-  const { user, userRole } = auth;
+  const { user, userRole, logout } = auth;
   const navigate = useNavigate();
   const location = useLocation();
   const { propertyId } = useParams<{ propertyId: string }>();
@@ -220,6 +222,17 @@ const BuyersDashboard = () => {
   const handleSectionChange = (section: string, path: string) => {
     setActiveSection(section);
     navigate(path);
+  };
+
+  // Add handleLogout function
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast.error('Failed to logout. Please try again.');
+    }
   };
 
   return (
@@ -370,14 +383,14 @@ const BuyersDashboard = () => {
                 />
                 <NavItem
                   icon={<DollarSign />}
-                  label="Offers"
+                  label="Make Offer"
                   active={activeSection === 'offers'}
                   onClick={() => handleSectionChange('offers', `/dashboard/buyer/property/${propertyId}/offers`)}
                   path={`/dashboard/buyer/property/${propertyId}/offers`}
                 />
                 <NavItem
                   icon={<Calendar />}
-                  label="Viewings"
+                  label="Schedule Viewing"
                   active={activeSection === 'viewings'}
                   onClick={() => handleSectionChange('viewings', `/dashboard/buyer/property/${propertyId}/viewings`)}
                   path={`/dashboard/buyer/property/${propertyId}/viewings`}
@@ -460,8 +473,8 @@ const BuyersDashboard = () => {
               activeSection === 'messages' ? 'w-full h-full' : 'max-w-7xl mx-auto'
             }`}>
               <Routes>
-                <Route path="offers" element={<OffersSection property={property || undefined} />} />
-                <Route path="viewings" element={<ViewingsSection />} />
+                <Route path="offers" element={<MakeOfferSection property={property || undefined} />} />
+                <Route path="viewings" element={<ScheduleViewingSection property={property || undefined} />} />
                 <Route path="availability" element={<AvailabilitySection />} />
                 <Route path="documents" element={
                   <div className="flex items-center justify-center h-full">
