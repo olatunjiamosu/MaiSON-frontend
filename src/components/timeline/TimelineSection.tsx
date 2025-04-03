@@ -16,8 +16,14 @@ import {
   PiggyBank,
   Scale,
   Eye,
-  Handshake
+  Handshake,
+  Settings,
+  LogOut,
+  RefreshCw
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 interface TimelineStep {
   title: string;
@@ -32,6 +38,23 @@ interface TimelineSectionProps {
 }
 
 const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode }) => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      toast.error('Failed to logout. Please try again.');
+    }
+  };
+
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
   // Buyer pre-offer steps
   const buyerPreOfferSteps: TimelineStep[] = [
     {
@@ -205,44 +228,82 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode }) => {
   ];
 
   const TimelineSteps: React.FC<{ steps: TimelineStep[] }> = ({ steps }) => (
-    <div className="space-y-8">
-      {steps.map((step, index) => (
-        <div key={index} className="relative">
-          {/* Step dot */}
-          <div className={`absolute left-6 -translate-x-1/2 w-4 h-4 rounded-full border-2 ${
-            step.status === 'completed' 
-              ? 'bg-emerald-500 border-emerald-500' 
-              : step.status === 'current'
-              ? 'bg-blue-500 border-blue-500'
-              : 'bg-white border-gray-300'
-          }`}></div>
-
-          {/* Step content */}
-          <div className="ml-12">
-            <div className="flex items-center gap-3 mb-1">
-              <div className={`p-2 rounded-lg ${
-                step.status === 'completed' 
-                  ? 'bg-emerald-100 text-emerald-600' 
-                  : step.status === 'current'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'bg-gray-100 text-gray-600'
-              }`}>
-                {step.icon}
-              </div>
-              <h3 className={`font-medium ${
-                step.status === 'completed' 
-                  ? 'text-emerald-900' 
-                  : step.status === 'current'
-                  ? 'text-blue-900'
-                  : 'text-gray-900'
-              }`}>
-                {step.title}
-              </h3>
+    <div className="relative">
+      {/* Single vertical line */}
+      <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+      
+      <div className="relative">
+        {steps.map((step, index) => (
+          <div key={index} className="flex items-start justify-center mb-12 relative">
+            {/* Left side content - even indexes */}
+            <div className="w-1/2 pr-8 text-right">
+              {index % 2 === 0 && (
+                <>
+                  <div className="flex items-center justify-end gap-3 mb-1">
+                    <h3 className={`font-medium ${
+                      step.status === 'completed' 
+                        ? 'text-emerald-900' 
+                        : step.status === 'current'
+                        ? 'text-blue-900'
+                        : 'text-gray-900'
+                    }`}>
+                      {step.title}
+                    </h3>
+                    <div className={`p-2 rounded-lg ${
+                      step.status === 'completed' 
+                        ? 'bg-emerald-100 text-emerald-600' 
+                        : step.status === 'current'
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {step.icon}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600">{step.description}</p>
+                </>
+              )}
             </div>
-            <p className="text-sm text-gray-600 ml-11">{step.description}</p>
+
+            {/* Circle on the line */}
+            <div className={`absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 ${
+              step.status === 'completed' 
+                ? 'bg-emerald-500 border-emerald-500' 
+                : step.status === 'current'
+                ? 'bg-blue-500 border-blue-500'
+                : 'bg-white border-gray-300'
+            }`}></div>
+
+            {/* Right side content - odd indexes */}
+            <div className="w-1/2 pl-8">
+              {index % 2 === 1 && (
+                <>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className={`p-2 rounded-lg ${
+                      step.status === 'completed' 
+                        ? 'bg-emerald-100 text-emerald-600' 
+                        : step.status === 'current'
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {step.icon}
+                    </div>
+                    <h3 className={`font-medium ${
+                      step.status === 'completed' 
+                        ? 'text-emerald-900' 
+                        : step.status === 'current'
+                        ? 'text-blue-900'
+                        : 'text-gray-900'
+                    }`}>
+                      {step.title}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-gray-600">{step.description}</p>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 
@@ -342,6 +403,34 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode }) => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Timeline</h2>
+          <p className="text-gray-500">Track your property journey progress</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <button
+            className="text-gray-600 hover:text-gray-900"
+            onClick={() => navigate('/settings')}
+          >
+            <Settings className="h-6 w-6" />
+          </button>
+          <button
+            className="text-gray-600 hover:text-gray-900"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-6 w-6" />
+          </button>
+          <button
+            className="text-gray-600 hover:text-gray-900"
+            onClick={handleRefresh}
+          >
+            <RefreshCw className="h-6 w-6" />
+          </button>
+        </div>
+      </div>
+
       {/* Pre-Offer Section */}
       <div className="bg-white rounded-lg border border-gray-100 p-6">
         <div className="flex items-center gap-3 mb-6">
@@ -349,34 +438,34 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode }) => {
             <User className="h-6 w-6 text-blue-600" />
           </div>
           <h2 className="text-2xl font-semibold text-gray-900">
-            {viewMode === 'buyer' ? 'Buyer Pre-Offer Timeline' : 'Seller Pre-Offer Timeline'}
+            Pre-Offer
           </h2>
         </div>
 
-        <div className="relative">
-          {/* Vertical line */}
-          <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+        <div className="relative min-h-[400px]">
           <TimelineSteps steps={viewMode === 'buyer' ? buyerPreOfferSteps : sellerPreOfferSteps} />
         </div>
       </div>
 
       {/* Post-Offer Section */}
       <div className="bg-white rounded-lg border border-gray-100 p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <Home className="h-6 w-6 text-blue-600" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Home className="h-6 w-6 text-blue-600" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-900">Post-Offer</h2>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-900">Post-Offer Timeline</h2>
         </div>
 
         <div className="relative min-h-[600px]">
           {/* Add subtitles for buyer and seller sides */}
           <div className="absolute top-0 left-0 right-0 flex justify-between mb-12">
             <div className="text-right w-1/3 pr-8">
-              <h3 className="text-lg font-bold text-gray-900">Buyer's Tasks</h3>
+              <h3 className="text-lg font-medium text-emerald-600">Buyer's Tasks</h3>
             </div>
             <div className="text-left w-1/3 pl-8">
-              <h3 className="text-lg font-bold text-gray-900">Seller's Tasks</h3>
+              <h3 className="text-lg font-medium text-emerald-600">Seller's Tasks</h3>
             </div>
           </div>
 

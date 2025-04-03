@@ -126,7 +126,7 @@ const BuyersDashboard = () => {
     const lastPart = pathParts[pathParts.length - 1];
     
     // Only change if it's a known section
-    if (['offers', 'viewings', 'messages', 'documents', 'availability', 'view-as-buyer'].includes(lastPart)) {
+    if (['offers', 'viewings', 'messages', 'documents', 'availability', 'view-as-buyer', 'timeline'].includes(lastPart)) {
       setActiveSection(lastPart);
     } else if (location.pathname === '/seller-dashboard') {
       setActiveSection('properties');
