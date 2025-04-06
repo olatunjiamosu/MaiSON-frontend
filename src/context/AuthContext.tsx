@@ -17,6 +17,7 @@ import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { UserData } from '../types/user';
 import { useNavigate } from 'react-router-dom';
+import UserService from '../services/UserService';
 
 type UserRole = 'buyer' | 'seller' | 'both' | null;
 
@@ -192,14 +193,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const user = userCredential.user;
     const userDocRef = doc(db, 'users', user.uid);
     
-    await setDoc(userDocRef, {
+    // Set default user type as 'both'
+    const defaultUserData = {
       firstName,
       lastName,
       email,
+      userType: 'both',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       ...userData
-    });
+    };
+    
+    await setDoc(userDocRef, defaultUserData);
+
+    // Create user in listings API with both roles
+    try {
+      await UserService.createUser({
+        user_id: user.uid,
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        phone_number: userData?.phone,
+        roles: [
+          { role_type: 'buyer' },
+          { role_type: 'seller' }
+        ]
+      });
+    } catch (error) {
+      console.error('Error creating user in listings API:', error);
+      // Continue even if API creation fails
+    }
 
     return userCredential;
   };

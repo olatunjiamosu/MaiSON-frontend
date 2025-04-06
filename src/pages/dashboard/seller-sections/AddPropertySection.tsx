@@ -20,6 +20,7 @@ import PriceHistoryChart from '../../../components/property/PriceHistoryChart';
 import { PricingApiResponse } from '../../../types/pricing';
 import { CreatePropertyRequest } from '../../../types/property';
 import { toast } from 'react-hot-toast';
+import CustomDropdown from '../../../components/CustomDropdown';
 
 interface PropertyFormData {
   propertyType: string;
@@ -599,582 +600,615 @@ const AddPropertySection = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-0">
-      <div className="mb-6">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <button
           type="button"
-          onClick={() => window.location.href = '/seller-dashboard'}
-          className="flex items-center text-emerald-600 hover:text-emerald-800 mb-4"
+          onClick={() => navigate('/dashboard')}
+          className="flex items-center text-emerald-600 hover:text-emerald-800 mb-8"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
           </svg>
-          Back to Properties
+          Back to Dashboard
         </button>
-        <h2 className="text-2xl font-bold text-gray-900">
-          {isEditMode ? 'Edit Property' : 'Add New Property'}
-        </h2>
-        <p className="text-gray-500">
-          {isEditMode ? 'Update your property details below' : 'Enter your property details below'}
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Property Type */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Property Type <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={formData.propertyType}
-            onChange={(e) => setFormData(prev => ({ ...prev, propertyType: e.target.value }))}
-            className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-              errors.propertyType ? 'border-red-500' : ''
-            }`}
-          >
-            <option value="">Select type</option>
-            <option value="house">House</option>
-            <option value="flat">Flat/Apartment</option>
-            <option value="bungalow">Bungalow</option>
-            <option value="maisonette">Maisonette</option>
-          </select>
-          {errors.propertyType && (
-            <p className="text-red-500 text-sm">{errors.propertyType}</p>
-          )}
-        </div>
-
-        {/* Address */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-900">Address</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                House Number <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.houseNumber}
-                onChange={(e) => setFormData(prev => ({ ...prev, houseNumber: e.target.value }))}
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                  errors.houseNumber ? 'border-red-500' : ''
-                }`}
-                placeholder="House number"
-              />
-              {errors.houseNumber && (
-                <p className="text-red-500 text-sm">{errors.houseNumber}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Road <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.road}
-                onChange={(e) => setFormData(prev => ({ ...prev, road: e.target.value }))}
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                  errors.road ? 'border-red-500' : ''
-                }`}
-                placeholder="Street address"
-              />
-              {errors.road && (
-                <p className="text-red-500 text-sm">{errors.road}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                City <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.city}
-                onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                  errors.city ? 'border-red-500' : ''
-                }`}
-                placeholder="City"
-              />
-              {errors.city && (
-                <p className="text-red-500 text-sm">{errors.city}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Postcode <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.postcode}
-                onChange={(e) => setFormData(prev => ({ ...prev, postcode: e.target.value }))}
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                  errors.postcode ? 'border-red-500' : ''
-                }`}
-                placeholder="Postcode"
-              />
-              {errors.postcode && (
-                <p className="text-red-500 text-sm">{errors.postcode}</p>
-              )}
-            </div>
+        <div className="bg-white rounded-lg shadow-sm p-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {isEditMode ? 'Edit Property' : 'Add New Property'}
+            </h2>
+            <p className="text-gray-500">
+              {isEditMode ? 'Update your property details below' : 'Enter your property details below'}
+            </p>
           </div>
-        </div>
 
-        {/* Property Details */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-900">Property Details</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Bedrooms <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={formData.beds}
-                onChange={(e) => setFormData(prev => ({ ...prev, beds: e.target.value }))}
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                  errors.beds ? 'border-red-500' : ''
-                }`}
-              />
-              {errors.beds && (
-                <p className="text-red-500 text-sm">{errors.beds}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Bathrooms <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={formData.baths}
-                onChange={(e) => setFormData(prev => ({ ...prev, baths: e.target.value }))}
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                  errors.baths ? 'border-red-500' : ''
-                }`}
-              />
-              {errors.baths && (
-                <p className="text-red-500 text-sm">{errors.baths}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Reception <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={formData.reception}
-                onChange={(e) => setFormData(prev => ({ ...prev, reception: e.target.value }))}
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                  errors.reception ? 'border-red-500' : ''
-                }`}
-              />
-              {errors.reception && (
-                <p className="text-red-500 text-sm">{errors.reception}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Square Feet <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={formData.sqft}
-                onChange={(e) => setFormData(prev => ({ ...prev, sqft: e.target.value }))}
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                  errors.sqft ? 'border-red-500' : ''
-                }`}
-              />
-              {errors.sqft && (
-                <p className="text-red-500 text-sm">{errors.sqft}</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Additional Details */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-900">Additional Details</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                EPC Rating <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.epcRating}
-                onChange={(e) => setFormData(prev => ({ ...prev, epcRating: e.target.value }))}
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                  errors.epcRating ? 'border-red-500' : ''
-                }`}
-              >
-                <option value="">Select rating</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-                <option value="E">E</option>
-                <option value="F">F</option>
-                <option value="G">G</option>
-              </select>
-              {errors.epcRating && (
-                <p className="text-red-500 text-sm">{errors.epcRating}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Construction Year <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={formData.constructionYear}
-                onChange={(e) => setFormData(prev => ({ ...prev, constructionYear: e.target.value }))}
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                  errors.constructionYear ? 'border-red-500' : ''
-                }`}
-                placeholder="e.g. 1990"
-              />
-              {errors.constructionYear && (
-                <p className="text-red-500 text-sm">{errors.constructionYear}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Heating Type <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.heatingType}
-                onChange={(e) => setFormData(prev => ({ ...prev, heatingType: e.target.value }))}
-                className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                  errors.heatingType ? 'border-red-500' : ''
-                }`}
-              >
-                <option value="">Select type</option>
-                <option value="gas central">Gas Central</option>
-                <option value="electric">Electric</option>
-                <option value="oil">Oil</option>
-                <option value="solid fuel">Solid Fuel</option>
-                <option value="air source heat pump">Air Source Heat Pump</option>
-                <option value="ground source heat pump">Ground Source Heat Pump</option>
-              </select>
-              {errors.heatingType && (
-                <p className="text-red-500 text-sm">{errors.heatingType}</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Features */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-900">Features</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Property Type */}
             <div className="space-y-2">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="has-garden"
-                  checked={formData.hasGarden}
-                  onChange={(e) => setFormData(prev => ({ ...prev, hasGarden: e.target.checked }))}
-                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+              <label className="block text-sm font-medium text-gray-700">
+                Property Type <span className="text-red-500">*</span>
+              </label>
+              <div className="mt-4 relative">
+                <CustomDropdown
+                  value={formData.propertyType}
+                  onChange={(value) => setFormData(prev => ({ ...prev, propertyType: value }))}
+                  options={[
+                    { value: '', label: 'Select type' },
+                    { value: 'detached', label: 'Detached House' },
+                    { value: 'semi_detached', label: 'Semi-Detached House' },
+                    { value: 'terraced', label: 'Terraced House' },
+                    { value: 'flat', label: 'Flat/Apartment' },
+                    { value: 'bungalow', label: 'Bungalow' },
+                    { value: 'maisonette', label: 'Maisonette' },
+                    { value: 'studio', label: 'Studio' }
+                  ]}
+                  icon={<Building className="h-5 w-5 text-gray-400" />}
+                  placeholder="Select type"
                 />
-                <label htmlFor="has-garden" className="ml-2 block text-sm text-gray-700">
-                  Has Garden
-                </label>
               </div>
-              {formData.hasGarden && (
+              {errors.propertyType && (
+                <p className="text-red-500 text-sm">{errors.propertyType}</p>
+              )}
+            </div>
+
+            {/* Address */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Address</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Garden Size (sq ft)
+                    House Number <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="number"
-                    value={formData.gardenSize}
-                    onChange={(e) => setFormData(prev => ({ ...prev, gardenSize: e.target.value }))}
-                    className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                      errors.gardenSize ? 'border-red-500' : ''
-                    }`}
-                  />
-                  {errors.gardenSize && (
-                    <p className="text-red-500 text-sm">{errors.gardenSize}</p>
+                  <div className="mt-4">
+                    <input
+                      type="text"
+                      value={formData.houseNumber}
+                      onChange={(e) => setFormData(prev => ({ ...prev, houseNumber: e.target.value }))}
+                      className={`w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                        errors.houseNumber ? 'border-red-500' : ''
+                      }`}
+                      placeholder="House number"
+                    />
+                  </div>
+                  {errors.houseNumber && (
+                    <p className="text-red-500 text-sm">{errors.houseNumber}</p>
                   )}
                 </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="has-garage"
-                  checked={formData.hasGarage}
-                  onChange={(e) => setFormData(prev => ({ ...prev, hasGarage: e.target.checked }))}
-                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-                />
-                <label htmlFor="has-garage" className="ml-2 block text-sm text-gray-700">
-                  Has Garage
-                </label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Road <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-4">
+                    <input
+                      type="text"
+                      value={formData.road}
+                      onChange={(e) => setFormData(prev => ({ ...prev, road: e.target.value }))}
+                      className={`w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                        errors.road ? 'border-red-500' : ''
+                      }`}
+                      placeholder="Street address"
+                    />
+                  </div>
+                  {errors.road && (
+                    <p className="text-red-500 text-sm">{errors.road}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    City <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-4">
+                    <input
+                      type="text"
+                      value={formData.city}
+                      onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                      className={`w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                        errors.city ? 'border-red-500' : ''
+                      }`}
+                      placeholder="City"
+                    />
+                  </div>
+                  {errors.city && (
+                    <p className="text-red-500 text-sm">{errors.city}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Postcode <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-4">
+                    <input
+                      type="text"
+                      value={formData.postcode}
+                      onChange={(e) => setFormData(prev => ({ ...prev, postcode: e.target.value }))}
+                      className={`w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                        errors.postcode ? 'border-red-500' : ''
+                      }`}
+                      placeholder="Postcode"
+                    />
+                  </div>
+                  {errors.postcode && (
+                    <p className="text-red-500 text-sm">{errors.postcode}</p>
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Parking Spaces <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  value={formData.parkingSpaces}
-                  onChange={(e) => setFormData(prev => ({ ...prev, parkingSpaces: e.target.value }))}
-                  className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                    errors.parkingSpaces ? 'border-red-500' : ''
-                  }`}
-                />
-                {errors.parkingSpaces && (
-                  <p className="text-red-500 text-sm">{errors.parkingSpaces}</p>
+            </div>
+
+            {/* Property Details */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Property Details</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Bedrooms <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-4">
+                    <input
+                      type="number"
+                      value={formData.beds}
+                      onChange={(e) => setFormData(prev => ({ ...prev, beds: e.target.value }))}
+                      className={`w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                        errors.beds ? 'border-red-500' : ''
+                      }`}
+                    />
+                  </div>
+                  {errors.beds && (
+                    <p className="text-red-500 text-sm">{errors.beds}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Bathrooms <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-4">
+                    <input
+                      type="number"
+                      value={formData.baths}
+                      onChange={(e) => setFormData(prev => ({ ...prev, baths: e.target.value }))}
+                      className={`w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                        errors.baths ? 'border-red-500' : ''
+                      }`}
+                    />
+                  </div>
+                  {errors.baths && (
+                    <p className="text-red-500 text-sm">{errors.baths}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Reception <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-4">
+                    <input
+                      type="number"
+                      value={formData.reception}
+                      onChange={(e) => setFormData(prev => ({ ...prev, reception: e.target.value }))}
+                      className={`w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                        errors.reception ? 'border-red-500' : ''
+                      }`}
+                    />
+                  </div>
+                  {errors.reception && (
+                    <p className="text-red-500 text-sm">{errors.reception}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Square Feet <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-4">
+                    <input
+                      type="number"
+                      value={formData.sqft}
+                      onChange={(e) => setFormData(prev => ({ ...prev, sqft: e.target.value }))}
+                      className={`w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                        errors.sqft ? 'border-red-500' : ''
+                      }`}
+                    />
+                  </div>
+                  {errors.sqft && (
+                    <p className="text-red-500 text-sm">{errors.sqft}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Details */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Additional Details</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    EPC Rating <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-4 relative">
+                    <CustomDropdown
+                      value={formData.epcRating}
+                      onChange={(value) => setFormData(prev => ({ ...prev, epcRating: value }))}
+                      options={[
+                        { value: '', label: 'Select rating' },
+                        { value: 'A', label: 'A' },
+                        { value: 'B', label: 'B' },
+                        { value: 'C', label: 'C' },
+                        { value: 'D', label: 'D' },
+                        { value: 'E', label: 'E' },
+                        { value: 'F', label: 'F' },
+                        { value: 'G', label: 'G' }
+                      ]}
+                      icon={<Info className="h-5 w-5 text-gray-400" />}
+                      placeholder="Select rating"
+                    />
+                  </div>
+                  {errors.epcRating && (
+                    <p className="text-red-500 text-sm">{errors.epcRating}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Construction Year <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-4">
+                    <input
+                      type="number"
+                      value={formData.constructionYear}
+                      onChange={(e) => setFormData(prev => ({ ...prev, constructionYear: e.target.value }))}
+                      className={`w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                        errors.constructionYear ? 'border-red-500' : ''
+                      }`}
+                      placeholder="e.g. 1990"
+                    />
+                  </div>
+                  {errors.constructionYear && (
+                    <p className="text-red-500 text-sm">{errors.constructionYear}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Heating Type <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-4 relative">
+                    <CustomDropdown
+                      value={formData.heatingType}
+                      onChange={(value) => setFormData(prev => ({ ...prev, heatingType: value }))}
+                      options={[
+                        { value: '', label: 'Select type' },
+                        { value: 'gas central', label: 'Gas Central' },
+                        { value: 'electric', label: 'Electric' },
+                        { value: 'oil', label: 'Oil' },
+                        { value: 'solid fuel', label: 'Solid Fuel' },
+                        { value: 'air source heat pump', label: 'Air Source Heat Pump' },
+                        { value: 'ground source heat pump', label: 'Ground Source Heat Pump' }
+                      ]}
+                      icon={<Info className="h-5 w-5 text-gray-400" />}
+                      placeholder="Select type"
+                    />
+                  </div>
+                  {errors.heatingType && (
+                    <p className="text-red-500 text-sm">{errors.heatingType}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Features */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Features</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="has-garden"
+                      checked={formData.hasGarden}
+                      onChange={(e) => setFormData(prev => ({ ...prev, hasGarden: e.target.checked }))}
+                      className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="has-garden" className="ml-2 block text-sm text-gray-700">
+                      Has Garden
+                    </label>
+                  </div>
+                  {formData.hasGarden && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Garden Size (sq ft)
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.gardenSize}
+                        onChange={(e) => setFormData(prev => ({ ...prev, gardenSize: e.target.value }))}
+                        className={`w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 ${
+                          errors.gardenSize ? 'border-red-500' : ''
+                        }`}
+                      />
+                      {errors.gardenSize && (
+                        <p className="text-red-500 text-sm">{errors.gardenSize}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="has-garage"
+                      checked={formData.hasGarage}
+                      onChange={(e) => setFormData(prev => ({ ...prev, hasGarage: e.target.checked }))}
+                      className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="has-garage" className="ml-2 block text-sm text-gray-700">
+                      Has Garage
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Parking Spaces <span className="text-red-500">*</span>
+                    </label>
+                    <div className="mt-4">
+                      <input
+                        type="number"
+                        value={formData.parkingSpaces}
+                        onChange={(e) => setFormData(prev => ({ ...prev, parkingSpaces: e.target.value }))}
+                        className={`w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                          errors.parkingSpaces ? 'border-red-500' : ''
+                        }`}
+                      />
+                    </div>
+                    {errors.parkingSpaces && (
+                      <p className="text-red-500 text-sm">{errors.parkingSpaces}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Property Images <span className="text-red-500">*</span>
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <div className="text-center">
+                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                  <p className="mt-1 text-sm text-gray-600">
+                    Drag and drop images here, or click to select files
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    You can upload as many images as you'd like to showcase your property.
+                    The first image will be used as the main image in listings.
+                  </p>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <label
+                    htmlFor="image-upload"
+                    className="mt-2 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                  >
+                    Select Files
+                  </label>
+                </div>
+                
+                {/* Existing Images (Edit Mode) */}
+                {isEditMode && existingImages.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Existing Images:</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {existingImages.map((url, index) => (
+                        <div key={`existing-${index}`} className="relative">
+                          <img
+                            src={url}
+                            alt={`Property ${index + 1}`}
+                            className="h-24 w-full object-cover rounded-lg"
+                          />
+                          {index === 0 && (
+                            <span className="absolute top-0 left-0 bg-emerald-500 text-white text-xs px-2 py-1 rounded-tl-lg">
+                              Main
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Note: Existing images cannot be removed in this version.
+                    </p>
+                  </div>
+                )}
+                
+                {/* Preview of New Images */}
+                {previewImages.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      {isEditMode ? 'New Images to Upload:' : 'Selected Images:'}
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {previewImages.map((url, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={url}
+                            alt={`Upload preview ${index + 1}`}
+                            className="h-24 w-full object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                          {!isEditMode && index === 0 && (
+                            <span className="absolute top-0 left-0 bg-emerald-500 text-white text-xs px-2 py-1 rounded-tl-lg">
+                              Main
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {errors.images && (
+                  <p className="text-red-500 text-sm mt-2">{errors.images}</p>
                 )}
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Image Upload */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Property Images <span className="text-red-500">*</span>
-          </label>
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-            <div className="text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-1 text-sm text-gray-600">
-                Drag and drop images here, or click to select files
-              </p>
-              <p className="text-xs text-gray-500">
-                You can upload as many images as you'd like to showcase your property.
-                The first image will be used as the main image in listings.
-              </p>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-                id="image-upload"
-              />
-              <label
-                htmlFor="image-upload"
-                className="mt-2 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
-              >
-                Select Files
+            {/* Description with AI assistance - MOVED BELOW IMAGES */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Description <span className="text-red-500">*</span>
               </label>
-            </div>
-            
-            {/* Existing Images (Edit Mode) */}
-            {isEditMode && existingImages.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">Existing Images:</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {existingImages.map((url, index) => (
-                    <div key={`existing-${index}`} className="relative">
-                      <img
-                        src={url}
-                        alt={`Property ${index + 1}`}
-                        className="h-24 w-full object-cover rounded-lg"
-                      />
-                      {index === 0 && (
-                        <span className="absolute top-0 left-0 bg-emerald-500 text-white text-xs px-2 py-1 rounded-tl-lg">
-                          Main
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Note: Existing images cannot be removed in this version.
+              <div className="space-y-2">
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={4}
+                  className={`w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                    errors.description ? 'border-red-500' : ''
+                  }`}
+                  placeholder="Describe your property..."
+                />
+                {errors.description && (
+                  <p className="text-red-500 text-sm">{errors.description}</p>
+                )}
+                <button
+                  type="button"
+                  onClick={getAIDescription}
+                  disabled={isGeneratingAI.description}
+                  className="flex items-center gap-2 px-4 py-2 text-emerald-600 border border-emerald-600 rounded-lg hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isGeneratingAI.description ? (
+                    <Loader className="h-4 w-4 animate-spin" />
+                  ) : (
+                  <Sparkles className="h-4 w-4" />
+                  )}
+                  <span>Generate Mia Description</span>
+                </button>
+                <p className="text-sm text-gray-500">
+                  Let AI generate a professional description based on your property details
                 </p>
               </div>
-            )}
-            
-            {/* Preview of New Images */}
-            {previewImages.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">
-                  {isEditMode ? 'New Images to Upload:' : 'Selected Images:'}
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {previewImages.map((url, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={url}
-                        alt={`Upload preview ${index + 1}`}
-                        className="h-24 w-full object-cover rounded-lg"
-                      />
+            </div>
+
+            {/* Price with AI suggestion - MOVED BELOW DESCRIPTION */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Price <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-2 text-gray-500">£</span>
+                <input
+                    type="text"
+                    value={formData.price}
+                    onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                    className={`w-full pl-7 p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                      errors.price ? 'border-red-500' : ''
+                    }`}
+                    placeholder="Enter price"
+                  />
+              </div>
                       <button
                         type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                      {!isEditMode && index === 0 && (
-                        <span className="absolute top-0 left-0 bg-emerald-500 text-white text-xs px-2 py-1 rounded-tl-lg">
-                          Main
-                        </span>
+                  onClick={getAIPrice}
+                  disabled={isGeneratingAI.price}
+                  className="flex items-center gap-2 px-4 py-2 text-emerald-600 border border-emerald-600 rounded-lg hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isGeneratingAI.price ? (
+                    <>
+                      <Loader className="h-4 w-4 animate-spin" />
+                      <span>Analyzing market data...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      <span>Generate Mia Suggestion</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {/* Pricing Chart and Explanation */}
+              {showPricingChart && pricingData && (
+                <div className="mt-6 border-t pt-6">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">Price Analysis</h3>
+                    <p className="text-sm text-gray-600">
+                      Based on historical property transactions in {formData.postcode}
+                    </p>
+                  </div>
+                  
+                  {/* Pricing Chart */}
+                  <PriceHistoryChart 
+                    data={pricingData.price_per_floor_area_per_year} 
+                    recommendedYear={
+                      PricingService.getRecommendedPrice(pricingData)?.year
+                    }
+                  />
+                  
+                  {/* Pricing Explanation */}
+                  <div className="mt-4 p-4 bg-emerald-50 rounded-lg border border-emerald-100">
+                    <h4 className="font-medium text-emerald-800 mb-2">How we calculated this price:</h4>
+                    <ul className="list-disc list-inside text-sm space-y-1 text-gray-700">
+                      <li>
+                        Used {formData.postcode} area property data from Land Registry and EPC certificates
+                      </li>
+                      {PricingService.getRecommendedPrice(pricingData) && (
+                        <li>
+                          Current market rate: £{PricingService.getRecommendedPrice(pricingData)?.pricePerSqm.toLocaleString('en-GB')} per m²
+                          (£{Math.round((PricingService.getRecommendedPrice(pricingData)?.pricePerSqm || 0) * 0.092903).toLocaleString('en-GB')} per sq ft)
+                        </li>
                       )}
-                    </div>
-                  ))}
+                      {formData.sqft && PricingService.getRecommendedPrice(pricingData) && (
+                        <li>
+                          Your property: {formData.sqft} sq ft × £{Math.round((PricingService.getRecommendedPrice(pricingData)?.pricePerSqm || 0) * 0.092903).toLocaleString('en-GB')} = £{parseInt(formData.price).toLocaleString('en-GB')} (rounded to nearest £500)
+                        </li>
+                      )}
+                      {PricingService.getRecommendedPrice(pricingData) && (
+                        <li>
+                          Based on {PricingService.getRecommendedPrice(pricingData)?.sampleSize} properties in this area
+                        </li>
+                      )}
+                    </ul>
+                    <p className="text-xs text-gray-500 mt-3">
+                      Note: This is an AI-generated suggestion. Final pricing decisions should consider 
+                      property condition, unique features, and current market trends.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
-            
-            {errors.images && (
-              <p className="text-red-500 text-sm mt-2">{errors.images}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Description with AI assistance - MOVED BELOW IMAGES */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Description <span className="text-red-500">*</span>
-          </label>
-          <div className="space-y-2">
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              rows={4}
-              className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                errors.description ? 'border-red-500' : ''
-              }`}
-              placeholder="Describe your property..."
-            />
-            {errors.description && (
-              <p className="text-red-500 text-sm">{errors.description}</p>
-            )}
-            <button
-              type="button"
-              onClick={getAIDescription}
-              disabled={isGeneratingAI.description}
-              className="flex items-center gap-2 px-4 py-2 text-emerald-600 border border-emerald-600 rounded-lg hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGeneratingAI.description ? (
-                <Loader className="h-4 w-4 animate-spin" />
-              ) : (
-              <Sparkles className="h-4 w-4" />
               )}
-              <span>Generate Mia Description</span>
-            </button>
-            <p className="text-sm text-gray-500">
-              Let AI generate a professional description based on your property details
-            </p>
-          </div>
-        </div>
 
-        {/* Price with AI suggestion - MOVED BELOW DESCRIPTION */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Price <span className="text-red-500">*</span>
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-2 text-gray-500">£</span>
-            <input
-                type="text"
-                value={formData.price}
-                onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                className={`w-full pl-7 p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
-                  errors.price ? 'border-red-500' : ''
-                }`}
-                placeholder="Enter price"
-              />
-          </div>
-                  <button
-                    type="button"
-              onClick={getAIPrice}
-              disabled={isGeneratingAI.price}
-              className="flex items-center gap-2 px-4 py-2 text-emerald-600 border border-emerald-600 rounded-lg hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGeneratingAI.price ? (
-                <>
-                  <Loader className="h-4 w-4 animate-spin" />
-                  <span>Analyzing market data...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  <span>Generate Mia Suggestion</span>
-                </>
+              {errors.price && (
+                <p className="text-red-500 text-sm">{errors.price}</p>
               )}
-            </button>
-          </div>
-          
-          {/* Pricing Chart and Explanation */}
-          {showPricingChart && pricingData && (
-            <div className="mt-6 border-t pt-6">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Price Analysis</h3>
-                <p className="text-sm text-gray-600">
-                  Based on historical property transactions in {formData.postcode}
-                </p>
-              </div>
-              
-              {/* Pricing Chart */}
-              <PriceHistoryChart 
-                data={pricingData.price_per_floor_area_per_year} 
-                recommendedYear={
-                  PricingService.getRecommendedPrice(pricingData)?.year
-                }
-              />
-              
-              {/* Pricing Explanation */}
-              <div className="mt-4 p-4 bg-emerald-50 rounded-lg border border-emerald-100">
-                <h4 className="font-medium text-emerald-800 mb-2">How we calculated this price:</h4>
-                <ul className="list-disc list-inside text-sm space-y-1 text-gray-700">
-                  <li>
-                    Used {formData.postcode} area property data from Land Registry and EPC certificates
-                  </li>
-                  {PricingService.getRecommendedPrice(pricingData) && (
-                    <li>
-                      Current market rate: £{PricingService.getRecommendedPrice(pricingData)?.pricePerSqm.toLocaleString('en-GB')} per m²
-                      (£{Math.round((PricingService.getRecommendedPrice(pricingData)?.pricePerSqm || 0) * 0.092903).toLocaleString('en-GB')} per sq ft)
-                    </li>
-                  )}
-                  {formData.sqft && PricingService.getRecommendedPrice(pricingData) && (
-                    <li>
-                      Your property: {formData.sqft} sq ft × £{Math.round((PricingService.getRecommendedPrice(pricingData)?.pricePerSqm || 0) * 0.092903).toLocaleString('en-GB')} = £{parseInt(formData.price).toLocaleString('en-GB')} (rounded to nearest £500)
-                    </li>
-                  )}
-                  {PricingService.getRecommendedPrice(pricingData) && (
-                    <li>
-                      Based on {PricingService.getRecommendedPrice(pricingData)?.sampleSize} properties in this area
-                    </li>
-                  )}
-                </ul>
-                <p className="text-xs text-gray-500 mt-3">
-                  Note: This is an AI-generated suggestion. Final pricing decisions should consider 
-                  property condition, unique features, and current market trends.
-                </p>
-              </div>
+              <p className="text-sm text-gray-500">
+                Thanks for letting Mia suggest a competitive price for you based on market data!
+              </p>
             </div>
-          )}
 
-          {errors.price && (
-            <p className="text-red-500 text-sm">{errors.price}</p>
-          )}
-          <p className="text-sm text-gray-500">
-            Thanks for letting Mia suggest a competitive price for you based on market data!
-          </p>
+            {/* Submit Button */}
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader className="h-4 w-4 animate-spin" />
+                    <span>{isEditMode ? 'Updating Property...' : 'Adding Property...'}</span>
+                  </>
+                ) : (
+                  <span>{isEditMode ? 'Update Property' : 'Add Property'}</span>
+                )}
+              </button>
+            </div>
+          </form>
         </div>
-
-        {/* Submit Button */}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader className="h-4 w-4 animate-spin" />
-                <span>{isEditMode ? 'Updating Property...' : 'Adding Property...'}</span>
-              </>
-            ) : (
-              <span>{isEditMode ? 'Update Property' : 'Add Property'}</span>
-            )}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 };

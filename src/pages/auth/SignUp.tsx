@@ -132,8 +132,8 @@ const SignUp = () => {
         userData
       );
 
-      // Navigate to user type selection after successful signup
-      navigate('/select-user-type');
+      // Navigate to dashboard after successful signup
+      navigate('/dashboard');
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
         setError('An account with this email already exists. Please try signing in or use a different email address.');
