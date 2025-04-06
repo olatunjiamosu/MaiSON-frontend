@@ -63,7 +63,7 @@ const PropertyCard = ({
   }, [negotiations]);
 
   const handleViewProperty = () => {
-    navigate(`/dashboard/buyer/property/${id}`, {
+    navigate(`/property/${id}`, {
       state: { from: fromSection },
     });
   };
