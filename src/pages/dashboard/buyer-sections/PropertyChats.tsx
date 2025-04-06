@@ -39,6 +39,7 @@ interface PropertyChatItem {
   };
   unread_count: number;
   status: 'active' | 'pending' | 'closed';
+  type: 'property';
 }
 
 interface PropertyAddress {
@@ -137,7 +138,8 @@ const PropertyChats = () => {
             timestamp: new Date().toISOString()
           },
           unread_count: chat.unread_count || 0,
-          status: chat.status || 'active'
+          status: chat.status || 'active',
+          type: 'property'
         };
         
         // If we already have a chat for this property, only replace it if this one is newer

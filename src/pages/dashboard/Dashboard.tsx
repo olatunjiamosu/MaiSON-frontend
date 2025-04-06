@@ -13,7 +13,8 @@ import {
   HourglassIcon,
   CalendarCheck,
   Trash2,
-  LogOut
+  LogOut,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import PropertyService from '../../services/PropertyService';
@@ -500,12 +501,38 @@ const Dashboard = () => {
                     </div>
                   </div>
                 ) : chatHistory && chatHistory.length > 0 ? (
-                  chatHistory.map((chat) => (
-                    <div key={chat.id} className="p-4 bg-gray-50 rounded-lg">
-                      <p className="text-gray-900 mb-1">{chat.question}</p>
-                      <p className="text-sm text-gray-500">{new Date(chat.timestamp).toLocaleString()}</p>
-                    </div>
-                  ))
+                  // Sort chats by timestamp in descending order (most recent first)
+                  [...chatHistory]
+                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                    .map((chat) => (
+                      <div key={chat.id} className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0">
+                            {chat.type === 'property' ? (
+                              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                                <Home className="h-4 w-4 text-emerald-600" />
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                                <MessageCircle className="h-4 w-4 text-purple-600" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-gray-900 mb-1">{chat.question}</h3>
+                            <p className="text-sm text-gray-500">
+                              {new Date(chat.timestamp).toLocaleString([], {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
                 ) : (
                   <div className="h-full flex items-center justify-center">
                     <p className="text-gray-500">No recent conversations</p>
