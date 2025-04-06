@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PropertyDetail } from '../../types/property';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import PropertyMap from '../PropertyMap';
+import PropertyService from '../../services/PropertyService';
 import {
   Home,
   MapPin,
@@ -21,7 +22,8 @@ import {
   ChevronLeft,
   Eye,
   Check,
-  X as XIcon
+  X as XIcon,
+  Heart
 } from 'lucide-react';
 
 interface PropertyDetailsViewProps {
@@ -51,6 +53,10 @@ const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
   const { logout } = useAuth();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [savingProperty, setSavingProperty] = useState(false);
+  const [propertyNotes, setPropertyNotes] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
   const [editState, setEditState] = useState<EditState>({
     keyDetails: false,
     description: false,
@@ -59,6 +65,70 @@ const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
     address: false
   });
   const [editedValues, setEditedValues] = useState<Partial<PropertyDetail>>({});
+
+  useEffect(() => {
+    const checkIfPropertyIsSaved = async () => {
+      if (!property?.id) return;
+
+      try {
+        const dashboardData = await PropertyService.getUserDashboard();
+        const isSavedProperty = dashboardData.saved_properties?.some(
+          (savedProp: any) => savedProp.property_id === property.id
+        );
+        setIsSaved(isSavedProperty || false);
+        
+        // If property is saved, fetch notes
+        if (isSavedProperty) {
+          const savedProperty = dashboardData.saved_properties?.find(
+            (savedProp: any) => savedProp.property_id === property.id
+          );
+          setPropertyNotes(savedProperty?.notes || '');
+        }
+      } catch (err) {
+        console.error('Error checking if property is saved:', err);
+        setIsSaved(false);
+      }
+    };
+
+    checkIfPropertyIsSaved();
+  }, [property?.id]);
+
+  const handleSaveProperty = async () => {
+    if (!property?.id) return;
+
+    try {
+      setSavingProperty(true);
+      if (isSaved) {
+        await PropertyService.unsaveProperty(property.id);
+        setIsSaved(false);
+        toast.success('Property removed from saved properties');
+      } else {
+        await PropertyService.saveProperty(property.id);
+        setIsSaved(true);
+        toast.success('Property saved successfully');
+      }
+    } catch (err) {
+      console.error('Error saving/unsaving property:', err);
+      toast.error('Failed to save property. Please try again.');
+    } finally {
+      setSavingProperty(false);
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    if (!property?.id) return;
+
+    try {
+      setSavingNotes(true);
+      await PropertyService.updateSavedPropertyNotes(property.id, propertyNotes);
+      toast.success('Notes saved successfully');
+    } catch (err) {
+      console.error('Error saving notes:', err);
+      toast.error('Failed to save notes. Please try again.');
+    } finally {
+      setSavingNotes(false);
+    }
+  };
 
   if (!property) {
     return (
@@ -217,6 +287,19 @@ const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
                 alt={`Property view ${currentImageIndex + 1}`}
                 className="w-full h-full object-cover"
               />
+              {viewMode === 'buyer' && (
+                <button
+                  onClick={handleSaveProperty}
+                  disabled={savingProperty}
+                  className={`absolute top-4 right-4 p-3 rounded-full ${
+                    isSaved 
+                      ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
+                      : 'bg-white/80 hover:bg-white text-gray-800'
+                  } shadow-sm transition-colors duration-200`}
+                >
+                  <Heart className={`h-7 w-7 ${isSaved ? 'fill-current' : ''}`} />
+                </button>
+              )}
               {property.image_urls.length > 1 && (
                 <>
                   <button
@@ -570,6 +653,26 @@ const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
                 >
                   Schedule Viewing
                 </button>
+                {isSaved && (
+                  <div className="bg-white rounded-lg border p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900">Notes</h3>
+                      <button
+                        onClick={handleSaveNotes}
+                        disabled={savingNotes}
+                        className="text-sm text-emerald-600 hover:text-emerald-700 disabled:text-gray-400"
+                      >
+                        {savingNotes ? 'Saving...' : 'Save Notes'}
+                      </button>
+                    </div>
+                    <textarea
+                      value={propertyNotes}
+                      onChange={(e) => setPropertyNotes(e.target.value)}
+                      placeholder="Add your notes about this property..."
+                      className="w-full h-32 p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -579,4 +682,4 @@ const PropertyDetailsView: React.FC<PropertyDetailsViewProps> = ({
   );
 };
 
-export default PropertyDetailsView; 
+export default PropertyDetailsView;

@@ -9,8 +9,11 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   onAuthStateChanged,
+  updateEmail,
+  updateProfile,
+  reload,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { UserData } from '../types/user';
 import { useNavigate } from 'react-router-dom';
@@ -34,6 +37,7 @@ interface AuthContextType {
     userData?: Partial<UserData>
   ) => Promise<UserCredential>;
   refreshUserRole: () => Promise<UserRole>;
+  updateUserProfile: (data: { email?: string; phoneNumber?: string; photoURL?: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -230,6 +234,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return signInWithPopup(auth, provider);
   };
 
+  const updateUserProfile = async (data: { email?: string; phoneNumber?: string; photoURL?: string }) => {
+    if (!user) throw new Error('No user logged in');
+
+    try {
+      if (data.email && data.email !== user.email) {
+        await updateEmail(auth.currentUser!, data.email);
+      }
+
+      if (data.photoURL) {
+        await updateProfile(auth.currentUser!, {
+          photoURL: data.photoURL
+        });
+      }
+
+      // Update phone number in Firestore
+      if (data.phoneNumber) {
+        await updateDoc(doc(db, 'users', user.uid), {
+          phoneNumber: data.phoneNumber
+        });
+      }
+
+      // Refresh user object to get latest data
+      await reload(auth.currentUser!);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  };
+
   const value = {
     user,
     userRole,
@@ -241,6 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     resetPassword,
     signInWithGoogle,
     refreshUserRole,
+    updateUserProfile,
   };
 
   return (

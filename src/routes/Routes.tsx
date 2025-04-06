@@ -17,6 +17,8 @@ import RoleRoute from './RoleRoute';
 import Dashboard from '../pages/dashboard/Dashboard';
 import SellerDashboard from '../pages/dashboard/SellerDashboard';
 import BuyersDashboard from '../pages/dashboard/BuyersDashboard';
+import AddPropertySection from '../pages/dashboard/seller-sections/AddPropertySection';
+import ProfileSettings from '../pages/profile/ProfileSettings';
 
 // Remove mock property data as we're now using the API
 
@@ -40,6 +42,16 @@ const AppRoutes = () => (
       element={
         <PrivateRoute>
           <Dashboard />
+        </PrivateRoute>
+      }
+    />
+
+    {/* Profile Settings Route */}
+    <Route 
+      path="/profile-settings" 
+      element={
+        <PrivateRoute>
+          <ProfileSettings />
         </PrivateRoute>
       }
     />
@@ -76,6 +88,7 @@ const AppRoutes = () => (
     {/* Dashboard Routes */}
     <Route path="/dashboard/seller/*" element={<PrivateRoute><SellerDashboard /></PrivateRoute>} />
     <Route path="/dashboard/buyer/property/:propertyId/*" element={<PrivateRoute><BuyersDashboard /></PrivateRoute>} />
+    <Route path="/dashboard/add-property" element={<PrivateRoute><AddPropertySection /></PrivateRoute>} />
   </Routes>
 );
 

@@ -174,7 +174,7 @@ const Dashboard = () => {
               </div>
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => navigate('/profile')}
+                  onClick={() => navigate('/profile-settings')}
                   className="text-gray-600 hover:text-gray-900"
                 >
                   <Settings className="h-6 w-6" />
@@ -334,7 +334,7 @@ const Dashboard = () => {
                 {/* Add Property Card */}
                 <div className="w-[250px]">
                   <div 
-                    onClick={() => navigate('/property/new')}
+                    onClick={() => navigate('/dashboard/add-property')}
                     className="flex flex-col items-center justify-center p-4 bg-white rounded-lg border-2 border-dashed border-emerald-300 hover:border-emerald-500 hover:bg-emerald-50 transition-all duration-300 cursor-pointer h-[180px]"
                   >
                     <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-3">
@@ -563,7 +563,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => navigate('/profile')}
+                    onClick={() => navigate('/profile-settings')}
                     className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
                   >
                     Manage Profile Settings →

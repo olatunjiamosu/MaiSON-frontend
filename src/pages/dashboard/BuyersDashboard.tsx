@@ -49,6 +49,7 @@ import PageTitle from '../../components/PageTitle';
 import MakeOfferSection from './buyer-sections/MakeOfferSection';
 import ScheduleViewingSection from './buyer-sections/ScheduleViewingSection';
 import TimelineSection from '../../components/timeline/TimelineSection';
+import DocumentsSection from './buyer-sections/DocumentsSection';
 
 // Add interfaces for the components
 interface NavItemProps {
@@ -121,17 +122,17 @@ const BuyersDashboard = () => {
   // Update active section based on location - only as a backup for direct navigation
   useEffect(() => {
     // Only use this effect for syncing with direct URL navigation
-    // Extract section from path: /seller-dashboard/property/123/section
+    // Extract section from path: /dashboard/buyer/property/123/section
     const pathParts = location.pathname.split('/');
     const lastPart = pathParts[pathParts.length - 1];
     
     // Only change if it's a known section
-    if (['offers', 'viewings', 'messages', 'documents', 'availability', 'view-as-buyer', 'timeline'].includes(lastPart)) {
+    if (['offers', 'viewings', 'messages', 'documents', 'availability', 'view-as-buyer', 'timeline', 'chat'].includes(lastPart)) {
       setActiveSection(lastPart);
-    } else if (location.pathname === '/seller-dashboard') {
+    } else if (location.pathname === '/dashboard') {
       setActiveSection('properties');
     } else if (propertyId) {
-      // When we're at the property root path (e.g., /dashboard/seller/property/123)
+      // When we're at the property root path (e.g., /dashboard/buyer/property/123)
       // or any property-specific path without a section
       setActiveSection('my-property');
     }
@@ -202,8 +203,7 @@ const BuyersDashboard = () => {
         'viewings': `Viewing Requests | ${property.address.street} | Buyer Dashboard | MaiSON`,
         'messages': `Property Chats | ${property.address.street} | Buyer Dashboard | MaiSON`,
         'documents': `Documents | ${property.address.street} | Buyer Dashboard | MaiSON`,
-        'availability': `Availability | ${property.address.street} | Buyer Dashboard | MaiSON`,
-        'view-as-buyer': `Buyer View | ${property.address.street} | Buyer Dashboard | MaiSON`
+        'availability': `Availability | ${property.address.street} | Buyer Dashboard | MaiSON`
       };
       document.title = sectionTitles[section] || sectionTitles['offers'];
     } else {
@@ -233,6 +233,40 @@ const BuyersDashboard = () => {
     } catch (error) {
       console.error('Error logging out:', error);
       toast.error('Failed to logout. Please try again.');
+    }
+  };
+
+  const renderSection = () => {
+    if (!property) return null;
+
+    switch (activeSection) {
+      case 'my-property':
+        return <PropertyDetailsSection property={property} />;
+      case 'timeline':
+        return <TimelineSection viewMode="buyer" />;
+      case 'viewings':
+        return <ScheduleViewingSection property={property} />;
+      case 'offers':
+        return <MakeOfferSection property={property} />;
+      case 'chat':
+        // Keep the chat section active even when showing "coming soon"
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900">Property Chat</h3>
+              <p className="text-gray-500 mt-2">This section is coming soon.</p>
+            </div>
+          </div>
+        );
+      case 'documents':
+        return <DocumentsSection />;
+      default:
+        // Only default to PropertyDetailsSection if we're not in a specific section
+        if (activeSection && activeSection !== 'chat') {
+          return <PropertyDetailsSection property={property} />;
+        }
+        return null;
     }
   };
 
@@ -383,18 +417,18 @@ const BuyersDashboard = () => {
                   path={`/dashboard/buyer/property/${propertyId}/timeline`}
                 />
                 <NavItem
-                  icon={<DollarSign />}
-                  label="Make Offer"
-                  active={activeSection === 'offers'}
-                  onClick={() => handleSectionChange('offers', `/dashboard/buyer/property/${propertyId}/offers`)}
-                  path={`/dashboard/buyer/property/${propertyId}/offers`}
-                />
-                <NavItem
                   icon={<Calendar />}
                   label="Schedule Viewing"
                   active={activeSection === 'viewings'}
                   onClick={() => handleSectionChange('viewings', `/dashboard/buyer/property/${propertyId}/viewings`)}
                   path={`/dashboard/buyer/property/${propertyId}/viewings`}
+                />
+                <NavItem
+                  icon={<DollarSign />}
+                  label="Make Offer"
+                  active={activeSection === 'offers'}
+                  onClick={() => handleSectionChange('offers', `/dashboard/buyer/property/${propertyId}/offers`)}
+                  path={`/dashboard/buyer/property/${propertyId}/offers`}
                 />
                 <NavItem
                   icon={<MessageCircle />}
@@ -477,15 +511,7 @@ const BuyersDashboard = () => {
                 <Route path="offers" element={<MakeOfferSection property={property || undefined} />} />
                 <Route path="viewings" element={<ScheduleViewingSection property={property || undefined} />} />
                 <Route path="availability" element={<AvailabilitySection />} />
-                <Route path="documents" element={
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900">Documents Section</h3>
-                      <p className="text-gray-500 mt-2">This section is coming soon.</p>
-                    </div>
-                  </div>
-                } />
+                <Route path="documents" element={<DocumentsSection />} />
                 <Route path="timeline" element={<TimelineSection viewMode="buyer" />} />
                 <Route path="chat" element={
                   <div className="flex items-center justify-center h-full">
@@ -497,19 +523,7 @@ const BuyersDashboard = () => {
                   </div>
                 } />
                 <Route path="my-property" element={property ? <PropertyDetailsSection property={property} /> : null} />
-                <Route path="*" element={
-                  propertyId && property ? (
-                    <PropertyDetailsSection property={property} />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <Home className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900">Welcome to Your Dashboard</h3>
-                        <p className="text-gray-500 mt-2">Select a property to view its details</p>
-                      </div>
-                    </div>
-                  )
-                } />
+                <Route path="*" element={renderSection()} />
               </Routes>
             </div>
             {/* Add padding at the bottom to ensure content isn't hidden behind the chat input */}

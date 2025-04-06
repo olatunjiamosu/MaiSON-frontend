@@ -12,39 +12,45 @@ import { MenuProvider } from './context/MenuContext';
 import { ToastContainer } from 'react-toastify';
 import { HelmetProvider } from 'react-helmet-async';
 import 'react-toastify/dist/ReactToastify.css';
+import { AuthProvider } from './context/AuthContext';
+import { DashboardProvider } from './context/DashboardContext';
 
 const App = () => {
   return (
-    <HelmetProvider>
-      <Router>
-        <MenuProvider>
-          <ChatProvider>
-            <div>
-              <ToastContainer position="top-right" autoClose={5000} />
-              <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<Home />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/login" element={<Login />} />
-                
-                {/* Protected routes */}
-                <Route 
-                  path="/select-user-type" 
-                  element={
-                    <ProtectedRoute>
-                      <SelectUserType />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                {/* App routes */}
-                <Route path="/*" element={<AppRoutes />} />
-              </Routes>
-            </div>
-          </ChatProvider>
-        </MenuProvider>
-      </Router>
-    </HelmetProvider>
+    <AuthProvider>
+      <DashboardProvider>
+        <HelmetProvider>
+          <Router>
+            <MenuProvider>
+              <ChatProvider>
+                <div>
+                  <ToastContainer position="top-right" autoClose={5000} />
+                  <Routes>
+                    {/* Public routes */}
+                    <Route path="/" element={<Home />} />
+                    <Route path="/signup" element={<SignUp />} />
+                    <Route path="/login" element={<Login />} />
+                    
+                    {/* Protected routes */}
+                    <Route 
+                      path="/select-user-type" 
+                      element={
+                        <ProtectedRoute>
+                          <SelectUserType />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    
+                    {/* App routes */}
+                    <Route path="/*" element={<AppRoutes />} />
+                  </Routes>
+                </div>
+              </ChatProvider>
+            </MenuProvider>
+          </Router>
+        </HelmetProvider>
+      </DashboardProvider>
+    </AuthProvider>
   );
 };
 

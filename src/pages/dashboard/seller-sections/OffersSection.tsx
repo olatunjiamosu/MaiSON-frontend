@@ -343,8 +343,8 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
     fetchNegotiations();
   }, [property?.id, user?.uid]);
 
-  const getOfferStrength = (amount: number): { strength: string; color: string } => {
-    const percentageOfAsking = (amount / marketStats.askingPrice) * 100;
+  const getOfferStrength = (amount: number, askingPrice: number): { strength: string; color: string } => {
+    const percentageOfAsking = (amount / askingPrice) * 100;
     if (percentageOfAsking >= 98) return { strength: 'Strong', color: 'text-emerald-600' };
     if (percentageOfAsking >= 95) return { strength: 'Good', color: 'text-blue-600' };
     if (percentageOfAsking >= 90) return { strength: 'Fair', color: 'text-yellow-600' };
@@ -392,18 +392,18 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
   // Get market position data
   const marketPosition = getMarketPositionAnalysis();
 
-  const getDisplayStatus = (negotiation: SellerNegotiation): 'accepted' | 'rejected' | 'pending' | 'action_required' => {
+  const getDisplayStatus = (negotiation: SellerNegotiation, userId: string | undefined): 'accepted' | 'rejected' | 'pending' | 'action_required' => {
     if (negotiation.status === 'accepted') return 'accepted';
     if (negotiation.status === 'rejected') return 'rejected';
     if (negotiation.status === 'active') {
-      return negotiation.last_offer_by === user?.uid ? 'pending' : 'action_required';
+      return negotiation.last_offer_by === userId ? 'pending' : 'action_required';
     }
     return 'action_required';
   };
 
   const filteredNegotiations = selectedFilter === 'all'
     ? negotiations
-    : negotiations.filter(neg => getDisplayStatus(neg) === selectedFilter);
+    : negotiations.filter(neg => getDisplayStatus(neg, user?.uid) === selectedFilter);
 
   const handleCounterOffer = (negotiation: SellerNegotiation) => {
     setCounterOfferId(negotiation.negotiation_id);
@@ -861,7 +861,7 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
             ) : (
               <div className="p-6 space-y-4">
                 {filteredNegotiations.map((negotiation) => {
-                  const offerStrength = getOfferStrength(negotiation.current_offer);
+                  const offerStrength = getOfferStrength(negotiation.current_offer, marketStats.askingPrice);
                   
                   return (
                     <div key={negotiation.negotiation_id} className="bg-white rounded-lg border shadow-sm">
@@ -934,7 +934,7 @@ const OffersSection: React.FC<{ property?: PropertyDetailWithStatus }> = ({ prop
                                 })}
                               </div>
                             </div>
-                            {negotiation.status === 'active' && getDisplayStatus(negotiation) === 'action_required' && (
+                            {negotiation.status === 'active' && getDisplayStatus(negotiation, user?.uid) === 'action_required' && (
                               <div className="flex items-center gap-2">
                                 <button className="px-4 py-1.5 bg-emerald-50 text-emerald-700 rounded-md hover:bg-emerald-100 transition-colors text-sm font-medium" onClick={() => handleAcceptOffer(negotiation)}>
                                   Accept
