@@ -23,43 +23,82 @@ const PropertyChatSection: React.FC<PropertyChatSectionProps> = ({ propertyId, r
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch property details
+  // Fetch property details and chat history
   useEffect(() => {
-    const fetchPropertyDetails = async () => {
-      if (!propertyId) return;
+    const fetchData = async () => {
+      if (!propertyId || !user?.uid) return;
       
       try {
         setIsLoading(true);
+        
+        // Fetch property details
         const propertyData = await PropertyService.getPropertyById(propertyId);
         setProperty(propertyData);
 
-        // After getting property details, fetch chat history
-        if (user?.uid) {
-          try {
-            // Get the session ID for this property
-            const propertySessionId = localStorage.getItem(`property_chat_session_${propertyId}`);
-            const propertyConversationId = localStorage.getItem(`property_chat_conversation_${propertyId}`);
+        // Get all user conversations
+        const response = await ChatService.getUserConversations(user.uid);
+        const propertyConversations = response.property_conversations || [];
+        
+        // Find the conversation for this property
+        const propertyConversation = propertyConversations.find(
+          (conv: any) => conv.property_id === propertyId
+        );
+
+        if (propertyConversation) {
+          // Get the conversation ID
+          const conversationId = propertyConversation.id || propertyConversation.conversation_id;
+          
+          // Store the conversation ID in localStorage
+          localStorage.setItem(`property_chat_conversation_${propertyId}`, conversationId.toString());
+          
+          // Fetch chat history for this conversation
+          const history = await ChatService.getChatHistory(conversationId, true);
+          console.log('=== CHAT HISTORY DEBUG ===');
+          console.log('Raw chat history:', JSON.stringify(history, null, 2));
+          
+          // Ensure messages have the correct role format
+          const formattedHistory = history.map(msg => {
+            console.log('Processing message:', {
+              id: msg.id,
+              originalRole: msg.role,
+              content: msg.content
+            });
             
-            if (propertyConversationId) {
-              const history = await ChatService.getChatHistory(parseInt(propertyConversationId), true);
-              setMessages(history);
-            }
+            // Convert the incoming role to our expected format
+            const incomingRole = msg.role.toLowerCase();
+            const role: 'user' | 'assistant' = 
+              incomingRole === 'buyer' || 
+              incomingRole === 'seller' || 
+              incomingRole === 'user' 
+                ? 'user' 
+                : 'assistant';
+            console.log('Converted role:', role);
             
-            if (propertySessionId) {
-              setSessionId(propertySessionId);
-            }
-          } catch (error) {
-            console.error('Error fetching chat history:', error);
+            return {
+              ...msg,
+              role
+            };
+          }) as ChatMessage[];
+          
+          console.log('Final formatted history:', JSON.stringify(formattedHistory, null, 2));
+          console.log('=== END CHAT HISTORY DEBUG ===');
+          
+          setMessages(formattedHistory);
+          
+          // Get and store the session ID
+          const propertySessionId = localStorage.getItem(`property_chat_session_${propertyId}`);
+          if (propertySessionId) {
+            setSessionId(propertySessionId);
           }
         }
       } catch (error) {
-        console.error('Error fetching property details:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchPropertyDetails();
+    fetchData();
   }, [propertyId, user?.uid]);
 
   // Scroll to bottom when messages change
@@ -84,6 +123,7 @@ const PropertyChatSection: React.FC<PropertyChatSectionProps> = ({ propertyId, r
         timestamp: new Date().toISOString(),
         property_id: propertyId
       };
+      console.log('New user message:', newUserMessage);
 
       // Add loading message for MIA's response
       const loadingMessage: ChatMessage = {
@@ -213,7 +253,7 @@ const PropertyChatSection: React.FC<PropertyChatSectionProps> = ({ propertyId, r
           </div>
         ) : messages.length > 0 ? (
           messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'items-start gap-3'}`}>
+            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start items-start gap-3'}`}>
               {msg.role === 'assistant' && (
                 <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
                   <span className="text-emerald-700 font-semibold">M</span>

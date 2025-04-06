@@ -393,34 +393,16 @@ const PropertyChats = () => {
             property_id: selectedChat.property_id
           };
           
-          // If the message doesn't have a role or it's not explicitly set to 'assistant',
-          // check the content to determine if it's likely a user message
-          if (!msg.role || msg.role !== 'assistant') {
-            // Common patterns in user messages
-            const userPatterns = [
-              'interested in this property',
-              'how many rooms',
-              'where is this property',
-              'can you tell me more',
-              'what is the price',
-              'is there a garden',
-              'when was it built',
-              'is it available',
-              'can i view'
-            ];
-            
-            // Check if the message content matches any user patterns
-            const isLikelyUserMessage = userPatterns.some(pattern => 
-              msg.content.toLowerCase().includes(pattern)
-            );
-            
-            if (isLikelyUserMessage) {
-              return { ...msgWithProperty, role: 'user' as 'user' };
-            }
-          }
+          // Convert the incoming role to our expected format
+          const incomingRole = msg.role?.toLowerCase();
+          const role: 'user' | 'assistant' = 
+            incomingRole === 'buyer' || 
+            incomingRole === 'seller' || 
+            incomingRole === 'user' 
+              ? 'user' 
+              : 'assistant';
           
-          // Default to assistant if not determined to be a user
-          return { ...msgWithProperty, role: msg.role as 'user' | 'assistant' || 'assistant' };
+          return { ...msgWithProperty, role };
         });
         
         console.log(`Processed ${processedMessages.length} messages for display`);
