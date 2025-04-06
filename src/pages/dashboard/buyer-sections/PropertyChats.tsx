@@ -66,127 +66,141 @@ const PropertyChats = () => {
   const isRefreshSafe = useRef<boolean>(true);
 
   // Define fetchPropertyChats function so it can be called from handleSendMessage
-    const fetchPropertyChats = async () => {
-      if (!user?.uid) return;
-      
-      try {
-        setLoading(true);
+  const fetchPropertyChats = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      setLoading(true);
       console.log('Fetching user conversations for user ID:', user.uid);
-      const response = await ChatService.getUserConversations(user.uid, 'buyer');
+      const response = await ChatService.getUserConversations(user.uid);
       console.log('Received user conversations response:', response);
       
       // Extract property conversations from the response
-      // The API returns an object with property_conversations array, not an array directly
       if (!response || typeof response !== 'object') {
         console.error('Invalid response format:', response);
         setPropertyChatsList([]);
         return;
       }
       
-      // Check if the response has property_conversations array
-      const propertyChats = response.property_conversations || [];
-      console.log('Property chats extracted from response:', propertyChats);
-      
-      // Group conversations by property_id to ensure we only show one entry per property
-      const propertyChatsMap = new Map();
+      const propertyConversations = response.property_conversations || [];
+      console.log('Property chats extracted from response:', propertyConversations);
       
       // Process each chat and fetch property details if needed
-      for (const chat of propertyChats) {
-        // Ensure we're using the correct conversation_id (should be an integer)
-        const conversationId = chat.id ? Number(chat.id) : (
-          chat.conversation_id ? Number(chat.conversation_id) : Date.now()
-        );
+      const formattedChats = await Promise.all(propertyConversations.map(async (conv: any) => {
+        const convId = conv.id || conv.conversation_id;
+        const propertyId = conv.property_id;
         
-        const propertyId = chat.property_id || 'unknown';
-        
-        // Try to get property details from the API if they're missing or incomplete
-        let propertyDetails = chat.property_details;
-        
-        if (!propertyDetails || propertyDetails.address === 'Unknown address' || propertyDetails.price === '0') {
-          try {
-            console.log(`Fetching details for property ${propertyId}`);
-            const propertyData = await PropertyService.getPropertyById(propertyId);
-            
-            // Format the property details
-            propertyDetails = {
-              address: propertyData.address ? `${propertyData.address.street}, ${propertyData.address.city}` : 'Unknown address',
-              price: propertyData.price ? `£${propertyData.price.toLocaleString()}` : '0',
-              images: propertyData.image_urls || [],
-              thumbnail: propertyData.main_image_url || (propertyData.image_urls && propertyData.image_urls.length > 0 ? propertyData.image_urls[0] : ''),
-              seller_id: propertyData.seller_id || ''
-            };
-            
-            console.log(`Retrieved property details for ${propertyId}:`, propertyDetails);
-          } catch (error) {
-            console.error(`Failed to fetch details for property ${propertyId}:`, error);
-            // Use default values if we can't get the property details
-            propertyDetails = {
+        try {
+          // Fetch messages for this conversation
+          const messages = await ChatService.getChatHistory(convId, true);
+          console.log(`Fetched ${messages.length} messages for property conversation ${convId}`);
+          
+          // Get the first and last message content
+          const firstMessage = messages[0]?.content;
+          const lastMessage = messages[messages.length - 1]?.content;
+          
+          // Parse the timestamp from the API response
+          const timestamp = messages[messages.length - 1]?.timestamp || conv.started_at || conv.updated_at || conv.created_at;
+          
+          // Get property details
+          let propertyDetails = conv.property_details;
+          if (!propertyDetails || propertyDetails.address === 'Unknown address') {
+            try {
+              const propertyData = await PropertyService.getPropertyById(propertyId);
+              propertyDetails = {
+                address: propertyData.address ? `${propertyData.address.street}, ${propertyData.address.city}` : 'Unknown address',
+                price: propertyData.price ? `£${propertyData.price.toLocaleString()}` : '0',
+                images: propertyData.image_urls || [],
+                thumbnail: propertyData.main_image_url || (propertyData.image_urls && propertyData.image_urls.length > 0 ? propertyData.image_urls[0] : ''),
+                seller_id: propertyData.seller_id || ''
+              };
+            } catch (error) {
+              console.error(`Failed to fetch property details for ${propertyId}:`, error);
+              propertyDetails = {
+                address: 'Unknown address',
+                price: '0',
+                images: [],
+                thumbnail: '',
+                seller_id: ''
+              };
+            }
+          }
+          
+          return {
+            conversation_id: conv.id || conv.conversation_id || Date.now(),
+            property_id: propertyId,
+            property_details: propertyDetails,
+            last_message: {
+              content: lastMessage || 'No messages yet',
+              timestamp: timestamp || new Date().toISOString()
+            },
+            unread_count: conv.unread_count || 0,
+            status: conv.status || 'active',
+            type: 'property'
+          };
+        } catch (error) {
+          console.error(`Failed to fetch messages for property conversation ${convId}:`, error);
+          return {
+            conversation_id: conv.id || conv.conversation_id || Date.now(),
+            property_id: propertyId,
+            property_details: {
               address: 'Unknown address',
               price: '0',
+              images: [],
+              thumbnail: '',
               seller_id: ''
-            };
-          }
+            },
+            last_message: {
+              content: 'Failed to load messages',
+              timestamp: conv.started_at || new Date().toISOString()
+            },
+            unread_count: 0,
+            status: 'error',
+            type: 'property'
+          };
         }
-        
-        // Create a properly formatted PropertyChatItem
-        const chatItem = {
-          conversation_id: conversationId,
-          property_id: propertyId,
-          property_details: propertyDetails,
-          last_message: chat.last_message || {
-            content: 'No messages yet',
-            timestamp: new Date().toISOString()
-          },
-          unread_count: chat.unread_count || 0,
-          status: chat.status || 'active',
-          type: 'property'
-        };
-        
-        // If we already have a chat for this property, only replace it if this one is newer
-        if (propertyChatsMap.has(propertyId)) {
-          const existingChat = propertyChatsMap.get(propertyId);
-          const existingTimestamp = new Date(existingChat.last_message.timestamp).getTime();
-          const newTimestamp = new Date(chatItem.last_message.timestamp).getTime();
-          
-          if (newTimestamp > existingTimestamp) {
-            propertyChatsMap.set(propertyId, chatItem);
-          }
+      }));
+      
+      // Deduplicate chats by property_id, keeping only the most recent one
+      const uniqueChats = formattedChats.reduce((acc: PropertyChatItem[], chat: PropertyChatItem) => {
+        const existingChat = acc.find(c => c.property_id === chat.property_id);
+        if (!existingChat) {
+          acc.push(chat);
         } else {
-          propertyChatsMap.set(propertyId, chatItem);
+          // If we already have a chat for this property, only replace it if this one is newer
+          const existingTimestamp = new Date(existingChat.last_message.timestamp).getTime();
+          const newTimestamp = new Date(chat.last_message.timestamp).getTime();
+          if (newTimestamp > existingTimestamp) {
+            const index = acc.findIndex(c => c.property_id === chat.property_id);
+            acc[index] = chat;
+          }
         }
-      }
+        return acc;
+      }, []);
       
-      // Convert map back to array
-      const formattedChats = Array.from(propertyChatsMap.values());
-      
-      console.log('Formatted property chats (grouped by property_id):', formattedChats);
-      setPropertyChatsList(formattedChats);
+      console.log('Deduplicated property chats:', uniqueChats);
+      setPropertyChatsList(uniqueChats);
       
       // If we have a selected chat, update it with the latest data
-      // but preserve the current selected state and don't reset chat messages
       if (selectedChat) {
-        const updatedSelectedChat = formattedChats.find(
+        const updatedSelectedChat = uniqueChats.find(
           (chat: PropertyChatItem) => chat.property_id === selectedChat.property_id
         );
         
         if (updatedSelectedChat) {
-          // Update the selected chat with new metadata but don't change the current messages
-          setSelectedChat(prev => ({
-            ...updatedSelectedChat,
-            // If we're preserving any other state, add it here
-          }));
+          setSelectedChat(updatedSelectedChat);
         }
-      } else if (formattedChats.length > 0) {
+      } else if (uniqueChats.length > 0) {
         // If no chat is selected and we have chats, select the first one
-        setSelectedChat(formattedChats[0]);
+        setSelectedChat(uniqueChats[0]);
       }
-      } catch (error) {
-        console.error('Failed to fetch property chats:', error);
+    } catch (error) {
+      console.error('Failed to fetch property chats:', error);
       setPropertyChatsList([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fetch user's property conversations when component mounts
   useEffect(() => {
@@ -348,13 +362,27 @@ const PropertyChats = () => {
         
         // If no stored messages, fetch from API
         const messages = await ChatService.getChatHistory(conversationId, true); // true for property chat
-        console.log('Received chat messages:', messages);
+        console.log('Received chat messages from API:', messages);
         
         // If we didn't get any messages, try to load from localStorage
         if (!messages || messages.length === 0) {
           console.log('No messages received from API');
           setChatMessages([]);
           return;
+        }
+        
+        // Log the date range of messages
+        if (messages.length > 0) {
+          const oldestTimestamp = messages[0].timestamp;
+          const newestTimestamp = messages[messages.length - 1].timestamp;
+          
+          if (oldestTimestamp && newestTimestamp) {
+            const oldestMessage = new Date(oldestTimestamp);
+            const newestMessage = new Date(newestTimestamp);
+            console.log(`Message date range: ${oldestMessage.toLocaleDateString()} to ${newestMessage.toLocaleDateString()}`);
+          } else {
+            console.log('Some messages are missing timestamps');
+          }
         }
         
         // Ensure messages have the correct role set
@@ -395,6 +423,7 @@ const PropertyChats = () => {
           return { ...msgWithProperty, role: msg.role as 'user' | 'assistant' || 'assistant' };
         });
         
+        console.log(`Processed ${processedMessages.length} messages for display`);
         setChatMessages(processedMessages);
         
         // Also update the in-memory map
