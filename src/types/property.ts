@@ -184,6 +184,11 @@ export interface Negotiation {
   last_updated: string;
   transactions: Transaction[];
   transaction_history: TransactionHistory[];
+  buyer_status?: string;
+  preferred_move_in_date?: string;
+  payment_method?: string;
+  mortgage_status?: string;
+  additional_notes?: string;
 }
 
 export interface UserRole {

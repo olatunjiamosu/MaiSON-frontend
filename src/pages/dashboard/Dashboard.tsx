@@ -27,6 +27,7 @@ import { toast } from 'react-hot-toast';
 import ViewingService from '../../services/ViewingService';
 import { Viewing } from '../../types/viewing';
 import { useChat } from '../../context/ChatContext';
+import { useLogout } from '../../hooks/useLogout';
 
 // Add formatStatus helper function after imports
 const formatStatus = (status: string): string => {
@@ -50,7 +51,7 @@ const formatStatus = (status: string): string => {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, userRole, logout } = useAuth();
+  const { user, userRole } = useAuth();
   const { isMenuOpen } = useMenu();
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
@@ -59,6 +60,7 @@ const Dashboard = () => {
   const [viewings, setViewings] = useState<Viewing[]>([]);
   const [isLoadingViewings, setIsLoadingViewings] = useState(true);
   const { chatHistory, isLoadingChats } = useChat();
+  const handleLogout = useLogout();
 
   // Fetch dashboard data
   const fetchDashboardData = async (refresh = false) => {
@@ -104,17 +106,6 @@ const Dashboard = () => {
   // Handle manual refresh
   const handleRefresh = () => {
     fetchDashboardData(true);
-  };
-
-  // Add logout handler
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-    } catch (error) {
-      console.error('Error logging out:', error);
-      toast.error('Failed to logout. Please try again.');
-    }
   };
 
   // Render loading state only for initial dashboard load
@@ -369,51 +360,64 @@ const Dashboard = () => {
 
               <div className="flex flex-wrap gap-4 justify-center">
                 {/* Properties with Offers */}
-                {dashboardData?.negotiations_as_buyer && dashboardData.negotiations_as_buyer.map((negotiation) => {
-                  const property = dashboardData.offered_properties.find(p => p.property_id === negotiation.property_id);
-                  return (
-                    <div 
-                      key={negotiation.property_id}
-                      className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer w-[250px]"
-                      onClick={() => navigate(`/dashboard/buyer/property/${negotiation.property_id}`)}
-                    >
-                      <div className="relative h-28">
-                        <img 
-                          src={property?.main_image_url || '/placeholder-property.jpg'} 
-                          alt={property?.address.street}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute bottom-0 left-0 bg-emerald-600 text-white px-2 py-0.5 text-sm">
-                          {formatPrice(negotiation.current_offer)}
+                {dashboardData?.negotiations_as_buyer && 
+                  // Create a map of property_id to the most recent negotiation
+                  Object.values(
+                    dashboardData.negotiations_as_buyer.reduce((acc, negotiation) => {
+                      if (!acc[negotiation.property_id] || 
+                          new Date(negotiation.last_updated) > new Date(acc[negotiation.property_id].last_updated)) {
+                        acc[negotiation.property_id] = negotiation;
+                      }
+                      return acc;
+                    }, {} as Record<string, typeof dashboardData.negotiations_as_buyer[0]>)
+                  ).map((negotiation) => {
+                    const property = dashboardData.offered_properties.find(p => p.property_id === negotiation.property_id);
+                    if (!property) return null;
+                    
+                    return (
+                      <div 
+                        key={negotiation.property_id}
+                        className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer w-[250px]"
+                        onClick={() => navigate(`/dashboard/buyer/property/${negotiation.property_id}`)}
+                      >
+                        <div className="relative h-28">
+                          <img 
+                            src={property.main_image_url || '/placeholder-property.jpg'} 
+                            alt={property.address.street}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute bottom-0 left-0 bg-emerald-600 text-white px-2 py-0.5 text-sm">
+                            {formatPrice(negotiation.current_offer)}
+                          </div>
+                          <div className="absolute top-2 left-2">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium
+                              ${negotiation.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' :
+                                negotiation.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                negotiation.status === 'counter_offer' ? 'bg-blue-100 text-blue-700' :
+                                'bg-yellow-100 text-yellow-700'}`}
+                            >
+                              {negotiation.status === 'accepted' ? 'Accepted' :
+                               negotiation.status === 'rejected' ? 'Rejected' :
+                               negotiation.status === 'counter_offer' ? 'Counter Offer' :
+                               'Pending'}
+                            </span>
+                          </div>
                         </div>
-                        <div className="absolute top-2 left-2">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium
-                            ${negotiation.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                              negotiation.status === 'counter_offer' ? 'bg-blue-100 text-blue-700' :
-                              negotiation.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-gray-100 text-gray-700'}`}
-                          >
-                            {negotiation.status === 'accepted' ? 'Offer Accepted' :
-                             negotiation.status === 'counter_offer' ? 'Counter Offer' :
-                             negotiation.status === 'pending' ? 'Offer Pending' :
-                             'Under Negotiation'}
-                          </span>
+                        <div className="px-3 pt-2 pb-2">
+                          <h3 className="font-medium text-gray-900 mb-0.5 text-sm">{property.address.street}</h3>
+                          <p className="text-gray-500 text-xs mb-0.5">{property.address.city}, {property.address.postcode}</p>
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                            <span>{property.specs.bedrooms} beds</span>
+                            <span>•</span>
+                            <span>{property.specs.bathrooms} baths</span>
+                            <span>•</span>
+                            <span>{property.specs.square_footage} sq ft</span>
+                          </div>
                         </div>
                       </div>
-                      <div className="px-3 pt-2 pb-2">
-                        <h3 className="font-medium text-gray-900 mb-0.5 text-sm">{property?.address.street}</h3>
-                        <p className="text-gray-500 text-xs mb-0.5">{property?.address.city}, {property?.address.postcode}</p>
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <span>{property?.specs.bedrooms} beds</span>
-                          <span>•</span>
-                          <span>{property?.specs.bathrooms} baths</span>
-                          <span>•</span>
-                          <span>{property?.specs.square_footage} sq ft</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                }
 
                 {/* Browse Properties Card */}
                 <div className="w-[250px]">
@@ -430,7 +434,12 @@ const Dashboard = () => {
                 </div>
 
                 {/* Invisible placeholder card to maintain grid layout */}
-                {dashboardData?.negotiations_as_buyer && dashboardData.negotiations_as_buyer.length === 2 && (
+                {dashboardData?.negotiations_as_buyer && Object.keys(
+                  dashboardData.negotiations_as_buyer.reduce((acc, negotiation) => {
+                    acc[negotiation.property_id] = negotiation;
+                    return acc;
+                  }, {} as Record<string, typeof dashboardData.negotiations_as_buyer[0]>)
+                ).length === 2 && (
                   <div className="w-[250px] invisible" />
                 )}
               </div>

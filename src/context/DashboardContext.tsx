@@ -5,7 +5,8 @@ import { DashboardResponse } from '../types/property';
 interface DashboardContextType {
   dashboardData: DashboardResponse | null;
   isLoading: boolean;
-  error: Error | null;
+  setDashboardData: (data: DashboardResponse | null) => void;
+  error: string | null;
   refreshDashboard: () => Promise<void>;
 }
 
@@ -14,7 +15,7 @@ const DashboardContext = createContext<DashboardContextType | undefined>(undefin
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const refreshDashboard = async () => {
     setIsLoading(true);
@@ -23,7 +24,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const data = await PropertyService.getUserDashboard();
       setDashboardData(data);
     } catch (err) {
-      setError(err as Error);
+      setError(err as string);
       console.error('Error fetching dashboard data:', err);
     } finally {
       setIsLoading(false);
@@ -38,6 +39,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const value = {
     dashboardData,
     isLoading,
+    setDashboardData,
     error,
     refreshDashboard
   };
