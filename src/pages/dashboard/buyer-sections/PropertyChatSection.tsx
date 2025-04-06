@@ -29,43 +29,37 @@ const PropertyChatSection: React.FC<PropertyChatSectionProps> = ({ propertyId, r
       if (!propertyId) return;
       
       try {
+        setIsLoading(true);
         const propertyData = await PropertyService.getPropertyById(propertyId);
         setProperty(propertyData);
+
+        // After getting property details, fetch chat history
+        if (user?.uid) {
+          try {
+            // Get the session ID for this property
+            const propertySessionId = localStorage.getItem(`property_chat_session_${propertyId}`);
+            const propertyConversationId = localStorage.getItem(`property_chat_conversation_${propertyId}`);
+            
+            if (propertyConversationId) {
+              const history = await ChatService.getChatHistory(parseInt(propertyConversationId), true);
+              setMessages(history);
+            }
+            
+            if (propertySessionId) {
+              setSessionId(propertySessionId);
+            }
+          } catch (error) {
+            console.error('Error fetching chat history:', error);
+          }
+        }
       } catch (error) {
         console.error('Error fetching property details:', error);
-      }
-    };
-    
-    fetchPropertyDetails();
-  }, [propertyId]);
-
-  // Fetch chat history
-  useEffect(() => {
-    const fetchChatHistory = async () => {
-      if (!propertyId || !user?.uid) return;
-      
-      try {
-        setIsLoading(true);
-        // Get the session ID for this property
-        const propertySessionId = localStorage.getItem(`property_chat_session_${propertyId}`);
-        const propertyConversationId = localStorage.getItem(`property_chat_conversation_${propertyId}`);
-        
-        if (propertyConversationId) {
-          const history = await ChatService.getChatHistory(parseInt(propertyConversationId), true);
-          setMessages(history);
-        }
-        
-        if (propertySessionId) {
-          setSessionId(propertySessionId);
-        }
-      } catch (error) {
-        console.error('Error fetching chat history:', error);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchChatHistory();
+    fetchPropertyDetails();
   }, [propertyId, user?.uid]);
 
   // Scroll to bottom when messages change
@@ -77,6 +71,7 @@ const PropertyChatSection: React.FC<PropertyChatSectionProps> = ({ propertyId, r
     if (!inputMessage.trim() || !propertyId || !user?.uid || !property) return;
 
     try {
+      setIsSendingMessage(true);
       const messageToSend = inputMessage.trim();
       setInputMessage('');
 
@@ -89,7 +84,18 @@ const PropertyChatSection: React.FC<PropertyChatSectionProps> = ({ propertyId, r
         timestamp: new Date().toISOString(),
         property_id: propertyId
       };
-      setMessages(prev => [...prev, newUserMessage]);
+
+      // Add loading message for MIA's response
+      const loadingMessage: ChatMessage = {
+        id: `${tempId}-loading`,
+        role: 'assistant',
+        content: 'Thinking...',
+        timestamp: new Date().toISOString(),
+        property_id: propertyId,
+        isLoading: true
+      };
+
+      setMessages(prev => [...prev, newUserMessage, loadingMessage]);
 
       // Get the session ID for this property
       const propertySessionId = localStorage.getItem(`property_chat_session_${propertyId}`);
@@ -116,18 +122,35 @@ const PropertyChatSection: React.FC<PropertyChatSectionProps> = ({ propertyId, r
         localStorage.setItem(`property_chat_conversation_${propertyId}`, response.conversation_id.toString());
       }
 
-      // Add AI response to messages
-      const aiResponse: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response.message,
-        timestamp: new Date().toISOString(),
-        property_id: propertyId
-      };
-      setMessages(prev => [...prev, aiResponse]);
+      // Replace loading message with AI response
+      setMessages(prev => prev.map(msg => 
+        msg.id === `${tempId}-loading`
+          ? {
+              id: (Date.now() + 1).toString(),
+              role: 'assistant',
+              content: response.message,
+              timestamp: new Date().toISOString(),
+              property_id: propertyId
+            }
+          : msg
+      ));
 
     } catch (error) {
       console.error('Chat error:', error);
+      // Replace loading message with error message
+      setMessages(prev => prev.map(msg => 
+        msg.id.endsWith('-loading')
+          ? {
+              id: (Date.now() + 1).toString(),
+              role: 'assistant',
+              content: 'Sorry, I encountered an error. Please try again.',
+              timestamp: new Date().toISOString(),
+              property_id: propertyId
+            }
+          : msg
+      ));
+    } finally {
+      setIsSendingMessage(false);
     }
   };
 
@@ -186,7 +209,7 @@ const PropertyChatSection: React.FC<PropertyChatSectionProps> = ({ propertyId, r
       <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ height: 'calc(100vh - 180px)' }}>
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
           </div>
         ) : messages.length > 0 ? (
           messages.map((msg) => (
@@ -203,16 +226,27 @@ const PropertyChatSection: React.FC<PropertyChatSectionProps> = ({ propertyId, r
                     : 'bg-white text-gray-800'
                 } rounded-lg p-3 max-w-[80%] prose shadow-sm`}
               >
-                <ReactMarkdown
-                  components={{
-                    li: ({node, ...props}) => <li className="list-disc ml-4" {...props} />,
-                    strong: ({node, ...props}) => <span className="font-bold" {...props} />,
-                    p: ({node, ...props}) => <p className="m-0" {...props} />
-                  }}
-                >
-                  {msg.content}
-                </ReactMarkdown>
-                {msg.timestamp && (
+                {msg.isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <span>Thinking</span>
+                    <span className="flex gap-1">
+                      <span className="animate-bounce">.</span>
+                      <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>.</span>
+                      <span className="animate-bounce" style={{ animationDelay: '0.4s' }}>.</span>
+                    </span>
+                  </div>
+                ) : (
+                  <ReactMarkdown
+                    components={{
+                      li: ({node, ...props}) => <li className="list-disc ml-4" {...props} />,
+                      strong: ({node, ...props}) => <span className="font-bold" {...props} />,
+                      p: ({node, ...props}) => <p className="m-0" {...props} />
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                )}
+                {msg.timestamp && !msg.isLoading && (
                   <p className={`text-xs mt-1 ${msg.role === 'user' ? 'text-emerald-100' : 'text-gray-500'}`}>
                     {msg.timestamp === 'now' ? 'Just now' : msg.timestamp}
                   </p>
