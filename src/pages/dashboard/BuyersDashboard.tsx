@@ -50,6 +50,7 @@ import MakeOfferSection from './buyer-sections/MakeOfferSection';
 import ScheduleViewingSection from './buyer-sections/ScheduleViewingSection';
 import TimelineSection from '../../components/timeline/TimelineSection';
 import DocumentsSection from './buyer-sections/DocumentsSection';
+import PropertyChatSection from './buyer-sections/PropertyChatSection';
 
 // Add interfaces for the components
 interface NavItemProps {
@@ -88,7 +89,8 @@ const BuyersDashboard = () => {
   
   // Compute if we're in the messages section to hide the persistent chat
   const isMessagesSection = activeSection === 'messages' || 
-                           location.pathname.includes('/seller-dashboard/messages');
+                           location.pathname.includes('/seller-dashboard/messages') ||
+                           location.pathname.includes('/chat');
 
   // Get chat history from context
   const { chatHistory, isLoadingChats, addConversation, refreshChatHistory } = useChat();
@@ -249,14 +251,13 @@ const BuyersDashboard = () => {
       case 'offers':
         return <MakeOfferSection property={property} />;
       case 'chat':
-        // Keep the chat section active even when showing "coming soon"
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">Property Chat</h3>
-              <p className="text-gray-500 mt-2">This section is coming soon.</p>
-            </div>
+        return property && propertyId ? (
+          <PropertyChatSection propertyId={propertyId} role="buyer" />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+            <MessageCircle className="w-12 h-12 text-emerald-500 mb-4" />
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Property Chat</h2>
+            <p className="text-gray-600">Loading property details...</p>
           </div>
         );
       case 'documents':
@@ -514,13 +515,19 @@ const BuyersDashboard = () => {
                 <Route path="documents" element={<DocumentsSection />} />
                 <Route path="timeline" element={<TimelineSection viewMode="buyer" />} />
                 <Route path="chat" element={
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900">Property Chat</h3>
-                      <p className="text-gray-500 mt-2">This section is coming soon.</p>
+                  isLoadingChats ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
                     </div>
-                  </div>
+                  ) : property && propertyId ? (
+                    <PropertyChatSection propertyId={propertyId} role="buyer" />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                      <MessageCircle className="w-12 h-12 text-emerald-500 mb-4" />
+                      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Property Chat</h2>
+                      <p className="text-gray-600">Loading property details...</p>
+                    </div>
+                  )
                 } />
                 <Route path="my-property" element={property ? <PropertyDetailsSection property={property} /> : null} />
                 <Route path="*" element={renderSection()} />

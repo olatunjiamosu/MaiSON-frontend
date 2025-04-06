@@ -54,6 +54,7 @@ import { FaMapMarkerAlt } from 'react-icons/fa';
 import { formatLargeNumber } from '../../utils/numberUtils';
 import PreviousChats from '../../components/chat/PreviousChats';
 import PageTitle from '../../components/PageTitle';
+import PropertyChatSection from './buyer-sections/PropertyChatSection';
 
 // Add interfaces for the components
 interface NavItemProps {
@@ -113,14 +114,15 @@ const SellerDashboard = () => {
   const location = useLocation();
   const { propertyId } = useParams<{ propertyId: string }>();
   const [property, setProperty] = useState<PropertyDetailWithStatus | null>(null);
-  const [isLoadingProperty, setIsLoadingProperty] = useState(false);
+  const [isLoadingProperty, setIsLoadingProperty] = useState(true);
   const [propertyError, setPropertyError] = useState<string | null>(null);
   const [isLoadingViewings, setIsLoadingViewings] = useState(false);
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   
   // Compute if we're in the messages section to hide the persistent chat
   const isMessagesSection = activeSection === 'messages' || 
-                           location.pathname.includes('/seller-dashboard/messages');
+                           location.pathname.includes('/seller-dashboard/messages') ||
+                           location.pathname.includes('/chat');
 
   // Get chat history from context
   const { chatHistory, isLoadingChats, addConversation, refreshChatHistory } = useChat();
@@ -716,11 +718,13 @@ const SellerDashboard = () => {
                     <div className="flex items-center justify-center h-full">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
                     </div>
+                  ) : property ? (
+                    <PropertyChatSection propertyId={propertyId} role="seller" />
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                       <MessageCircle className="w-12 h-12 text-emerald-500 mb-4" />
                       <h2 className="text-2xl font-semibold text-gray-900 mb-2">Property Chat</h2>
-                      <p className="text-gray-600">Coming soon! Chat with potential buyers and manage property-related conversations here.</p>
+                      <p className="text-gray-600">Loading property details...</p>
                     </div>
                   )
                 } />
