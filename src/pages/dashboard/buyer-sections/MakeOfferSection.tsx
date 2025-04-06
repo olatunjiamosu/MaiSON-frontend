@@ -781,6 +781,12 @@ const MakeOfferSection: React.FC<MakeOfferSectionProps> = ({ property }) => {
             >
               <LogOut className="h-6 w-6" />
             </button>
+            <button
+              className="text-gray-600 hover:text-gray-900 disabled:text-gray-300"
+              onClick={() => window.location.reload()}
+            >
+              <RefreshCw className="h-6 w-6" />
+            </button>
           </div>
         </div>
 
