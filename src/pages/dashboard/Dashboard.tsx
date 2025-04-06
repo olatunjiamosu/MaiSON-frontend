@@ -272,7 +272,9 @@ const Dashboard = () => {
               dashboardData?.listed_properties && dashboardData.listed_properties.length > 0 
                 ? dashboardData?.negotiations_as_buyer && dashboardData.negotiations_as_buyer.length > 0
                   ? 'lg:col-span-2'
-                  : 'lg:col-span-3'
+                  : dashboardData.listed_properties.length === 1 && (!dashboardData?.negotiations_as_buyer || dashboardData.negotiations_as_buyer.length === 0)
+                    ? 'lg:col-span-2'
+                    : 'lg:col-span-3'
                 : 'lg:col-span-1'
             }`}>
               <div className="flex items-center justify-between mb-6">
@@ -349,7 +351,9 @@ const Dashboard = () => {
               dashboardData?.negotiations_as_buyer && dashboardData.negotiations_as_buyer.length > 0 
                 ? dashboardData?.listed_properties && dashboardData.listed_properties.length > 0
                   ? 'lg:col-span-2'
-                  : 'lg:col-span-3'
+                  : dashboardData.negotiations_as_buyer.length === 1 && (!dashboardData?.listed_properties || dashboardData.listed_properties.length === 0)
+                    ? 'lg:col-span-2'
+                    : 'lg:col-span-3'
                 : 'lg:col-span-1'
             }`}>
               <div className="flex items-center justify-between mb-6">
