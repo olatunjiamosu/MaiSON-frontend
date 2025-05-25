@@ -542,7 +542,11 @@ const Dashboard = () => {
                       [...chatHistory]
                         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                         .map((chat) => (
-                          <div key={chat.id} className="p-4 bg-gray-50 rounded-lg">
+                          <div 
+                            key={chat.id} 
+                            className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                            onClick={() => navigate('/dashboard/listings/property-chats')}
+                          >
                             <div className="flex items-start gap-3">
                               <div className="flex-shrink-0">
                                 {chat.type === 'property' ? (
@@ -579,77 +583,79 @@ const Dashboard = () => {
                 </section>
 
                 {/* Questions Section */}
-                <section className="border border-gray-100 rounded-lg p-6 bg-white shadow-sm lg:col-span-2">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <HelpCircle className="h-6 w-6 text-blue-600" />
-                      </div>
-                      <h2 className="text-2xl font-semibold text-gray-900">Property Questions</h2>
-                    </div>
-                    <button
-                      onClick={() => navigate('questions')}
-                      className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
-                    >
-                      View All →
-                    </button>
-                  </div>
-                  <div className="space-y-4 h-[180px] overflow-y-auto">
-                    {isLoadingQuestions ? (
-                      <div className="h-full flex items-center justify-center">
-                        <div className="flex flex-col items-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mb-2"></div>
-                          <p className="text-gray-500">Loading questions...</p>
-                        </div>
-                      </div>
-                    ) : questions && questions.length > 0 ? (
-                      questions
-                        .slice(0, 3) // Show only the 3 most recent questions
-                        .map((question) => (
-                          <div key={question.id} className="p-4 bg-gray-50 rounded-lg">
-                            <div className="flex items-start gap-3">
-                              <div className="flex-shrink-0">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                  <HelpCircle className="h-4 w-4 text-blue-600" />
-                                </div>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-medium text-gray-900 mb-1 line-clamp-1">
-                                  {question.question_text}
-                                </h3>
-                                <div className="flex items-center gap-2">
-                                  <span className={`px-2 py-0.5 text-xs rounded-full ${
-                                    question.status === 'answered' 
-                                      ? 'bg-emerald-100 text-emerald-700'
-                                      : 'bg-yellow-100 text-yellow-700'
-                                  }`}>
-                                    {question.status === 'answered' ? 'Answered' : 'Pending'}
-                                  </span>
-                                  <span className="text-sm text-gray-500">
-                                    {format(new Date(question.created_at), 'PPP')}
-                                  </span>
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => navigate(`/dashboard/seller/property/${question.property_id}/questions`)}
-                                className="flex-shrink-0 text-emerald-600 hover:text-emerald-700"
-                              >
-                                <Eye className="h-5 w-5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-center">
-                        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-3">
+                {dashboardData?.listed_properties && dashboardData.listed_properties.length > 0 && (
+                  <section className="border border-gray-100 rounded-lg p-6 bg-white shadow-sm lg:col-span-2">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
                           <HelpCircle className="h-6 w-6 text-blue-600" />
                         </div>
-                        <p className="text-gray-600 mb-1">No Questions Found</p>
-                        <p className="text-sm text-gray-500">You haven't received any questions for your properties yet.</p>
+                        <h2 className="text-2xl font-semibold text-gray-900">Property Questions</h2>
                       </div>
-                    )}
-                  </div>
-                </section>
+                      <button
+                        onClick={() => navigate('questions')}
+                        className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+                      >
+                        View All →
+                      </button>
+                    </div>
+                    <div className="space-y-4 h-[180px] overflow-y-auto">
+                      {isLoadingQuestions ? (
+                        <div className="h-full flex items-center justify-center">
+                          <div className="flex flex-col items-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mb-2"></div>
+                            <p className="text-gray-500">Loading questions...</p>
+                          </div>
+                        </div>
+                      ) : questions && questions.length > 0 ? (
+                        questions
+                          .slice(0, 3) // Show only the 3 most recent questions
+                          .map((question) => (
+                            <div key={question.id} className="p-4 bg-gray-50 rounded-lg">
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0">
+                                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <HelpCircle className="h-4 w-4 text-blue-600" />
+                                  </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-medium text-gray-900 mb-1 line-clamp-1">
+                                    {question.question_text}
+                                  </h3>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                      question.status === 'answered' 
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : 'bg-yellow-100 text-yellow-700'
+                                    }`}>
+                                      {question.status === 'answered' ? 'Answered' : 'Pending'}
+                                    </span>
+                                    <span className="text-sm text-gray-500">
+                                      {format(new Date(question.created_at), 'PPP')}
+                                    </span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => navigate(`/dashboard/seller/property/${question.property_id}/questions`)}
+                                  className="flex-shrink-0 text-emerald-600 hover:text-emerald-700"
+                                >
+                                  <Eye className="h-5 w-5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-center">
+                          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-3">
+                            <HelpCircle className="h-6 w-6 text-blue-600" />
+                          </div>
+                          <p className="text-gray-600 mb-1">No Questions Found</p>
+                          <p className="text-sm text-gray-500">You haven't received any questions for your properties yet.</p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                )}
 
                 {/* Documents Section */}
                 <section className="border border-gray-100 rounded-lg p-6 bg-white shadow-sm lg:col-span-2">
