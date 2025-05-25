@@ -86,6 +86,7 @@ const BuyersDashboard = () => {
   const [property, setProperty] = useState<PropertyDetailWithStatus | null>(null);
   const [isLoadingProperty, setIsLoadingProperty] = useState(true);
   const [propertyError, setPropertyError] = useState<string | null>(null);
+  const [userDashboard, setUserDashboard] = useState<any>(null);
   
   // Compute if we're in the messages section to hide the persistent chat
   const isMessagesSection = activeSection === 'messages' || 
@@ -95,30 +96,42 @@ const BuyersDashboard = () => {
   // Get chat history from context
   const { chatHistory, isLoadingChats, addConversation, refreshChatHistory } = useChat();
 
-  // Fetch property details when propertyId changes
+  // Fetch property details and user dashboard when propertyId changes
   useEffect(() => {
-    const fetchPropertyDetails = async () => {
+    const fetchData = async () => {
       if (!propertyId) return;
       
       setIsLoadingProperty(true);
       setPropertyError(null);
       
       try {
+        // Fetch property details
         const propertyData = await PropertyService.getPropertyById(propertyId);
-        // Add a default status of 'active' to the property
+        
+        // Fetch user dashboard to get negotiations
+        const dashboardData = await PropertyService.getUserDashboard();
+        setUserDashboard(dashboardData);
+        
+        // Find negotiations for this property
+        const propertyNegotiations = dashboardData.negotiations_as_buyer?.filter(
+          (n: { property_id: string; status: string }) => n.property_id === propertyId
+        );
+        
+        // Add negotiations to property data
         setProperty({
           ...propertyData,
-          status: 'active' // Default status
+          status: 'active', // Default status
+          negotiations: propertyNegotiations || []
         });
       } catch (error) {
-        console.error('Error fetching property details:', error);
+        console.error('Error fetching data:', error);
         setPropertyError('Failed to load property details. Please try again later.');
       } finally {
         setIsLoadingProperty(false);
       }
     };
     
-    fetchPropertyDetails();
+    fetchData();
   }, [propertyId]);
 
   // Update active section based on location - only as a backup for direct navigation
@@ -245,7 +258,22 @@ const BuyersDashboard = () => {
       case 'my-property':
         return <PropertyDetailsSection property={property} />;
       case 'timeline':
-        return <TimelineSection viewMode="buyer" />;
+        return <TimelineSection 
+          viewMode="buyer" 
+          offerStatus={
+            userDashboard?.negotiations_as_buyer?.find(
+              (n: { property_id: string; status: string }) => 
+                n.property_id === propertyId && n.status === 'accepted'
+            )
+              ? 'accepted' 
+              : userDashboard?.negotiations_as_buyer?.some(
+                  (n: { property_id: string; status: string }) => 
+                    n.property_id === propertyId && n.status === 'active'
+                )
+                  ? 'pending'
+                  : 'none'
+          } 
+        />;
       case 'viewings':
         return <ScheduleViewingSection property={property} />;
       case 'offers':
@@ -513,7 +541,24 @@ const BuyersDashboard = () => {
                 <Route path="viewings" element={<ScheduleViewingSection property={property || undefined} />} />
                 <Route path="availability" element={<AvailabilitySection />} />
                 <Route path="documents" element={<DocumentsSection />} />
-                <Route path="timeline" element={<TimelineSection viewMode="buyer" />} />
+                <Route path="timeline" element={
+                  <TimelineSection 
+                    viewMode="buyer" 
+                    offerStatus={
+                      userDashboard?.negotiations_as_buyer?.find(
+                        (n: { property_id: string; status: string }) => 
+                          n.property_id === propertyId && n.status === 'accepted'
+                      )
+                        ? 'accepted' 
+                        : userDashboard?.negotiations_as_buyer?.some(
+                            (n: { property_id: string; status: string }) => 
+                              n.property_id === propertyId && n.status === 'active'
+                          )
+                            ? 'pending'
+                            : 'none'
+                    } 
+                  />
+                } />
                 <Route path="chat" element={
                   isLoadingChats ? (
                     <div className="flex items-center justify-center h-full">

@@ -99,6 +99,25 @@ export interface PropertyDetail {
   status?: string;
 }
 
+export interface PropertyDetailWithStatus extends PropertyDetail {
+  status: 'active' | 'pending' | 'sold' | 'draft';
+  negotiations?: {
+    status: 'active' | 'accepted' | 'rejected' | 'cancelled';
+    negotiation_id: string;
+    property_id: string;
+    buyer_id: string;
+    current_offer: number;
+    last_offer_by: string;
+    last_updated: string;
+    created_at: string;
+    transaction_history: {
+      made_by: string;
+      offer_amount: number;
+      created_at: string;
+    }[];
+  }[];
+}
+
 export interface CreatePropertyRequest {
   price: number;
   user_id: string | number;

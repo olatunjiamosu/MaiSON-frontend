@@ -712,7 +712,18 @@ const SellerDashboard = () => {
                 <Route path="availability" element={<AvailabilitySection />} />
                 <Route path="documents" element={<DocumentsSection />} />
                 <Route path="my-property" element={!isLoadingProperty ? <MyPropertySection property={property || undefined} /> : null} />
-                <Route path="timeline" element={<TimelineSection viewMode="seller" />} />
+                <Route path="timeline" element={
+                  <TimelineSection 
+                    viewMode="seller" 
+                    offerStatus={
+                      property?.negotiations?.find(n => n.status === 'accepted') 
+                        ? 'accepted' 
+                        : property?.negotiations?.some(n => n.status === 'active')
+                          ? 'pending'
+                          : 'none'
+                    } 
+                  />
+                } />
                 <Route path="chat" element={
                   isLoadingChat ? (
                     <div className="flex items-center justify-center h-full">
