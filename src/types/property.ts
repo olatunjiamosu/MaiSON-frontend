@@ -194,7 +194,7 @@ export interface Negotiation {
   negotiation_id: string;
   property_id: string;
   buyer_id: string;
-  status: string;
+  status: 'active' | 'accepted' | 'rejected' | 'cancelled';
   current_offer: number;
   last_offer_by: string;
   awaiting_response_from: string;

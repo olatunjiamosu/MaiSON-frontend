@@ -26,6 +26,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import TimelineService from '../../services/TimelineService';
 
 interface TimelineStep {
   title: string;
@@ -38,13 +39,40 @@ interface TimelineStep {
 interface TimelineSectionProps {
   viewMode: 'buyer' | 'seller';
   offerStatus?: 'pending' | 'accepted' | 'rejected' | 'none';
+  transactionId: string;
 }
 
-const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus = 'none' }) => {
-  const { logout } = useAuth();
+const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus = 'none', transactionId }) => {
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
 
-  console.log('TimelineSection offerStatus:', offerStatus);
+  console.log('TimelineSection props:', { 
+    viewMode, 
+    offerStatus, 
+    transactionId, 
+    userId: user?.uid,
+    hasTransactionId: !!transactionId,
+    transactionIdLength: transactionId?.length
+  });
+
+  // Add validation for transactionId
+  useEffect(() => {
+    if (offerStatus === 'accepted' && !transactionId) {
+      console.error('No transaction ID provided for accepted offer');
+      toast.error('Unable to load timeline. Please refresh the page or contact support.');
+    }
+  }, [offerStatus, transactionId]);
+
+  // Add validation before making API calls
+  const validateApiCall = () => {
+    if (!user?.uid) {
+      throw new Error('User is not authenticated');
+    }
+    if (!transactionId) {
+      throw new Error('No transaction ID available');
+    }
+    return true;
+  };
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
@@ -78,6 +106,8 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
   const [mortgageValuationVisitCompleted, setMortgageValuationVisitCompleted] = useState<boolean>(false);
   const [mortgageValuationScheduleDate, setMortgageValuationScheduleDate] = useState<string>('');
   const [mortgageValuationScheduleTime, setMortgageValuationScheduleTime] = useState<string>('');
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [timelineError, setTimelineError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -135,6 +165,17 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
         : buyerExchangeContractsConfirmed
           ? 'Waiting for seller to confirm.'
           : 'Sign and exchange contracts with seller';
+
+  // Add effect to log state changes
+  useEffect(() => {
+    console.log('TimelineSection state:', {
+      isDialogOpen,
+      selectedTask,
+      mortgageDecision,
+      transactionId,
+      userId: user?.uid
+    });
+  }, [isDialogOpen, selectedTask, mortgageDecision, transactionId, user?.uid]);
 
   const handleLogout = async () => {
     try {
@@ -251,13 +292,21 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
           ? 'Mortgage Application Started'
           : 'Mortgage Application',
       description:
-        mortgageDecision === 'cash'
-          ? 'Cash buyer - no mortgage required'
-          : mortgageDecision === 'mortgage'
-            ? (mortgageProviderSubmitted && mortgageProvider
-                ? `Mortgage provider: ${mortgageProvider}`
-                : 'Please supply the details of the bank you are applying to')
-            : 'Complete and submit your full mortgage application',
+        viewMode === 'buyer'
+          ? (mortgageDecision === 'cash'
+              ? 'Cash buyer - no mortgage required'
+              : mortgageDecision === 'mortgage'
+                ? (mortgageProviderSubmitted && mortgageProvider
+                    ? `Mortgage provider: ${mortgageProvider}`
+                    : 'Please supply the details of the bank you are applying to')
+                : 'Complete and submit your full mortgage application')
+          : (mortgageDecision === 'cash'
+              ? 'The buyer is a cash buyer - no mortgage required'
+              : mortgageDecision === 'mortgage'
+                ? (mortgageProviderSubmitted && mortgageProvider
+                    ? `The buyer's mortgage provider: ${mortgageProvider}`
+                    : 'Waiting for buyer to supply their mortgage provider details')
+                : 'Waiting for buyer to start their mortgage application'),
       icon: <PiggyBank className="w-5 h-5" />,
       status:
         mortgageDecision === 'cash'
@@ -269,11 +318,17 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
     ...((mortgageDecision === 'mortgage' && mortgageProviderSubmitted) ? [{
       title: 'Mortgage Valuation Survey',
       description:
-        onsiteVisitRequired === 'yes'
-          ? 'You indicated your provider will require an onsite visit.'
-          : onsiteVisitRequired === 'no'
-            ? 'You indicated your provider will not require an onsite visit.'
-            : 'Will your mortgage provider require an onsite visit to approve the mortgage?',
+        viewMode === 'buyer'
+          ? (onsiteVisitRequired === 'yes'
+              ? 'You indicated your provider will require an onsite visit.'
+              : onsiteVisitRequired === 'no'
+                ? 'You indicated your provider will not require an onsite visit.'
+                : 'Will your mortgage provider require an onsite visit to approve the mortgage?')
+          : (onsiteVisitRequired === 'yes'
+              ? 'The buyer indicated their provider will require an onsite visit.'
+              : onsiteVisitRequired === 'no'
+                ? 'The buyer indicated their provider will not require an onsite visit.'
+                : 'Waiting for buyer to indicate if their mortgage provider requires an onsite visit.'),
       icon: <Calendar className="w-5 h-5" />,
       status: onsiteVisitRequired ? 'completed' as const : 'current' as const,
     }] : []),
@@ -284,7 +339,7 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
       status: 'pending' as const,
       isPlaceholder: true
     }] : []),
-    ...(mortgageValuationVisitCompleted ? [{
+    ...((onsiteVisitRequired === 'no' || mortgageValuationVisitCompleted) ? [{
       title: 'Mortgage Offer',
       description: mortgageOfferFile
         ? `Mortgage offer uploaded: ${mortgageOfferFile.name}`
@@ -295,13 +350,21 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
     {
       title: 'Property Survey',
       description:
-        propertySurveyDecision === 'no'
-          ? 'Survey not required'
-          : propertySurveyDecision === 'yes'
-            ? (surveyorName
-                ? `Surveyor: ${surveyorName}${surveyorEmail ? ' (' + surveyorEmail + ')' : ''}${surveyorPhone ? ' - ' + surveyorPhone : ''}`
-                : 'Please provide details of surveyor')
-            : 'Arrange and attend property survey',
+        viewMode === 'buyer'
+          ? (propertySurveyDecision === 'no'
+              ? 'You indicated a survey is not required.'
+              : propertySurveyDecision === 'yes'
+                ? (surveyorName
+                    ? `You provided surveyor details: ${surveyorName}${surveyorEmail ? ' (' + surveyorEmail + ')' : ''}${surveyorPhone ? ' - ' + surveyorPhone : ''}`
+                    : 'Please provide details of surveyor')
+                : 'Do you want to arrange a property survey?')
+          : (propertySurveyDecision === 'no'
+              ? 'The buyer indicated a survey is not required.'
+              : propertySurveyDecision === 'yes'
+                ? (surveyorName
+                    ? `The buyer provided surveyor details: ${surveyorName}${surveyorEmail ? ' (' + surveyorEmail + ')' : ''}${surveyorPhone ? ' - ' + surveyorPhone : ''}`
+                    : 'Waiting for buyer to provide surveyor details.')
+                : 'Waiting for buyer to decide if they want a survey.'),
       icon: <Building2 className="w-5 h-5" />,
       status:
         propertySurveyDecision === 'no'
@@ -336,9 +399,13 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
     {
       title: 'Conveyancing',
       description:
-        solicitorName
-          ? `Solicitor: ${solicitorName}${solicitorContact ? ' (' + solicitorContact + ')' : ''}`
-          : 'Add the details of your solicitor',
+        viewMode === 'buyer'
+          ? (solicitorName
+              ? `Solicitor: ${solicitorName}${solicitorContact ? ' (' + solicitorContact + ')' : ''}`
+              : 'Add the details of your solicitor')
+          : (solicitorName
+              ? `Solicitor: ${solicitorName}${solicitorContact ? ' (' + solicitorContact + ')' : ''}`
+              : 'Waiting for buyer to add their solicitor details'),
       icon: <Scale className="w-5 h-5" />,
       status:
         solicitorName && sellerSolicitorName
@@ -387,7 +454,7 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
     {
       title: '',
       description: '',
-      icon: <div />, 
+      icon: <div />,
       status: 'pending' as const,
       isPlaceholder: true
     },
@@ -528,6 +595,61 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
     console.log('sellerPostOfferSteps:', sellerPostOfferSteps.map(s => ({ title: s.title, isPlaceholder: s.isPlaceholder })));
   }, [buyerPostOfferSteps, sellerPostOfferSteps]);
 
+  useEffect(() => {
+    const fetchTimeline = async () => {
+      if (!user?.uid || !transactionId || offerStatus !== 'accepted') return;
+      setTimelineLoading(true);
+      setTimelineError(null);
+      try {
+        validateApiCall();
+        const data = await TimelineService.getTimelineProgress(user.uid, transactionId);
+        // Hydrate state from backend data (example keys, adjust as needed)
+        setMortgageDecision(data.mortgage_decision || null);
+        setMortgageProvider(data.mortgage_provider || '');
+        setMortgageProviderSubmitted(!!data.mortgage_provider);
+        setOnsiteVisitRequired(data.onsite_visit_required || null);
+        setMortgageValuationScheduleDate(data.mortgage_valuation_schedule_date || '');
+        setMortgageValuationScheduleTime(data.mortgage_valuation_schedule_time || '');
+        setMortgageValuationVisitCompleted(!!data.mortgage_valuation_visit_completed);
+        setMortgageOfferFile(null); // File uploads need special handling
+        setPropertySurveyDecision(data.property_survey_decision || null);
+        setSurveyorName(data.surveyor_name || '');
+        setSurveyorEmail(data.surveyor_email || '');
+        setSurveyorPhone(data.surveyor_phone || '');
+        setSurveyScheduleDate(data.survey_schedule_date || '');
+        setSurveyScheduleTime(data.survey_schedule_time || '');
+        setSurveyVisitCompleted(!!data.survey_visit_completed);
+        setSurveyApproval(data.survey_approval || null);
+        setSolicitorName(data.buyer_solicitor_name || '');
+        setSolicitorContact(data.buyer_solicitor_contact || '');
+        setSellerSolicitorName(data.seller_solicitor_name || '');
+        setSellerSolicitorContact(data.seller_solicitor_contact || '');
+        setBuyerFinalChecksConfirmed(!!data.buyer_final_checks_confirmed);
+        setSellerFinalChecksConfirmed(!!data.seller_final_checks_confirmed);
+        setBuyerExchangeContractsConfirmed(!!data.buyer_exchange_contracts_confirmed);
+        setSellerExchangeContractsConfirmed(!!data.seller_exchange_contracts_confirmed);
+        setBuyerCompletionConfirmed(!!data.buyer_completion_confirmed);
+        setSellerCompletionConfirmed(!!data.seller_completion_confirmed);
+      } catch (err: any) {
+        console.error('Failed to load timeline:', err);
+        setTimelineError(err.message || 'Failed to load timeline progress.');
+        toast.error(err.message || 'Failed to load timeline progress.');
+      } finally {
+        setTimelineLoading(false);
+      }
+    };
+    fetchTimeline();
+  }, [user?.uid, transactionId, offerStatus]);
+
+  // Add effect to log timeline steps when onsiteVisitRequired changes
+  useEffect(() => {
+    console.log('Timeline steps after onsiteVisitRequired change:', {
+      onsiteVisitRequired,
+      buyerSteps: buyerPostOfferSteps.map(s => ({ title: s.title, isPlaceholder: s.isPlaceholder })),
+      sellerSteps: sellerPostOfferSteps.map(s => ({ title: s.title, isPlaceholder: s.isPlaceholder }))
+    });
+  }, [onsiteVisitRequired, buyerPostOfferSteps, sellerPostOfferSteps]);
+
   const TimelineSteps: React.FC<{ steps: TimelineStep[] }> = ({ steps }) => (
     <div className="relative">
       {/* Single vertical line */}
@@ -649,39 +771,63 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
 
             // For Exchange Contracts, track which side opened the dialog
             const handleBuyerClick = () => {
-              setSelectedTask(buyerStep.title);
-              if (buyerStep.title === 'Conveyancing') {
-                setConveyancingDialogRole('buyer');
+              try {
+                validateApiCall();
+                if (viewMode !== 'buyer') {
+                  toast.error('Only the buyer can perform this action');
+                  return;
+                }
+                console.log('Buyer task clicked:', buyerStep.title);
+                console.log('Before state update - isDialogOpen:', isDialogOpen);
+                setSelectedTask(buyerStep.title);
+                if (buyerStep.title === 'Conveyancing') {
+                  setConveyancingDialogRole('buyer');
+                }
+                if (buyerStep.title === 'Final Checks') {
+                  setFinalChecksDialogRole('buyer');
+                }
+                if (buyerStep.title === 'Exchange Contracts') {
+                  setExchangeContractsDialogRole('buyer');
+                }
+                if (buyerStep.title === 'Completion') {
+                  setCompletionDialogRole('buyer');
+                }
+                setIsDialogOpen(true);
+                console.log('After state update - selectedTask:', buyerStep.title);
+                console.log('After state update - isDialogOpen:', true);
+              } catch (err: any) {
+                console.error('Failed to handle buyer click:', err);
+                toast.error(err.message || 'Unable to proceed. Please try again.');
               }
-              if (buyerStep.title === 'Final Checks') {
-                setFinalChecksDialogRole('buyer');
-              }
-              if (buyerStep.title === 'Exchange Contracts') {
-                setExchangeContractsDialogRole('buyer');
-              }
-              if (buyerStep.title === 'Completion') {
-                setCompletionDialogRole('buyer');
-              }
-              setIsDialogOpen(true);
             };
             const handleSellerClick = () => {
-              if (!sellerStep) return;
-              setSelectedTask(sellerStep.title);
-              if (sellerStep.title === 'Conveyancing') {
-                setConveyancingDialogRole('seller');
+              try {
+                validateApiCall();
+                if (viewMode !== 'seller') {
+                  toast.error('Only the seller can perform this action');
+                  return;
+                }
+                console.log('Seller task clicked:', sellerStep.title);
+                setSelectedTask(sellerStep.title);
+                if (sellerStep.title === 'Conveyancing') {
+                  setConveyancingDialogRole('seller');
+                }
+                if (sellerStep.title === 'Final Checks') {
+                  setFinalChecksDialogRole('seller');
+                }
+                if (sellerStep.title === 'Exchange Contracts') {
+                  setExchangeContractsDialogRole('seller');
+                }
+                if (sellerStep.title === 'Completion') {
+                  setCompletionDialogRole('seller');
+                }
+                setIsDialogOpen(true);
+              } catch (err: any) {
+                console.error('Failed to handle seller click:', err);
+                toast.error(err.message || 'Unable to proceed. Please try again.');
               }
-              if (sellerStep.title === 'Final Checks') {
-                setFinalChecksDialogRole('seller');
-              }
-              if (sellerStep.title === 'Exchange Contracts') {
-                setExchangeContractsDialogRole('seller');
-              }
-              if (sellerStep.title === 'Completion') {
-                setCompletionDialogRole('seller');
-              }
-              setIsDialogOpen(true);
             };
-
+            
             return (
               <div
                 key={index}
@@ -701,13 +847,13 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                             className={`inline-block max-w-xl text-right group bg-gray-50 border border-gray-200 rounded-lg p-4 mb-2 transition hover:shadow cursor-pointer mr-4 relative z-20
                               ${buyerStep.status === 'pending' ? 'hover:border-blue-400' : 'hover:border-yellow-400'}`}
                           >
-                            <div className="flex items-center justify-end gap-3 mb-1">
+                  <div className="flex items-center justify-end gap-3 mb-1">
                               <h3 className={`font-medium text-gray-900 ${buyerStep.status === 'pending' ? 'group-hover:text-blue-700' : 'group-hover:text-yellow-700'}`}> 
-                                {buyerStep.title}
-                              </h3>
-                              <div className={`p-2 rounded-lg ${
+                      {buyerStep.title}
+                    </h3>
+                    <div className={`p-2 rounded-lg ${
                                 (buyerStep.status as 'pending' | 'current' | 'completed') === 'completed' 
-                                  ? 'bg-emerald-100 text-emerald-600' 
+                        ? 'bg-emerald-100 text-emerald-600' 
                                   : (buyerStep.status as 'pending' | 'current' | 'completed') === 'current'
                                   ? 'bg-yellow-100 text-yellow-600'
                                   : 'bg-gray-100 text-gray-600'
@@ -726,20 +872,18 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                                   ? 'bg-emerald-100 text-emerald-600' 
                                   : (buyerStep.status as 'pending' | 'current' | 'completed') === 'current'
                                   ? 'bg-yellow-100 text-yellow-600'
-                                  : 'bg-gray-100 text-gray-600'
-                              }`}>
-                                {buyerStep.icon}
-                              </div>
-                            </div>
-                            <p className="text-sm text-gray-600">{buyerStep.description}</p>
+                        : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {buyerStep.icon}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600">{buyerStep.description}</p>
                           </div>
                         )
                       ) : (
                         <div className="inline-block max-w-xl bg-gray-50 border border-gray-200 rounded-lg p-4 mb-2 mr-4 relative z-20">
                           <div className="flex items-center justify-end gap-3 mb-1">
-                            <h3 className="font-medium text-gray-900">
-                              {buyerStep.title}
-                            </h3>
+                            <h3 className="font-medium text-gray-900">{buyerStep.title}</h3>
                             <div className={`p-2 rounded-lg ${
                               (buyerStep.status as 'pending' | 'current' | 'completed') === 'completed' 
                                 ? 'bg-emerald-100 text-emerald-600' 
@@ -767,11 +911,11 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
                   <div className={`w-4 h-4 rounded-full border-2 ${
                     (buyerStep.status as 'pending' | 'current' | 'completed') === 'completed' || (sellerStep?.status as 'pending' | 'current' | 'completed') === 'completed'
-                      ? 'bg-emerald-500 border-emerald-500' 
+                    ? 'bg-emerald-500 border-emerald-500' 
                       : (buyerStep.status as 'pending' | 'current' | 'completed') === 'current' || (sellerStep?.status as 'pending' | 'current' | 'completed') === 'current'
                         ? 'bg-yellow-500 border-yellow-500'
-                        : 'bg-white border-gray-300'
-                  }`}></div>
+                    : 'bg-white border-gray-300'
+                }`}></div>
                 </div>
 
                 {/* Seller side - only render if it's a linked step or placeholder, or if the buyer step is a placeholder or missing */}
@@ -783,17 +927,17 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                       </div>
                     )}
                     {!sellerStep.isPlaceholder && (
-                      (viewMode === 'seller' || viewMode === 'buyer') && sellerStep.status !== 'completed' ? (
+                      viewMode === 'seller' && sellerStep.status !== 'completed' ? (
                         canClick ? (
                           <div
                             className={`inline-block max-w-xl text-left group bg-gray-50 border border-gray-200 rounded-lg p-4 mb-2 transition hover:shadow cursor-pointer ml-4 relative z-20
                               ${sellerStep.status === 'pending' ? 'hover:border-blue-400' : 'hover:border-yellow-400'}`}
                             onClick={handleSellerClick}
                           >
-                            <div className="flex items-center gap-3 mb-1">
-                              <div className={`p-2 rounded-lg ${
+                        <div className="flex items-center gap-3 mb-1">
+                          <div className={`p-2 rounded-lg ${
                                 (sellerStep.status as 'pending' | 'current' | 'completed') === 'completed' 
-                                  ? 'bg-emerald-100 text-emerald-600' 
+                              ? 'bg-emerald-100 text-emerald-600' 
                                   : (sellerStep.status as 'pending' | 'current' | 'completed') === 'current'
                                   ? 'bg-yellow-100 text-yellow-600'
                                   : 'bg-gray-100 text-gray-600'
@@ -814,10 +958,10 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                                   ? 'bg-emerald-100 text-emerald-600' 
                                   : (sellerStep.status as 'pending' | 'current' | 'completed') === 'current'
                                   ? 'bg-yellow-100 text-yellow-600'
-                                  : 'bg-gray-100 text-gray-600'
-                              }`}>
-                                {sellerStep.icon}
-                              </div>
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {sellerStep.icon}
+                          </div>
                               <h3 className="font-medium text-gray-900">
                                 {sellerStep.title}
                               </h3>
@@ -838,10 +982,10 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                               {sellerStep.icon}
                             </div>
                             <h3 className="font-medium text-gray-900">
-                              {sellerStep.title}
-                            </h3>
-                          </div>
-                          <p className="text-sm text-gray-600">{sellerStep.description}</p>
+                            {sellerStep.title}
+                          </h3>
+                        </div>
+                        <p className="text-sm text-gray-600">{sellerStep.description}</p>
                         </div>
                       )
                     )}
@@ -853,6 +997,49 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
         </div>
       </div>
     );
+  };
+
+  // Add effect to log state changes
+  useEffect(() => {
+    console.log('Dialog state changed:', { 
+      isDialogOpen, 
+      selectedTask, 
+      mortgageDecision,
+      dialogVisible: isDialogOpen && selectedTask === 'Mortgage Application'
+    });
+  }, [isDialogOpen, selectedTask, mortgageDecision]);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.uid || !transactionId) return;
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(surveyorEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      await TimelineService.updateTimelineProgress(user.uid, transactionId, {
+        property_survey_decision: 'yes',
+        surveyor_name: surveyorName,
+        surveyor_email: surveyorEmail,
+        surveyor_phone: surveyorPhone
+      });
+      setIsDialogOpen(false);
+      setSelectedTask(null);
+      toast.success('Surveyor details saved!');
+      // Refresh the timeline data
+      const data = await TimelineService.getTimelineProgress(user.uid, transactionId);
+      setPropertySurveyDecision(data.property_survey_decision || null);
+      setSurveyorName(data.surveyor_name || '');
+      setSurveyorEmail(data.surveyor_email || '');
+      setSurveyorPhone(data.surveyor_phone || '');
+    } catch (err) {
+      console.error('Failed to save surveyor details:', err);
+      toast.error('Failed to save surveyor details. Please try again.');
+    }
   };
 
   return (
@@ -928,7 +1115,7 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
 
           <div className="pt-16">
               <PostOfferTimeline setIsDialogOpen={setIsDialogOpen} />
-            </div>
+          </div>
 
             {/* Mortgage Decision Dialog */}
             {selectedTask === 'Mortgage Application' && (
@@ -950,12 +1137,20 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                         <h2 className="text-xl font-semibold mb-4">Mortgage Provider Details</h2>
                         <p className="mb-6">Please provide the details of your mortgage provider.</p>
                         <form
-                          onSubmit={e => {
+                          onSubmit={async e => {
                             e.preventDefault();
                             setIsDialogOpen(false);
                             setSelectedTask(null);
                             setMortgageProviderSubmitted(true);
-                            toast.success('Mortgage provider details saved!');
+                            try {
+                              await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                                mortgage_provider: mortgageProvider,
+                                mortgage_decision: 'mortgage'
+                              });
+                              toast.success('Mortgage provider details saved!');
+                            } catch (err) {
+                              toast.error('Failed to save mortgage provider details.');
+                            }
                           }}
                           className="flex flex-col gap-3"
                         >
@@ -982,28 +1177,68 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                         <div className="flex flex-col gap-3">
                           <button
                             className="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700 transition"
-                            onClick={() => {
-                              setMortgageDecision('mortgage');
-                              setIsDialogOpen(false);
-                              setSelectedTask(null);
+                            onClick={async () => {
+                              console.log('Setting mortgage decision to mortgage');
+                              try {
+                                if (!transactionId) {
+                                  throw new Error('No transaction ID available. Please refresh the page and try again.');
+                                }
+                                console.log('Making API call with:', {
+                                  userId: user?.uid,
+                                  transactionId,
+                                  progress: {
+                                    mortgage: {
+                                      decision: 'mortgage',
+                                      provider: null
+                                    }
+                                  }
+                                });
+                                await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                                  mortgage_provider: mortgageProvider,
+                                  mortgage_decision: 'mortgage'
+                                });
+                                console.log('API call successful');
+                                setMortgageDecision('mortgage');
+                                setSelectedTask(null);
+                                toast.success('Mortgage decision saved!');
+                              } catch (err) {
+                                console.error('Failed to save mortgage decision:', err);
+                                if (err instanceof Error) {
+                                  console.error('Error details:', {
+                                    message: err.message,
+                                    stack: err.stack
+                                  });
+                                }
+                                toast.error('Failed to save mortgage decision');
+                              }
                             }}
                           >
                             I will be using a mortgage
                           </button>
                           <button
                             className="bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition"
-                            onClick={() => {
-                              setMortgageDecision('cash');
-                              setIsDialogOpen(false);
-                              setSelectedTask(null);
+                            onClick={async () => {
+                              console.log('Setting mortgage decision to cash');
+                              try {
+                                await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                                  mortgage_decision: 'cash'
+                                });
+                                setMortgageDecision('cash');
+                                setSelectedTask(null);
+                                setIsDialogOpen(false);
+                                toast.success('Mortgage decision saved!');
+                              } catch (err) {
+                                console.error('Failed to save mortgage decision:', err);
+                                toast.error('Failed to save mortgage decision');
+                              }
                             }}
                           >
                             I am a cash buyer
                           </button>
-                        </div>
+        </div>
                       </>
                     )}
-                  </div>
+      </div>
                 </div>
               </div>
             )}
@@ -1030,20 +1265,38 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                         <div className="flex flex-col gap-3">
                           <button
                             className="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700 transition"
-                            onClick={() => {
-                              setPropertySurveyDecision('yes');
-                              setIsDialogOpen(false);
-                              setSelectedTask(null);
+                            onClick={async () => {
+                              try {
+                                await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                                  property_survey_decision: 'yes'
+                                });
+                                setPropertySurveyDecision('yes');
+                                setIsDialogOpen(false);
+                                setSelectedTask(null);
+                                toast.success('Survey decision saved!');
+                              } catch (err) {
+                                console.error('Failed to save survey decision:', err);
+                                toast.error('Failed to save decision. Please try again.');
+                              }
                             }}
                           >
                             Yes, I want a survey
                           </button>
                           <button
                             className="bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition"
-                            onClick={() => {
-                              setPropertySurveyDecision('no');
-                              setIsDialogOpen(false);
-                              setSelectedTask(null);
+                            onClick={async () => {
+                              try {
+                                await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                                  property_survey_decision: 'no'
+                                });
+                                setPropertySurveyDecision('no');
+                                setIsDialogOpen(false);
+                                setSelectedTask(null);
+                                toast.success('Survey decision saved!');
+                              } catch (err) {
+                                console.error('Failed to save survey decision:', err);
+                                toast.error('Failed to save decision. Please try again.');
+                              }
                             }}
                           >
                             No, I do not want a survey
@@ -1056,12 +1309,7 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                         <h2 className="text-xl font-semibold mb-4">Surveyor Details</h2>
                         <p className="mb-6">Please provide the details of your surveyor.</p>
                         <form
-                          onSubmit={e => {
-                            e.preventDefault();
-                            setIsDialogOpen(false);
-                            setSelectedTask(null);
-                            toast.success('Surveyor details saved!');
-                          }}
+                          onSubmit={onSubmit}
                           className="flex flex-col gap-3"
                         >
                           <input
@@ -1119,12 +1367,20 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                     <h2 className="text-xl font-semibold mb-4">Conveyancing</h2>
                     <p className="mb-6">Please provide the details of your solicitor.</p>
                     <form
-                      onSubmit={e => {
+                      onSubmit={async e => {
                         e.preventDefault();
                         setIsDialogOpen(false);
                         setSelectedTask(null);
                         setConveyancingDialogRole(null);
-                        toast.success('Solicitor details saved!');
+                        try {
+                          await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                            buyer_solicitor_name: solicitorName,
+                            buyer_solicitor_contact: solicitorContact
+                          });
+                          toast.success('Solicitor details saved!');
+                        } catch (err) {
+                          toast.error('Failed to save solicitor details.');
+                        }
                       }}
                       className="flex flex-col gap-3"
                     >
@@ -1173,12 +1429,20 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                     <h2 className="text-xl font-semibold mb-4">Conveyancing</h2>
                     <p className="mb-6">Please provide the details of your solicitor.</p>
                     <form
-                      onSubmit={e => {
+                      onSubmit={async e => {
                         e.preventDefault();
                         setIsDialogOpen(false);
                         setSelectedTask(null);
                         setConveyancingDialogRole(null);
-                        toast.success('Solicitor details saved!');
+                        try {
+                          await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                            seller_solicitor_name: sellerSolicitorName,
+                            seller_solicitor_contact: sellerSolicitorContact
+                          });
+                          toast.success('Solicitor details saved!');
+                        } catch (err) {
+                          toast.error('Failed to save solicitor details.');
+                        }
                       }}
                       className="flex flex-col gap-3"
                     >
@@ -1228,11 +1492,20 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                     <h2 className="text-xl font-semibold mb-4">Schedule Survey</h2>
                     <p className="mb-6">Enter the date and time for the surveyor's visit.</p>
                     <form
-                      onSubmit={e => {
+                      onSubmit={async e => {
                         e.preventDefault();
-                        setIsDialogOpen(false);
-                        setSelectedTask(null);
-                        toast.success('Survey scheduled!');
+                        try {
+                          await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                            survey_schedule_date: surveyScheduleDate,
+                            survey_schedule_time: surveyScheduleTime
+                          });
+                          setIsDialogOpen(false);
+                          setSelectedTask(null);
+                          toast.success('Survey scheduled!');
+                        } catch (err) {
+                          console.error('Failed to save survey schedule:', err);
+                          toast.error('Failed to save schedule. Please try again.');
+                        }
                       }}
                       className="flex flex-col gap-3"
                     >
@@ -1261,18 +1534,26 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                         </button>
                       )}
                     </form>
-                    {/* Confirm Survey Completed button, only if scheduled date/time has passed and not completed */}
+                    {/* Confirm Visit Completed button, only if scheduled date/time has passed and not completed */}
                     {!surveyVisitCompleted && surveyScheduleDate && surveyScheduleTime && new Date() > new Date(`${surveyScheduleDate}T${surveyScheduleTime}`) && (
                       <button
                         className="mt-4 bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition w-full"
-                        onClick={() => {
-                          setSurveyVisitCompleted(true);
-                          setIsDialogOpen(false);
-                          setSelectedTask(null);
-                          toast.success('Survey marked as completed!');
+                        onClick={async () => {
+                          try {
+                            await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                              survey_visit_completed: true
+                            });
+                            setSurveyVisitCompleted(true);
+                            setIsDialogOpen(false);
+                            setSelectedTask(null);
+                            toast.success('Survey visit marked as completed!');
+                          } catch (err) {
+                            console.error('Failed to mark survey visit as completed:', err);
+                            toast.error('Failed to update visit status. Please try again.');
+                          }
                         }}
                       >
-                        Confirm Survey Completed
+                        Confirm Visit Completed
                       </button>
                     )}
                     {/* Completion message */}
@@ -1284,10 +1565,10 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
               </div>
             )}
 
-            {/* Approve Survey Results Dialog (Buyer) */}
-            {selectedTask === 'Approve Survey Results' && isDialogOpen && (
+            {/* Schedule Mortgage Valuation Visit Dialog */}
+            {selectedTask === 'Schedule Mortgage Valuation Visit' && isDialogOpen && (
               <div>
-                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40`}>
+                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${isDialogOpen ? '' : 'hidden'}`}>
                   <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
                     <button
                       className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
@@ -1299,210 +1580,86 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                     >
                       <X className="w-6 h-6" />
                     </button>
-                    <h2 className="text-xl font-semibold mb-4">Approve Survey Results</h2>
-                    <p className="mb-6">Do you approve of the survey results?</p>
-                    <div className="flex flex-col gap-3">
-                      <button
-                        className="bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition"
-                        onClick={() => {
-                          setSurveyApproval('approved');
+                    <h2 className="text-xl font-semibold mb-4">Schedule Mortgage Valuation Visit</h2>
+                    <p className="mb-6">Enter the date and time for the mortgage provider's visit.</p>
+                    <form
+                      onSubmit={async e => {
+                        e.preventDefault();
+                        try {
+                          await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                            mortgage_valuation_schedule_date: mortgageValuationScheduleDate,
+                            mortgage_valuation_schedule_time: mortgageValuationScheduleTime
+                          });
                           setIsDialogOpen(false);
                           setSelectedTask(null);
-                          toast.success('You have approved the survey results.');
-                        }}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        className="bg-red-600 text-white rounded px-4 py-2 hover:bg-red-700 transition"
-                        onClick={() => {
-                          setSurveyApproval('rejected');
-                          setIsDialogOpen(false);
-                          setSelectedTask(null);
-                          toast('You have rejected the survey results.');
-                        }}
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Final Checks Dialog (Buyer/Seller) */}
-            {selectedTask === 'Final Checks' && isDialogOpen && (
-              <div>
-                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40`}>
-                  <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
-                    <button
-                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
-                      onClick={() => {
-                        setIsDialogOpen(false);
-                        setSelectedTask(null);
-                        setFinalChecksDialogRole(null);
-                      }}
-                      aria-label="Close dialog"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                    <h2 className="text-xl font-semibold mb-4">Final Checks</h2>
-                    <p className="mb-6">Please confirm that all final checks are complete.</p>
-                    <button
-                      className="bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition w-full"
-                      onClick={() => {
-                        if (finalChecksDialogRole === 'buyer') {
-                          setBuyerFinalChecksConfirmed(true);
-                        } else if (finalChecksDialogRole === 'seller') {
-                          setSellerFinalChecksConfirmed(true);
+                          toast.success('Mortgage valuation visit scheduled!');
+                        } catch (err) {
+                          console.error('Failed to save mortgage valuation schedule:', err);
+                          toast.error('Failed to save schedule. Please try again.');
                         }
-                        setIsDialogOpen(false);
-                        setSelectedTask(null);
-                        setFinalChecksDialogRole(null);
-                        toast.success('Final checks confirmed!');
                       }}
+                      className="flex flex-col gap-3"
                     >
-                      Confirm Final Checks
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Exchange Contracts Dialog (Buyer/Seller) */}
-            {selectedTask === 'Exchange Contracts' && isDialogOpen && (
-              <div>
-                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40`}>
-                  <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
-                    <button
-                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
-                      onClick={() => {
-                        setIsDialogOpen(false);
-                        setSelectedTask(null);
-                        setExchangeContractsDialogRole(null);
-                      }}
-                      aria-label="Close dialog"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                    <h2 className="text-xl font-semibold mb-4">Exchange Contracts</h2>
-                    <p className="mb-6">Please confirm that contracts have been signed and exchanged.</p>
-                    <button
-                      className="bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition w-full"
-                      onClick={() => {
-                        if (exchangeContractsDialogRole === 'buyer') {
-                          setBuyerExchangeContractsConfirmed(true);
-                        } else if (exchangeContractsDialogRole === 'seller') {
-                          setSellerExchangeContractsConfirmed(true);
-                        }
-                        setIsDialogOpen(false);
-                        setSelectedTask(null);
-                        setExchangeContractsDialogRole(null);
-                        toast.success('Contracts exchanged confirmed!');
-                      }}
-                    >
-                      Confirm Exchange of Contracts
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Completion Dialog (Buyer/Seller) */}
-            {selectedTask === 'Completion' && isDialogOpen && (
-              <div>
-                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40`}>
-                  <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
-                    <button
-                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
-                      onClick={() => {
-                        setIsDialogOpen(false);
-                        setSelectedTask(null);
-                        setCompletionDialogRole(null);
-                      }}
-                      aria-label="Close dialog"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                    <h2 className="text-xl font-semibold mb-4">Completion</h2>
-                    <p className="mb-6">
-                      {completionDialogRole === 'buyer'
-                        ? 'Have you received the keys?'
-                        : completionDialogRole === 'seller'
-                          ? 'Have you received the payment?'
-                          : ''}
-                    </p>
-                    <button
-                      className="bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition w-full"
-                      onClick={() => {
-                        if (completionDialogRole === 'buyer') {
-                          setBuyerCompletionConfirmed(true);
-                        } else if (completionDialogRole === 'seller') {
-                          setSellerCompletionConfirmed(true);
-                        }
-                        setIsDialogOpen(false);
-                        setSelectedTask(null);
-                        setCompletionDialogRole(null);
-                        toast.success('Completion confirmed!');
-                      }}
-                    >
-                      Confirm Completion
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Mortgage Valuation Survey Dialog (Buyer) */}
-            {selectedTask === 'Mortgage Valuation Survey' && isDialogOpen && (
-              <div>
-                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40`}>
-                  <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
-                    <button
-                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
-                      onClick={() => {
-                        setIsDialogOpen(false);
-                        setSelectedTask(null);
-                      }}
-                      aria-label="Close dialog"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                    <h2 className="text-xl font-semibold mb-4">Mortgage Valuation Survey</h2>
-                    <p className="mb-6">Will your mortgage provider require an onsite visit to approve the mortgage?</p>
-                    <div className="flex flex-col gap-3">
+                      <input
+                        type="date"
+                        className="border rounded px-3 py-2"
+                        value={mortgageValuationScheduleDate}
+                        onChange={e => setMortgageValuationScheduleDate(e.target.value)}
+                        required
+                        disabled={mortgageValuationVisitCompleted}
+                      />
+                      <input
+                        type="time"
+                        className="border rounded px-3 py-2"
+                        value={mortgageValuationScheduleTime}
+                        onChange={e => setMortgageValuationScheduleTime(e.target.value)}
+                        required
+                        disabled={mortgageValuationVisitCompleted}
+                      />
+                      {!mortgageValuationVisitCompleted && (
+                        <button
+                          type="submit"
+                          className="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700 transition"
+                        >
+                          {mortgageValuationScheduleDate && mortgageValuationScheduleTime ? 'Reschedule visit' : 'Schedule'}
+                        </button>
+                      )}
+                    </form>
+                    {/* Confirm Visit Completed button, only if scheduled date/time has passed and not completed */}
+                    {!mortgageValuationVisitCompleted && mortgageValuationScheduleDate && mortgageValuationScheduleTime && new Date() > new Date(`${mortgageValuationScheduleDate}T${mortgageValuationScheduleTime}`) && (
                       <button
-                        className="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700 transition"
-                        onClick={() => {
-                          setOnsiteVisitRequired('yes');
-                          setIsDialogOpen(false);
-                          setSelectedTask(null);
-                          toast.success('Response saved!');
+                        className="mt-4 bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition w-full"
+                        onClick={async () => {
+                          try {
+                            await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                              mortgage_valuation_visit_completed: true
+                            });
+                            setMortgageValuationVisitCompleted(true);
+                            setIsDialogOpen(false);
+                            setSelectedTask(null);
+                            toast.success('Mortgage valuation visit marked as completed!');
+                          } catch (err) {
+                            console.error('Failed to mark mortgage valuation visit as completed:', err);
+                            toast.error('Failed to update visit status. Please try again.');
+                          }
                         }}
                       >
-                        Yes
+                        Confirm Visit Completed
                       </button>
-                      <button
-                        className="bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition"
-                        onClick={() => {
-                          setOnsiteVisitRequired('no');
-                          setIsDialogOpen(false);
-                          setSelectedTask(null);
-                          toast.success('Response saved!');
-                        }}
-                      >
-                        No
-                      </button>
-                    </div>
+                    )}
+                    {/* Completion message */}
+                    {mortgageValuationVisitCompleted && (
+                      <div className="mt-4 text-emerald-700 font-semibold text-center">Mortgage valuation visit has been marked as completed.</div>
+                    )}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Mortgage Offer Dialog (Buyer) */}
+            {/* Mortgage Offer Dialog */}
             {selectedTask === 'Mortgage Offer' && isDialogOpen && (
               <div>
-                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40`}>
+                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${isDialogOpen ? '' : 'hidden'}`}>
                   <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
                     <button
                       className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
@@ -1519,6 +1676,10 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                     <form
                       onSubmit={e => {
                         e.preventDefault();
+                        if (!mortgageOfferFile) {
+                          toast.error('Please select a file to upload');
+                          return;
+                        }
                         setIsDialogOpen(false);
                         setSelectedTask(null);
                         toast.success('Mortgage offer uploaded!');
@@ -1567,10 +1728,10 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
               </div>
             )}
 
-            {/* Schedule Mortgage Valuation Visit Dialog (Buyer) */}
-            {selectedTask === 'Schedule Mortgage Valuation Visit' && isDialogOpen && (
+            {/* Approve Survey Results Dialog */}
+            {selectedTask === 'Approve Survey Results' && isDialogOpen && (
               <div>
-                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40`}>
+                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${isDialogOpen ? '' : 'hidden'}`}>
                   <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
                     <button
                       className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
@@ -1582,60 +1743,272 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                     >
                       <X className="w-6 h-6" />
                     </button>
-                    <h2 className="text-xl font-semibold mb-4">Schedule Mortgage Valuation Visit</h2>
-                    <p className="mb-6">Arrange a date and time for the mortgage provider to visit the property for valuation.</p>
-                    <form
-                      onSubmit={e => {
-                        e.preventDefault();
-                        setIsDialogOpen(false);
-                        setSelectedTask(null);
-                        toast.success('Mortgage valuation visit arranged!');
-                      }}
-                      className="flex flex-col gap-3"
-                    >
-                      <input
-                        type="date"
-                        className="border rounded px-3 py-2"
-                        value={mortgageValuationScheduleDate}
-                        onChange={e => setMortgageValuationScheduleDate(e.target.value)}
-                        required
-                        disabled={mortgageValuationVisitCompleted}
-                      />
-                      <input
-                        type="time"
-                        className="border rounded px-3 py-2"
-                        value={mortgageValuationScheduleTime}
-                        onChange={e => setMortgageValuationScheduleTime(e.target.value)}
-                        required
-                        disabled={mortgageValuationVisitCompleted}
-                      />
-                      {!mortgageValuationVisitCompleted && (
-                        <button
-                          type="submit"
-                          className="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700 transition"
-                        >
-                          {mortgageValuationScheduleDate && mortgageValuationScheduleTime ? 'Reschedule visit' : 'Schedule'}
-                        </button>
-                      )}
-                    </form>
-                    {/* Confirm Visit Completed button, only if scheduled date/time has passed and not completed */}
-                    {!mortgageValuationVisitCompleted && mortgageValuationScheduleDate && mortgageValuationScheduleTime && new Date() > new Date(`${mortgageValuationScheduleDate}T${mortgageValuationScheduleTime}`) && (
+                    <h2 className="text-xl font-semibold mb-4">Approve Survey Results</h2>
+                    <p className="mb-6">Please review and approve the survey results.</p>
+                    <div className="flex flex-col gap-3">
                       <button
-                        className="mt-4 bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition w-full"
-                        onClick={() => {
-                          setMortgageValuationVisitCompleted(true);
-                          setIsDialogOpen(false);
-                          setSelectedTask(null);
-                          toast.success('Mortgage valuation visit marked as completed!');
+                        className="bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition"
+                        onClick={async () => {
+                          try {
+                            await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                              survey_approval: 'approved'
+                            });
+                            setSurveyApproval('approved');
+                            setIsDialogOpen(false);
+                            setSelectedTask(null);
+                            toast.success('Survey results approved!');
+                          } catch (err) {
+                            console.error('Failed to approve survey results:', err);
+                            toast.error('Failed to approve survey results. Please try again.');
+                          }
                         }}
                       >
-                        Confirm Visit Completed
+                        Approve
                       </button>
-                    )}
-                    {/* Completion message */}
-                    {mortgageValuationVisitCompleted && (
-                      <div className="mt-4 text-emerald-700 font-semibold text-center">Mortgage valuation visit has been marked as completed.</div>
-                    )}
+                      <button
+                        className="bg-red-600 text-white rounded px-4 py-2 hover:bg-red-700 transition"
+                        onClick={async () => {
+                          try {
+                            await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                              survey_approval: 'rejected'
+                            });
+                            setSurveyApproval('rejected');
+                            setIsDialogOpen(false);
+                            setSelectedTask(null);
+                            toast.success('Survey results rejected.');
+                          } catch (err) {
+                            console.error('Failed to reject survey results:', err);
+                            toast.error('Failed to reject survey results. Please try again.');
+                          }
+                        }}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Final Checks Dialog */}
+            {selectedTask === 'Final Checks' && isDialogOpen && (
+              <div>
+                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${isDialogOpen ? '' : 'hidden'}`}>
+                  <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
+                    <button
+                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        setSelectedTask(null);
+                        setFinalChecksDialogRole(null);
+                      }}
+                      aria-label="Close dialog"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                    <h2 className="text-xl font-semibold mb-4">Final Checks</h2>
+                    <p className="mb-6">Please confirm that you have completed all final checks.</p>
+                    <div className="flex flex-col gap-3">
+                      <button
+                        className="bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition"
+                        onClick={async () => {
+                          try {
+                            if (finalChecksDialogRole === 'buyer') {
+                              await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                                buyer_final_checks_confirmed: true
+                              });
+                              setBuyerFinalChecksConfirmed(true);
+                            } else {
+                              await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                                seller_final_checks_confirmed: true
+                              });
+                              setSellerFinalChecksConfirmed(true);
+                            }
+                            setIsDialogOpen(false);
+                            setSelectedTask(null);
+                            setFinalChecksDialogRole(null);
+                            toast.success('Final checks confirmed!');
+                          } catch (err) {
+                            console.error('Failed to confirm final checks:', err);
+                            toast.error('Failed to confirm final checks. Please try again.');
+                          }
+                        }}
+                      >
+                        Confirm Final Checks
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Exchange Contracts Dialog */}
+            {selectedTask === 'Exchange Contracts' && isDialogOpen && (
+              <div>
+                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${isDialogOpen ? '' : 'hidden'}`}>
+                  <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
+                    <button
+                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        setSelectedTask(null);
+                        setExchangeContractsDialogRole(null);
+                      }}
+                      aria-label="Close dialog"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                    <h2 className="text-xl font-semibold mb-4">Exchange Contracts</h2>
+                    <p className="mb-6">Please confirm that you have exchanged contracts.</p>
+                    <div className="flex flex-col gap-3">
+                      <button
+                        className="bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition"
+                        onClick={async () => {
+                          try {
+                            if (exchangeContractsDialogRole === 'buyer') {
+                              await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                                buyer_exchange_contracts_confirmed: true
+                              });
+                              setBuyerExchangeContractsConfirmed(true);
+                            } else {
+                              await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                                seller_exchange_contracts_confirmed: true
+                              });
+                              setSellerExchangeContractsConfirmed(true);
+                            }
+                            setIsDialogOpen(false);
+                            setSelectedTask(null);
+                            setExchangeContractsDialogRole(null);
+                            toast.success('Contracts exchanged!');
+                          } catch (err) {
+                            console.error('Failed to confirm contract exchange:', err);
+                            toast.error('Failed to confirm contract exchange. Please try again.');
+                          }
+                        }}
+                      >
+                        Confirm Contracts Exchanged
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Completion Dialog */}
+            {selectedTask === 'Completion' && isDialogOpen && (
+              <div>
+                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${isDialogOpen ? '' : 'hidden'}`}>
+                  <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
+                    <button
+                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        setSelectedTask(null);
+                        setCompletionDialogRole(null);
+                      }}
+                      aria-label="Close dialog"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                    <h2 className="text-xl font-semibold mb-4">Completion</h2>
+                    <p className="mb-6">
+                      {completionDialogRole === 'buyer' 
+                        ? 'Please confirm that you have received the keys to the property.'
+                        : 'Please confirm that you have received the payment for the property.'}
+                    </p>
+                    <div className="flex flex-col gap-3">
+                      <button
+                        className="bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition"
+                        onClick={async () => {
+                          try {
+                            if (completionDialogRole === 'buyer') {
+                              await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                                buyer_completion_confirmed: true
+                              });
+                              setBuyerCompletionConfirmed(true);
+                            } else {
+                              await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                                seller_completion_confirmed: true
+                              });
+                              setSellerCompletionConfirmed(true);
+                            }
+                            setIsDialogOpen(false);
+                            setSelectedTask(null);
+                            setCompletionDialogRole(null);
+                            toast.success('Completion confirmed!');
+                          } catch (err) {
+                            console.error('Failed to confirm completion:', err);
+                            toast.error('Failed to confirm completion. Please try again.');
+                          }
+                        }}
+                      >
+                        {completionDialogRole === 'buyer' 
+                          ? 'Confirm Keys Received'
+                          : 'Confirm Payment Received'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mortgage Valuation Survey Dialog */}
+            {selectedTask === 'Mortgage Valuation Survey' && isDialogOpen && (
+              <div>
+                <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${isDialogOpen ? '' : 'hidden'}`}>
+                  <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
+                    <button
+                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        setSelectedTask(null);
+                      }}
+                      aria-label="Close dialog"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                    <h2 className="text-xl font-semibold mb-4">Mortgage Valuation Survey</h2>
+                    <p className="mb-6">Will your mortgage provider require an onsite visit to approve the mortgage?</p>
+                    <div className="flex flex-col gap-3">
+                      <button
+                        className="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700 transition"
+                        onClick={async () => {
+                          try {
+                            await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                              onsite_visit_required: 'yes'
+                            });
+                            setOnsiteVisitRequired('yes');
+                            setIsDialogOpen(false);
+                            setSelectedTask(null);
+                            toast.success('Visit requirement saved!');
+                          } catch (err) {
+                            console.error('Failed to save visit requirement:', err);
+                            toast.error('Failed to save requirement. Please try again.');
+                          }
+                        }}
+                      >
+                        Yes, an onsite visit is required
+                      </button>
+                      <button
+                        className="bg-emerald-600 text-white rounded px-4 py-2 hover:bg-emerald-700 transition"
+                        onClick={async () => {
+                          try {
+                            await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
+                              onsite_visit_required: 'no'
+                            });
+                            setOnsiteVisitRequired('no');
+                            setIsDialogOpen(false);
+                            setSelectedTask(null);
+                            toast.success('Visit requirement saved!');
+                          } catch (err) {
+                            console.error('Failed to save visit requirement:', err);
+                            toast.error('Failed to save requirement. Please try again.');
+                          }
+                        }}
+                      >
+                        No, an onsite visit is not required
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

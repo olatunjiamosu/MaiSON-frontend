@@ -46,7 +46,7 @@ import TimelineSection from '../../components/timeline/TimelineSection';
 //import NotificationsSection from './seller-sections/NotificationsSection';
 import DocumentsSection from './seller-sections/DocumentsSection';
 import AvailabilitySection from './seller-sections/AvailabilitySection';
-import { PropertyDetail } from '../../types/property';
+import { PropertyDetail, PropertyDetailWithStatus } from '../../types/property';
 import { toast } from 'react-hot-toast';
 import { MdHome, MdDescription, MdOutlineAttachMoney } from 'react-icons/md';
 import { BsChatLeftText } from 'react-icons/bs';
@@ -65,26 +65,6 @@ interface NavItemProps {
   path: string;
 }
 
-interface Property {
-  id: string;
-  status: 'active' | 'pending' | 'sold' | 'withdrawn';
-  image: string;
-  price: string;
-  road: string;
-  city: string;
-  postcode: string;
-  beds: number;
-  baths: number;
-  reception: number;
-  sqft: number;
-  propertyType: string;
-  epcRating: string;
-  viewings: number;
-  favorites: number;
-  inquiries: number;
-  dateAdded: string;
-}
-
 interface ChatHistory {
   id: string;
   question: string;
@@ -98,11 +78,6 @@ interface ChatMessageDisplay {
   role: 'user' | 'assistant';
   content: string;
   timestamp?: string;
-}
-
-// Add a custom interface that extends PropertyDetail with status
-interface PropertyDetailWithStatus extends PropertyDetail {
-  status?: 'active' | 'pending' | 'sold' | 'withdrawn';
 }
 
 const SellerDashboard = () => {
@@ -136,11 +111,30 @@ const SellerDashboard = () => {
       setPropertyError(null);
       
       try {
+        // Fetch property details
         const propertyData = await PropertyService.getPropertyById(propertyId);
+        
+        // Fetch user dashboard to get negotiations
+        const dashboardData = await PropertyService.getUserDashboard();
+        
+        // Find negotiations for this property
+        const propertyNegotiations = dashboardData.negotiations_as_seller?.filter(
+          (n: { property_id: string; status: string }) => n.property_id === propertyId
+        );
+        
+        console.log('Property negotiations:', {
+          propertyId,
+          negotiations: propertyNegotiations,
+          hasAcceptedOffer: propertyNegotiations?.some(n => n.status === 'accepted'),
+          hasActiveOffer: propertyNegotiations?.some(n => n.status === 'active')
+        });
+        
+        // Add negotiations to property data
         setProperty({
           ...propertyData,
           status: 'active',
-          id: propertyData.id || propertyData.property_id || propertyId
+          id: propertyData.id || propertyData.property_id || propertyId,
+          negotiations: propertyNegotiations || []
         });
       } catch (error) {
         console.error('Error fetching property details:', error);
@@ -721,7 +715,10 @@ const SellerDashboard = () => {
                         : property?.negotiations?.some(n => n.status === 'active')
                           ? 'pending'
                           : 'none'
-                    } 
+                    }
+                    transactionId={
+                      property?.negotiations?.find(n => n.status === 'accepted')?.negotiation_id || ''
+                    }
                   />
                 } />
                 <Route path="chat" element={

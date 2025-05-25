@@ -272,7 +272,13 @@ const BuyersDashboard = () => {
                 )
                   ? 'pending'
                   : 'none'
-          } 
+          }
+          transactionId={
+            userDashboard?.negotiations_as_buyer?.find(
+              (n: { property_id: string; status: string }) => 
+                n.property_id === propertyId && n.status === 'accepted'
+            )?.negotiation_id || ''
+          }
         />;
       case 'viewings':
         return <ScheduleViewingSection property={property} />;
@@ -556,7 +562,13 @@ const BuyersDashboard = () => {
                           )
                             ? 'pending'
                             : 'none'
-                    } 
+                    }
+                    transactionId={
+                      userDashboard?.negotiations_as_buyer?.find(
+                        (n: { property_id: string; status: string }) => 
+                          n.property_id === propertyId && n.status === 'accepted'
+                      )?.negotiation_id || ''
+                    }
                   />
                 } />
                 <Route path="chat" element={
