@@ -40,7 +40,7 @@ import OffersSection from './seller-sections/OffersSection';
 import ViewingsSection from './seller-sections/ViewingRequestsSection';
 import PropertyDetailsSection from './buyer-sections/PropertyDetailsSection';
 import AvailabilitySection from './seller-sections/AvailabilitySection';
-import { PropertyDetail } from '../../types/property';
+import { PropertyDetail, PropertyDetailWithStatus, Negotiation } from '../../types/property';
 import { ChatHistory } from '../../types/chat';
 import { toast } from 'react-hot-toast';
 import { formatLargeNumber } from '../../utils/numberUtils';
@@ -67,11 +67,6 @@ interface ChatMessageDisplay {
   role: 'user' | 'assistant';
   content: string;
   timestamp?: string;
-}
-
-// Add a custom interface that extends PropertyDetail with status
-interface PropertyDetailWithStatus extends PropertyDetail {
-  status?: 'active' | 'pending' | 'sold' | 'withdrawn';
 }
 
 const BuyersDashboard = () => {
