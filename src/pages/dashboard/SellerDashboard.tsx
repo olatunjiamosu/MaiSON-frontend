@@ -46,6 +46,7 @@ import TimelineSection from '../../components/timeline/TimelineSection';
 //import NotificationsSection from './seller-sections/NotificationsSection';
 import DocumentsSection from './seller-sections/DocumentsSection';
 import AvailabilitySection from './seller-sections/AvailabilitySection';
+import PropertyQuestionsSection from './seller-sections/PropertyQuestionsSection';
 import { PropertyDetail } from '../../types/property';
 import { toast } from 'react-hot-toast';
 import { MdHome, MdDescription, MdOutlineAttachMoney } from 'react-icons/md';
@@ -621,6 +622,13 @@ const SellerDashboard = () => {
                 path={`/dashboard/seller/property/${propertyId}/documents`}
               />
               <NavItem
+                icon={<MessageCircle />}
+                label="Questions"
+                active={activeSection === 'questions'}
+                onClick={() => handleSectionChange('questions', `/dashboard/seller/property/${propertyId}/questions`)}
+                path={`/dashboard/seller/property/${propertyId}/questions`}
+              />
+              <NavItem
                 icon={<ArrowUpRight />}
                 label="View as Buyer"
                 active={activeSection === 'view-as-buyer'}
@@ -711,6 +719,7 @@ const SellerDashboard = () => {
                 } />
                 <Route path="availability" element={<AvailabilitySection />} />
                 <Route path="documents" element={<DocumentsSection />} />
+                <Route path="questions" element={<PropertyQuestionsSection />} />
                 <Route path="my-property" element={!isLoadingProperty ? <MyPropertySection property={property || undefined} /> : null} />
                 <Route path="timeline" element={<TimelineSection viewMode="seller" />} />
                 <Route path="chat" element={

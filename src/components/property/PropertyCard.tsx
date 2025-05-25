@@ -221,7 +221,7 @@ const PropertyCard = ({
             });
             
             // Navigate to property chats page
-            navigate('/buyer-dashboard/property-chats');
+            navigate('/dashboard/listings/property-chats');
             return;
           } else {
             console.log(`Conversation ${existingConversationId} not found on backend, creating new one`);
@@ -268,7 +268,7 @@ const PropertyCard = ({
       }
       
       // Navigate to property chats page
-      navigate('/buyer-dashboard/property-chats');
+      navigate('/dashboard/listings/property-chats');
     } catch (error: any) {
       console.error('Error starting property chat:', error);
       
