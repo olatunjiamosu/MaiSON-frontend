@@ -51,6 +51,7 @@ import ScheduleViewingSection from './buyer-sections/ScheduleViewingSection';
 import TimelineSection from '../../components/timeline/TimelineSection';
 import DocumentsSection from './buyer-sections/DocumentsSection';
 import PropertyChatSection from './buyer-sections/PropertyChatSection';
+import PropertyChats from './buyer-sections/PropertyChats';
 
 // Add interfaces for the components
 interface NavItemProps {
@@ -456,6 +457,13 @@ const BuyersDashboard = () => {
                   onClick={() => handleSectionChange('add-property', '/buyer-dashboard/add-property')}
                   path="/buyer-dashboard/add-property"
                 />
+                <NavItem
+                  icon={<MessageCircle />}
+                  label="Property Chats"
+                  active={activeSection === 'property-chats'}
+                  onClick={() => handleSectionChange('property-chats', '/dashboard/listings/property-chats')}
+                  path="/dashboard/listings/property-chats"
+                />
               </>
             )}
           </nav>
@@ -514,6 +522,7 @@ const BuyersDashboard = () => {
                 <Route path="availability" element={<AvailabilitySection />} />
                 <Route path="documents" element={<DocumentsSection />} />
                 <Route path="timeline" element={<TimelineSection viewMode="buyer" />} />
+                <Route path="property-chats" element={<PropertyChats />} />
                 <Route path="chat" element={
                   isLoadingChats ? (
                     <div className="flex items-center justify-center h-full">

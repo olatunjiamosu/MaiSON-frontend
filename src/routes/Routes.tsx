@@ -19,6 +19,7 @@ import SellerDashboard from '../pages/dashboard/SellerDashboard';
 import BuyersDashboard from '../pages/dashboard/BuyersDashboard';
 import AddPropertySection from '../pages/dashboard/seller-sections/AddPropertySection';
 import ProfileSettings from '../pages/profile/ProfileSettings';
+import AllQuestionsSection from '../pages/dashboard/AllQuestionsSection';
 
 // Remove mock property data as we're now using the API
 
@@ -44,7 +45,9 @@ const AppRoutes = () => (
           <Dashboard />
         </PrivateRoute>
       }
-    />
+    >
+      <Route path="questions" element={<AllQuestionsSection />} />
+    </Route>
 
     {/* Profile Settings Route */}
     <Route 

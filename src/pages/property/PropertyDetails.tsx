@@ -268,7 +268,7 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
             });
             
             // Navigate to property chats page
-            navigate('/buyer-dashboard/property-chats');
+            navigate('/dashboard/listings/property-chats');
             return;
           } else {
             console.log(`Conversation ${existingConversationId} not found on backend, creating new one`);
@@ -322,7 +322,7 @@ const PropertyDetails = ({ property: propProperty }: PropertyDetailsProps) => {
         }
         
         // Navigate to property chats page
-        navigate('/buyer-dashboard/property-chats');
+        navigate('/dashboard/listings/property-chats');
       } catch (chatError: any) {
         console.error('Error initiating chat:', chatError);
         
