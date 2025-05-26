@@ -154,6 +154,8 @@ describe('PropertyCard', () => {
     const propertyCard = screen.getByRole('img', { name: /test road, test city/i });
     fireEvent.click(propertyCard);
     
-    expect(mockNavigate).toHaveBeenCalledWith(`/property/${mockProperty.id}`, expect.anything());
+    expect(mockNavigate).toHaveBeenCalledWith(`/dashboard/buyer/property/${mockProperty.id}`, {
+      state: { from: 'listings' }
+    });
   });
 }); 

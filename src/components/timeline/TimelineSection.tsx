@@ -471,14 +471,27 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
     ...(onsiteVisitRequired === 'yes'
       ? [{
           title: 'Schedule Mortgage Valuation Visit',
-          description: mortgageValuationScheduleDate && mortgageValuationScheduleTime
+          description: mortgageValuationVisitCompleted
             ? (() => {
-                const dateObj = new Date(`${mortgageValuationScheduleDate}T${mortgageValuationScheduleTime}`);
+                const dateObj = new Date(`${mortgageValuationScheduleDate}T${mortgageValuationScheduleTime}:00`);
+                if (isNaN(dateObj.getTime())) {
+                  return 'Visit complete';
+                }
                 const dateStr = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
                 const timeStr = dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-                return `Visit scheduled for ${dateStr} at ${timeStr}`;
+                return `Visit complete on: ${dateStr} at ${timeStr}`;
               })()
-            : 'Arrange a time for the mortgage provider to visit the property',
+            : mortgageValuationScheduleDate && mortgageValuationScheduleTime
+              ? (() => {
+                  const dateObj = new Date(`${mortgageValuationScheduleDate}T${mortgageValuationScheduleTime}:00`);
+                  if (isNaN(dateObj.getTime())) {
+                    return 'Visit scheduled';
+                  }
+                  const dateStr = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+                  const timeStr = dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+                  return `Visit scheduled for ${dateStr} at ${timeStr}`;
+                })()
+              : 'Arrange a time for the mortgage provider to visit the property',
           icon: <Calendar className="w-5 h-5" />,
           status: mortgageValuationVisitCompleted
             ? 'completed' as const
@@ -1632,7 +1645,9 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({ viewMode, offerStatus
                         onClick={async () => {
                           try {
                             await TimelineService.updateTimelineProgress(user?.uid ?? '', transactionId ?? '', {
-                              mortgage_valuation_visit_completed: true
+                              mortgage_valuation_visit_completed: true,
+                              mortgage_valuation_schedule_date: mortgageValuationScheduleDate,
+                              mortgage_valuation_schedule_time: mortgageValuationScheduleTime
                             });
                             setMortgageValuationVisitCompleted(true);
                             setIsDialogOpen(false);
